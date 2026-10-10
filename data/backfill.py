@@ -1,4 +1,4 @@
-"""Load gauges, annual peaks and instantaneous history into Tiger.
+﻿"""Load gauges, annual peaks and instantaneous history into Tiger.
 
   python data/backfill.py gauges --sites 08075000 08074500 ... [--pctile 70]
   python data/backfill.py peaks
@@ -74,6 +74,19 @@ def cmd_gauges(args) -> None:
                 "nws_flood_ft=EXCLUDED.nws_flood_ft, record_start=EXCLUDED.record_start, "
                 "record_note=EXCLUDED.record_note", r)
             print(f"gauge {r[0]}  trigger {r[4]} ft  record_start {r[6]}  {r[1]}")
+
+
+def cmd_f11(args) -> None:
+    """Apply data/f11_decisions.json to gauges.record_start and record_note."""
+    dec = json.loads((common.DATA_DIR / "f11_decisions.json").read_text(encoding="utf-8"))
+    with db.connect() as conn:
+        for site, d in dec["decisions"].items():
+            note = (f" | F11 DECISION (USGS peak-file flags): record_start {d['record_start']}. "
+                    f"{d['evidence']}.")
+            cur = conn.execute(
+                "UPDATE gauges SET record_start = %s, record_note = COALESCE(record_note, '') "
+                "|| %s WHERE gauge_id = %s", (d["record_start"], note, site))
+            print(f"{site}: record_start {d['record_start']} ({cur.rowcount} row)")
 
 
 def cmd_peaks(args) -> None:
@@ -157,7 +170,7 @@ def cmd_iv(args) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("command", choices=["gauges", "peaks", "iv", "all"])
+    ap.add_argument("command", choices=["gauges", "peaks", "iv", "all", "f11"])
     ap.add_argument("--sites", nargs="*", default=[])
     ap.add_argument("--pctile", type=float, default=70)
     ap.add_argument("--record-start", nargs="*", default=[], metavar="SITE=YEAR")
@@ -170,6 +183,8 @@ def main() -> None:
         if not a.sites:
             raise SystemExit("--sites is required")
         cmd_gauges(a)
+    if a.command == "f11":
+        cmd_f11(a)
     if a.command in ("peaks", "all"):
         cmd_peaks(a)
     if a.command in ("iv", "all"):
@@ -178,3 +193,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

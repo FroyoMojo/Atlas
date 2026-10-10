@@ -1,0 +1,14 @@
+{
+  "_note": "F11 comparability decisions. Source: USGS peak-file flag gage_ht_cd=6 ('Gage datum changed during this year'), read with `preflight.py peakcodes` on Oct 10 2026. Stage readings before a datum change are in a different datum and are not converted here (the shift size is unknown), so the stage record is truncated to start the water year AFTER the flagged year. peak_cd=C (urbanization/channelization) is set on nearly every row for every gauge, so it does not discriminate. The stage-discharge screen in preflight.py agreed for Brays and Greens (within a year) and disagreed elsewhere; USGS flags win. Discharge-based pricing over the longer record is the planned sensitivity for gauges with fewer than 20 comparable years.",
+  "decisions": {
+    "08075000": {"record_start": 2007, "evidence": "gage_ht_cd=6 in 2006; screen suggested 2005"},
+    "08076000": {"record_start": 2007, "evidence": "gage_ht_cd=6 in 2006; screen suggested 2006"},
+    "08074500": {"record_start": 2010, "evidence": "gage_ht_cd=6 in 2009; also code 3 (different site/datum) in 1937; screen suggested 2015"},
+    "08074000": {"record_start": 2010, "evidence": "gage_ht_cd=6 in 2009; screen suggested 2011"},
+    "08075770": {"record_start": 2011, "evidence": "gage_ht_cd=6 in 2010; screen suggested 2011"},
+    "08076500": {"record_start": 2011, "evidence": "gage_ht_cd=6 in 2010; screen suggested 2016"},
+    "08069000": {"record_start": 2013, "evidence": "gage_ht_cd=6 in 2012; screen inconclusive"},
+    "08068500": {"record_start": 2015, "evidence": "gage_ht_cd=6 in 1946, 1965, 1976, 1995 and 2014; screen inconclusive"},
+    "08075500": {"record_start": 1953, "evidence": "UNRESOLVED: no datum flag in the peak file, but the screen suggested 2015. Kept the full record; read the USGS site page before relying on it. Not a demo gauge."}
+  }
+}

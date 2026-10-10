@@ -1,0 +1,1890 @@
+{
+  "generated": "2026-10-10T22:33:16.522361+00:00",
+  "gauges": [
+    {
+      "site": "08075000",
+      "problems": [],
+      "iv_recent": {
+        "readings": 9,
+        "latest": "2026-10-10T21:45:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2977,
+        "max_stage_ft": 45.67
+      },
+      "peaks": {
+        "n": 92,
+        "first_wy": 1919,
+        "last_wy": 2025,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 42.49,
+        "p80_ft": 48.24
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "consistent since 2005",
+        "fit": {
+          "a": -83.449,
+          "b": 12.277,
+          "r2": 0.994
+        },
+        "blocks": [
+          {
+            "from_wy": 1925,
+            "to_wy": 1929,
+            "n": 1,
+            "mean_resid_ft": 19.5,
+            "se_ft": null,
+            "flagged": false
+          },
+          {
+            "from_wy": 1935,
+            "to_wy": 1939,
+            "n": 4,
+            "mean_resid_ft": 24.89,
+            "se_ft": 1.91,
+            "flagged": true
+          },
+          {
+            "from_wy": 1940,
+            "to_wy": 1944,
+            "n": 5,
+            "mean_resid_ft": 25.5,
+            "se_ft": 1.59,
+            "flagged": true
+          },
+          {
+            "from_wy": 1945,
+            "to_wy": 1949,
+            "n": 5,
+            "mean_resid_ft": 29.94,
+            "se_ft": 0.95,
+            "flagged": true
+          },
+          {
+            "from_wy": 1950,
+            "to_wy": 1954,
+            "n": 5,
+            "mean_resid_ft": 29.44,
+            "se_ft": 1.9,
+            "flagged": true
+          },
+          {
+            "from_wy": 1955,
+            "to_wy": 1959,
+            "n": 5,
+            "mean_resid_ft": 25.24,
+            "se_ft": 2.54,
+            "flagged": true
+          },
+          {
+            "from_wy": 1960,
+            "to_wy": 1964,
+            "n": 5,
+            "mean_resid_ft": 16.18,
+            "se_ft": 0.83,
+            "flagged": true
+          },
+          {
+            "from_wy": 1965,
+            "to_wy": 1969,
+            "n": 5,
+            "mean_resid_ft": 12.23,
+            "se_ft": 1.67,
+            "flagged": true
+          },
+          {
+            "from_wy": 1970,
+            "to_wy": 1974,
+            "n": 5,
+            "mean_resid_ft": 9.37,
+            "se_ft": 0.31,
+            "flagged": true
+          },
+          {
+            "from_wy": 1975,
+            "to_wy": 1979,
+            "n": 5,
+            "mean_resid_ft": 9.93,
+            "se_ft": 0.61,
+            "flagged": true
+          },
+          {
+            "from_wy": 1980,
+            "to_wy": 1984,
+            "n": 5,
+            "mean_resid_ft": 9.53,
+            "se_ft": 0.26,
+            "flagged": true
+          },
+          {
+            "from_wy": 1985,
+            "to_wy": 1989,
+            "n": 5,
+            "mean_resid_ft": 9.28,
+            "se_ft": 0.35,
+            "flagged": true
+          },
+          {
+            "from_wy": 1990,
+            "to_wy": 1994,
+            "n": 5,
+            "mean_resid_ft": 9.02,
+            "se_ft": 0.21,
+            "flagged": true
+          },
+          {
+            "from_wy": 1995,
+            "to_wy": 1999,
+            "n": 5,
+            "mean_resid_ft": 8.94,
+            "se_ft": 0.09,
+            "flagged": true
+          },
+          {
+            "from_wy": 2000,
+            "to_wy": 2004,
+            "n": 5,
+            "mean_resid_ft": 9.63,
+            "se_ft": 0.39,
+            "flagged": true
+          },
+          {
+            "from_wy": 2005,
+            "to_wy": 2009,
+            "n": 5,
+            "mean_resid_ft": 3.5,
+            "se_ft": 2.33,
+            "flagged": false
+          },
+          {
+            "from_wy": 2010,
+            "to_wy": 2014,
+            "n": 5,
+            "mean_resid_ft": -0.27,
+            "se_ft": 0.06,
+            "flagged": false
+          },
+          {
+            "from_wy": 2015,
+            "to_wy": 2019,
+            "n": 5,
+            "mean_resid_ft": 0.07,
+            "se_ft": 0.18,
+            "flagged": false
+          },
+          {
+            "from_wy": 2020,
+            "to_wy": 2024,
+            "n": 5,
+            "mean_resid_ft": 0.21,
+            "se_ft": 0.11,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2000,
+            "to_wy": 2004,
+            "shift_ft": 9.63
+          },
+          {
+            "from_wy": 1995,
+            "to_wy": 1999,
+            "shift_ft": 8.94
+          },
+          {
+            "from_wy": 1990,
+            "to_wy": 1994,
+            "shift_ft": 9.02
+          },
+          {
+            "from_wy": 1985,
+            "to_wy": 1989,
+            "shift_ft": 9.28
+          },
+          {
+            "from_wy": 1980,
+            "to_wy": 1984,
+            "shift_ft": 9.53
+          },
+          {
+            "from_wy": 1975,
+            "to_wy": 1979,
+            "shift_ft": 9.93
+          },
+          {
+            "from_wy": 1970,
+            "to_wy": 1974,
+            "shift_ft": 9.37
+          },
+          {
+            "from_wy": 1965,
+            "to_wy": 1969,
+            "shift_ft": 12.23
+          },
+          {
+            "from_wy": 1960,
+            "to_wy": 1964,
+            "shift_ft": 16.18
+          },
+          {
+            "from_wy": 1955,
+            "to_wy": 1959,
+            "shift_ft": 25.24
+          },
+          {
+            "from_wy": 1950,
+            "to_wy": 1954,
+            "shift_ft": 29.44
+          },
+          {
+            "from_wy": 1945,
+            "to_wy": 1949,
+            "shift_ft": 29.94
+          },
+          {
+            "from_wy": 1940,
+            "to_wy": 1944,
+            "shift_ft": 25.5
+          },
+          {
+            "from_wy": 1935,
+            "to_wy": 1939,
+            "shift_ft": 24.89
+          }
+        ],
+        "suggested_record_start": 2005
+      },
+      "site_meta": {
+        "site": "08075000",
+        "name": "Brays Bayou at Houston, TX",
+        "lat": 29.69717469,
+        "lon": -95.412162,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 94.9
+      }
+    },
+    {
+      "site": "08074500",
+      "problems": [],
+      "iv_recent": {
+        "readings": 9,
+        "latest": "2026-10-10T21:45:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2471,
+        "max_stage_ft": 44.31
+      },
+      "peaks": {
+        "n": 91,
+        "first_wy": 1929,
+        "last_wy": 2025,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 35.23,
+        "p80_ft": 40.22
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "only 10 comparable years since 2015: price from discharge",
+        "fit": {
+          "a": -73.516,
+          "b": 11.009,
+          "r2": 0.841
+        },
+        "blocks": [
+          {
+            "from_wy": 1925,
+            "to_wy": 1929,
+            "n": 1,
+            "mean_resid_ft": 19.84,
+            "se_ft": null,
+            "flagged": false
+          },
+          {
+            "from_wy": 1935,
+            "to_wy": 1939,
+            "n": 4,
+            "mean_resid_ft": 23.05,
+            "se_ft": 1.88,
+            "flagged": true
+          },
+          {
+            "from_wy": 1940,
+            "to_wy": 1944,
+            "n": 5,
+            "mean_resid_ft": 20.69,
+            "se_ft": 2.35,
+            "flagged": true
+          },
+          {
+            "from_wy": 1945,
+            "to_wy": 1949,
+            "n": 5,
+            "mean_resid_ft": 21.96,
+            "se_ft": 1.68,
+            "flagged": true
+          },
+          {
+            "from_wy": 1950,
+            "to_wy": 1954,
+            "n": 5,
+            "mean_resid_ft": 22.65,
+            "se_ft": 1.31,
+            "flagged": true
+          },
+          {
+            "from_wy": 1955,
+            "to_wy": 1959,
+            "n": 5,
+            "mean_resid_ft": 20.55,
+            "se_ft": 0.35,
+            "flagged": true
+          },
+          {
+            "from_wy": 1960,
+            "to_wy": 1964,
+            "n": 5,
+            "mean_resid_ft": 18.42,
+            "se_ft": 1.22,
+            "flagged": true
+          },
+          {
+            "from_wy": 1965,
+            "to_wy": 1969,
+            "n": 5,
+            "mean_resid_ft": 9.94,
+            "se_ft": 3.13,
+            "flagged": true
+          },
+          {
+            "from_wy": 1970,
+            "to_wy": 1974,
+            "n": 5,
+            "mean_resid_ft": 9.17,
+            "se_ft": 0.59,
+            "flagged": true
+          },
+          {
+            "from_wy": 1975,
+            "to_wy": 1979,
+            "n": 5,
+            "mean_resid_ft": 6.93,
+            "se_ft": 0.17,
+            "flagged": true
+          },
+          {
+            "from_wy": 1980,
+            "to_wy": 1984,
+            "n": 5,
+            "mean_resid_ft": 7.84,
+            "se_ft": 0.34,
+            "flagged": true
+          },
+          {
+            "from_wy": 1985,
+            "to_wy": 1989,
+            "n": 5,
+            "mean_resid_ft": 7.96,
+            "se_ft": 0.51,
+            "flagged": true
+          },
+          {
+            "from_wy": 1990,
+            "to_wy": 1994,
+            "n": 5,
+            "mean_resid_ft": 8.22,
+            "se_ft": 1.05,
+            "flagged": true
+          },
+          {
+            "from_wy": 1995,
+            "to_wy": 1999,
+            "n": 5,
+            "mean_resid_ft": 8.26,
+            "se_ft": 0.72,
+            "flagged": true
+          },
+          {
+            "from_wy": 2000,
+            "to_wy": 2004,
+            "n": 5,
+            "mean_resid_ft": 9.33,
+            "se_ft": 1.18,
+            "flagged": true
+          },
+          {
+            "from_wy": 2005,
+            "to_wy": 2009,
+            "n": 5,
+            "mean_resid_ft": 6.71,
+            "se_ft": 1.86,
+            "flagged": true
+          },
+          {
+            "from_wy": 2010,
+            "to_wy": 2014,
+            "n": 5,
+            "mean_resid_ft": -1.66,
+            "se_ft": 0.16,
+            "flagged": true
+          },
+          {
+            "from_wy": 2015,
+            "to_wy": 2019,
+            "n": 5,
+            "mean_resid_ft": 1.77,
+            "se_ft": 1.89,
+            "flagged": false
+          },
+          {
+            "from_wy": 2020,
+            "to_wy": 2024,
+            "n": 5,
+            "mean_resid_ft": -0.11,
+            "se_ft": 0.4,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2010,
+            "to_wy": 2014,
+            "shift_ft": -1.66
+          },
+          {
+            "from_wy": 2005,
+            "to_wy": 2009,
+            "shift_ft": 6.71
+          },
+          {
+            "from_wy": 2000,
+            "to_wy": 2004,
+            "shift_ft": 9.33
+          },
+          {
+            "from_wy": 1995,
+            "to_wy": 1999,
+            "shift_ft": 8.26
+          },
+          {
+            "from_wy": 1990,
+            "to_wy": 1994,
+            "shift_ft": 8.22
+          },
+          {
+            "from_wy": 1985,
+            "to_wy": 1989,
+            "shift_ft": 7.96
+          },
+          {
+            "from_wy": 1980,
+            "to_wy": 1984,
+            "shift_ft": 7.84
+          },
+          {
+            "from_wy": 1975,
+            "to_wy": 1979,
+            "shift_ft": 6.93
+          },
+          {
+            "from_wy": 1970,
+            "to_wy": 1974,
+            "shift_ft": 9.17
+          },
+          {
+            "from_wy": 1965,
+            "to_wy": 1969,
+            "shift_ft": 9.94
+          },
+          {
+            "from_wy": 1960,
+            "to_wy": 1964,
+            "shift_ft": 18.42
+          },
+          {
+            "from_wy": 1955,
+            "to_wy": 1959,
+            "shift_ft": 20.55
+          },
+          {
+            "from_wy": 1950,
+            "to_wy": 1954,
+            "shift_ft": 22.65
+          },
+          {
+            "from_wy": 1945,
+            "to_wy": 1949,
+            "shift_ft": 21.96
+          },
+          {
+            "from_wy": 1940,
+            "to_wy": 1944,
+            "shift_ft": 20.69
+          },
+          {
+            "from_wy": 1935,
+            "to_wy": 1939,
+            "shift_ft": 23.05
+          }
+        ],
+        "suggested_record_start": 2015
+      },
+      "site_meta": {
+        "site": "08074500",
+        "name": "Whiteoak Bayou at Houston, TX",
+        "lat": 29.77522777,
+        "lon": -95.3971612,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 95.1
+      }
+    },
+    {
+      "site": "08074000",
+      "problems": [],
+      "iv_recent": {
+        "readings": 7,
+        "latest": "2026-10-10T21:15:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2861,
+        "max_stage_ft": 41.9
+      },
+      "peaks": {
+        "n": 91,
+        "first_wy": 1929,
+        "last_wy": 2025,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 20.1,
+        "p80_ft": 26.95
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "only 15 comparable years since 2011: price from discharge",
+        "fit": {
+          "a": -100.945,
+          "b": 13.639,
+          "r2": 0.942
+        },
+        "blocks": [
+          {
+            "from_wy": 1926,
+            "to_wy": 1930,
+            "n": 1,
+            "mean_resid_ft": 10.07,
+            "se_ft": null,
+            "flagged": false
+          },
+          {
+            "from_wy": 1936,
+            "to_wy": 1940,
+            "n": 5,
+            "mean_resid_ft": 11.64,
+            "se_ft": 3.28,
+            "flagged": true
+          },
+          {
+            "from_wy": 1941,
+            "to_wy": 1945,
+            "n": 5,
+            "mean_resid_ft": 6.46,
+            "se_ft": 0.91,
+            "flagged": true
+          },
+          {
+            "from_wy": 1946,
+            "to_wy": 1950,
+            "n": 5,
+            "mean_resid_ft": 6.81,
+            "se_ft": 1.17,
+            "flagged": true
+          },
+          {
+            "from_wy": 1951,
+            "to_wy": 1955,
+            "n": 5,
+            "mean_resid_ft": 10.08,
+            "se_ft": 1.11,
+            "flagged": true
+          },
+          {
+            "from_wy": 1956,
+            "to_wy": 1960,
+            "n": 5,
+            "mean_resid_ft": 5.29,
+            "se_ft": 4.28,
+            "flagged": false
+          },
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "n": 5,
+            "mean_resid_ft": 3.4,
+            "se_ft": 0.98,
+            "flagged": true
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "n": 5,
+            "mean_resid_ft": 3.83,
+            "se_ft": 1.72,
+            "flagged": true
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "n": 5,
+            "mean_resid_ft": -0.03,
+            "se_ft": 1.26,
+            "flagged": false
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "n": 5,
+            "mean_resid_ft": 3.98,
+            "se_ft": 0.69,
+            "flagged": true
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "n": 5,
+            "mean_resid_ft": 4.63,
+            "se_ft": 1.48,
+            "flagged": true
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "n": 5,
+            "mean_resid_ft": 4.72,
+            "se_ft": 0.59,
+            "flagged": true
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "n": 5,
+            "mean_resid_ft": 4.69,
+            "se_ft": 0.58,
+            "flagged": true
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "n": 5,
+            "mean_resid_ft": 4.77,
+            "se_ft": 0.73,
+            "flagged": true
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "n": 5,
+            "mean_resid_ft": 3.97,
+            "se_ft": 0.9,
+            "flagged": true
+          },
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "n": 5,
+            "mean_resid_ft": 3.47,
+            "se_ft": 1.12,
+            "flagged": true
+          },
+          {
+            "from_wy": 2011,
+            "to_wy": 2015,
+            "n": 5,
+            "mean_resid_ft": 0.46,
+            "se_ft": 0.29,
+            "flagged": false
+          },
+          {
+            "from_wy": 2016,
+            "to_wy": 2020,
+            "n": 5,
+            "mean_resid_ft": -1.14,
+            "se_ft": 1.0,
+            "flagged": false
+          },
+          {
+            "from_wy": 2021,
+            "to_wy": 2025,
+            "n": 5,
+            "mean_resid_ft": 0.68,
+            "se_ft": 1.1,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "shift_ft": 3.47
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "shift_ft": 3.97
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "shift_ft": 4.77
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "shift_ft": 4.69
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "shift_ft": 4.72
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "shift_ft": 4.63
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "shift_ft": 3.98
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "shift_ft": 3.83
+          },
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "shift_ft": 3.4
+          },
+          {
+            "from_wy": 1951,
+            "to_wy": 1955,
+            "shift_ft": 10.08
+          },
+          {
+            "from_wy": 1946,
+            "to_wy": 1950,
+            "shift_ft": 6.81
+          },
+          {
+            "from_wy": 1941,
+            "to_wy": 1945,
+            "shift_ft": 6.46
+          },
+          {
+            "from_wy": 1936,
+            "to_wy": 1940,
+            "shift_ft": 11.64
+          }
+        ],
+        "suggested_record_start": 2011
+      },
+      "site_meta": {
+        "site": "08074000",
+        "name": "Buffalo Bayou at Houston, TX",
+        "lat": 29.76022829,
+        "lon": -95.4085505,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 336.0
+      }
+    },
+    {
+      "site": "08076000",
+      "problems": [],
+      "iv_recent": {
+        "readings": 8,
+        "latest": "2026-10-10T21:30:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2972,
+        "max_stage_ft": 62.88
+      },
+      "peaks": {
+        "n": 73,
+        "first_wy": 1953,
+        "last_wy": 2025,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 60.84,
+        "p80_ft": 64.31
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "consistent since 2006",
+        "fit": {
+          "a": -2.114,
+          "b": 6.465,
+          "r2": 0.985
+        },
+        "blocks": [
+          {
+            "from_wy": 1951,
+            "to_wy": 1955,
+            "n": 3,
+            "mean_resid_ft": 10.54,
+            "se_ft": 0.46,
+            "flagged": true
+          },
+          {
+            "from_wy": 1956,
+            "to_wy": 1960,
+            "n": 5,
+            "mean_resid_ft": 13.16,
+            "se_ft": 0.57,
+            "flagged": true
+          },
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "n": 5,
+            "mean_resid_ft": 13.25,
+            "se_ft": 1.02,
+            "flagged": true
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "n": 5,
+            "mean_resid_ft": 12.74,
+            "se_ft": 0.57,
+            "flagged": true
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "n": 5,
+            "mean_resid_ft": 10.7,
+            "se_ft": 1.73,
+            "flagged": true
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "n": 5,
+            "mean_resid_ft": 9.06,
+            "se_ft": 0.94,
+            "flagged": true
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "n": 5,
+            "mean_resid_ft": 9.7,
+            "se_ft": 0.78,
+            "flagged": true
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "n": 5,
+            "mean_resid_ft": 8.05,
+            "se_ft": 0.72,
+            "flagged": true
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "n": 5,
+            "mean_resid_ft": 7.45,
+            "se_ft": 0.2,
+            "flagged": true
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "n": 5,
+            "mean_resid_ft": 5.25,
+            "se_ft": 0.52,
+            "flagged": true
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "n": 5,
+            "mean_resid_ft": 5.58,
+            "se_ft": 0.38,
+            "flagged": true
+          },
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "n": 5,
+            "mean_resid_ft": 1.52,
+            "se_ft": 0.94,
+            "flagged": false
+          },
+          {
+            "from_wy": 2011,
+            "to_wy": 2015,
+            "n": 5,
+            "mean_resid_ft": -0.11,
+            "se_ft": 0.28,
+            "flagged": false
+          },
+          {
+            "from_wy": 2016,
+            "to_wy": 2020,
+            "n": 5,
+            "mean_resid_ft": -0.03,
+            "se_ft": 0.25,
+            "flagged": false
+          },
+          {
+            "from_wy": 2021,
+            "to_wy": 2025,
+            "n": 5,
+            "mean_resid_ft": 0.14,
+            "se_ft": 0.07,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "shift_ft": 5.58
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "shift_ft": 5.25
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "shift_ft": 7.45
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "shift_ft": 8.05
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "shift_ft": 9.7
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "shift_ft": 9.06
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "shift_ft": 10.7
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "shift_ft": 12.74
+          },
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "shift_ft": 13.25
+          },
+          {
+            "from_wy": 1956,
+            "to_wy": 1960,
+            "shift_ft": 13.16
+          },
+          {
+            "from_wy": 1951,
+            "to_wy": 1955,
+            "shift_ft": 10.54
+          }
+        ],
+        "suggested_record_start": 2006
+      },
+      "site_meta": {
+        "site": "08076000",
+        "name": "Greens Bayou nr Houston, TX",
+        "lat": 29.9182784,
+        "lon": -95.3068796,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 68.7
+      }
+    },
+    {
+      "site": "08075500",
+      "problems": [],
+      "iv_recent": {
+        "readings": 8,
+        "latest": "2026-10-10T21:30:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2973,
+        "max_stage_ft": 26.56
+      },
+      "peaks": {
+        "n": 71,
+        "first_wy": 1953,
+        "last_wy": 2024,
+        "dropped_no_stage": 1,
+        "has_2017": true,
+        "p50_ft": 22.78,
+        "p80_ft": 28.92
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "only 10 comparable years since 2015: price from discharge",
+        "fit": {
+          "a": -53.325,
+          "b": 7.49,
+          "r2": 0.828
+        },
+        "blocks": [
+          {
+            "from_wy": 1950,
+            "to_wy": 1954,
+            "n": 2,
+            "mean_resid_ft": 17.05,
+            "se_ft": null,
+            "flagged": false
+          },
+          {
+            "from_wy": 1955,
+            "to_wy": 1959,
+            "n": 5,
+            "mean_resid_ft": 15.27,
+            "se_ft": 1.5,
+            "flagged": true
+          },
+          {
+            "from_wy": 1960,
+            "to_wy": 1964,
+            "n": 5,
+            "mean_resid_ft": 15.9,
+            "se_ft": 0.22,
+            "flagged": true
+          },
+          {
+            "from_wy": 1965,
+            "to_wy": 1969,
+            "n": 5,
+            "mean_resid_ft": 15.43,
+            "se_ft": 0.24,
+            "flagged": true
+          },
+          {
+            "from_wy": 1970,
+            "to_wy": 1974,
+            "n": 5,
+            "mean_resid_ft": 15.44,
+            "se_ft": 0.29,
+            "flagged": true
+          },
+          {
+            "from_wy": 1975,
+            "to_wy": 1979,
+            "n": 5,
+            "mean_resid_ft": 17.29,
+            "se_ft": 0.97,
+            "flagged": true
+          },
+          {
+            "from_wy": 1980,
+            "to_wy": 1984,
+            "n": 5,
+            "mean_resid_ft": 16.55,
+            "se_ft": 0.23,
+            "flagged": true
+          },
+          {
+            "from_wy": 1985,
+            "to_wy": 1989,
+            "n": 5,
+            "mean_resid_ft": 16.43,
+            "se_ft": 0.21,
+            "flagged": true
+          },
+          {
+            "from_wy": 1990,
+            "to_wy": 1994,
+            "n": 5,
+            "mean_resid_ft": 15.77,
+            "se_ft": 0.21,
+            "flagged": true
+          },
+          {
+            "from_wy": 1995,
+            "to_wy": 1999,
+            "n": 4,
+            "mean_resid_ft": 9.41,
+            "se_ft": 3.74,
+            "flagged": true
+          },
+          {
+            "from_wy": 2000,
+            "to_wy": 2004,
+            "n": 5,
+            "mean_resid_ft": 3.45,
+            "se_ft": 0.66,
+            "flagged": true
+          },
+          {
+            "from_wy": 2005,
+            "to_wy": 2009,
+            "n": 5,
+            "mean_resid_ft": 2.83,
+            "se_ft": 0.54,
+            "flagged": true
+          },
+          {
+            "from_wy": 2010,
+            "to_wy": 2014,
+            "n": 5,
+            "mean_resid_ft": 1.44,
+            "se_ft": 0.07,
+            "flagged": true
+          },
+          {
+            "from_wy": 2015,
+            "to_wy": 2019,
+            "n": 5,
+            "mean_resid_ft": 0.08,
+            "se_ft": 1.29,
+            "flagged": false
+          },
+          {
+            "from_wy": 2020,
+            "to_wy": 2024,
+            "n": 5,
+            "mean_resid_ft": -1.52,
+            "se_ft": 0.89,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2010,
+            "to_wy": 2014,
+            "shift_ft": 1.44
+          },
+          {
+            "from_wy": 2005,
+            "to_wy": 2009,
+            "shift_ft": 2.83
+          },
+          {
+            "from_wy": 2000,
+            "to_wy": 2004,
+            "shift_ft": 3.45
+          },
+          {
+            "from_wy": 1995,
+            "to_wy": 1999,
+            "shift_ft": 9.41
+          },
+          {
+            "from_wy": 1990,
+            "to_wy": 1994,
+            "shift_ft": 15.77
+          },
+          {
+            "from_wy": 1985,
+            "to_wy": 1989,
+            "shift_ft": 16.43
+          },
+          {
+            "from_wy": 1980,
+            "to_wy": 1984,
+            "shift_ft": 16.55
+          },
+          {
+            "from_wy": 1975,
+            "to_wy": 1979,
+            "shift_ft": 17.29
+          },
+          {
+            "from_wy": 1970,
+            "to_wy": 1974,
+            "shift_ft": 15.44
+          },
+          {
+            "from_wy": 1965,
+            "to_wy": 1969,
+            "shift_ft": 15.43
+          },
+          {
+            "from_wy": 1960,
+            "to_wy": 1964,
+            "shift_ft": 15.9
+          },
+          {
+            "from_wy": 1955,
+            "to_wy": 1959,
+            "shift_ft": 15.27
+          }
+        ],
+        "suggested_record_start": 2015
+      },
+      "site_meta": {
+        "site": "08075500",
+        "name": "Sims Bayou at Houston, TX",
+        "lat": 29.67439687,
+        "lon": -95.2893807,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 63.0
+      }
+    },
+    {
+      "site": "08076500",
+      "problems": [],
+      "iv_recent": {
+        "readings": 7,
+        "latest": "2026-10-10T21:15:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2686,
+        "max_stage_ft": 57.54
+      },
+      "peaks": {
+        "n": 73,
+        "first_wy": 1953,
+        "last_wy": 2025,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 57.94,
+        "p80_ft": 60.18
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "only 10 comparable years since 2016: price from discharge",
+        "fit": {
+          "a": 5.275,
+          "b": 5.811,
+          "r2": 0.833
+        },
+        "blocks": [
+          {
+            "from_wy": 1951,
+            "to_wy": 1955,
+            "n": 3,
+            "mean_resid_ft": 9.47,
+            "se_ft": 0.84,
+            "flagged": true
+          },
+          {
+            "from_wy": 1956,
+            "to_wy": 1960,
+            "n": 5,
+            "mean_resid_ft": 9.93,
+            "se_ft": 0.62,
+            "flagged": true
+          },
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "n": 5,
+            "mean_resid_ft": 7.86,
+            "se_ft": 0.15,
+            "flagged": true
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "n": 5,
+            "mean_resid_ft": 8.69,
+            "se_ft": 0.74,
+            "flagged": true
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "n": 5,
+            "mean_resid_ft": 8.2,
+            "se_ft": 0.24,
+            "flagged": true
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "n": 5,
+            "mean_resid_ft": 8.86,
+            "se_ft": 0.21,
+            "flagged": true
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "n": 5,
+            "mean_resid_ft": 8.95,
+            "se_ft": 0.36,
+            "flagged": true
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "n": 5,
+            "mean_resid_ft": 8.84,
+            "se_ft": 0.23,
+            "flagged": true
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "n": 5,
+            "mean_resid_ft": 8.46,
+            "se_ft": 0.12,
+            "flagged": true
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "n": 5,
+            "mean_resid_ft": 6.87,
+            "se_ft": 0.34,
+            "flagged": true
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "n": 5,
+            "mean_resid_ft": 7.54,
+            "se_ft": 0.15,
+            "flagged": true
+          },
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "n": 5,
+            "mean_resid_ft": 6.51,
+            "se_ft": 1.21,
+            "flagged": true
+          },
+          {
+            "from_wy": 2011,
+            "to_wy": 2015,
+            "n": 5,
+            "mean_resid_ft": 1.14,
+            "se_ft": 0.18,
+            "flagged": true
+          },
+          {
+            "from_wy": 2016,
+            "to_wy": 2020,
+            "n": 5,
+            "mean_resid_ft": 0.08,
+            "se_ft": 0.75,
+            "flagged": false
+          },
+          {
+            "from_wy": 2021,
+            "to_wy": 2025,
+            "n": 5,
+            "mean_resid_ft": -1.22,
+            "se_ft": 0.21,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2011,
+            "to_wy": 2015,
+            "shift_ft": 1.14
+          },
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "shift_ft": 6.51
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "shift_ft": 7.54
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "shift_ft": 6.87
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "shift_ft": 8.46
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "shift_ft": 8.84
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "shift_ft": 8.95
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "shift_ft": 8.86
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "shift_ft": 8.2
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "shift_ft": 8.69
+          },
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "shift_ft": 7.86
+          },
+          {
+            "from_wy": 1956,
+            "to_wy": 1960,
+            "shift_ft": 9.93
+          },
+          {
+            "from_wy": 1951,
+            "to_wy": 1955,
+            "shift_ft": 9.47
+          }
+        ],
+        "suggested_record_start": 2016
+      },
+      "site_meta": {
+        "site": "08076500",
+        "name": "Halls Bayou at Houston, TX",
+        "lat": 29.86189143,
+        "lon": -95.3349365,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 28.7
+      }
+    },
+    {
+      "site": "08075770",
+      "problems": [],
+      "iv_recent": {
+        "readings": 11,
+        "latest": "2026-10-10T22:15:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2717,
+        "max_stage_ft": 37.12
+      },
+      "peaks": {
+        "n": 62,
+        "first_wy": 1964,
+        "last_wy": 2025,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 34.1,
+        "p80_ft": 38.0
+      },
+      "comparability": {
+        "usable": true,
+        "verdict": "only 15 comparable years since 2011: price from discharge",
+        "fit": {
+          "a": -6.692,
+          "b": 4.981,
+          "r2": 0.982
+        },
+        "blocks": [
+          {
+            "from_wy": 1961,
+            "to_wy": 1965,
+            "n": 2,
+            "mean_resid_ft": 4.83,
+            "se_ft": null,
+            "flagged": false
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "n": 5,
+            "mean_resid_ft": 3.08,
+            "se_ft": 0.02,
+            "flagged": true
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "n": 5,
+            "mean_resid_ft": 4.31,
+            "se_ft": 0.23,
+            "flagged": true
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "n": 5,
+            "mean_resid_ft": 5.61,
+            "se_ft": 0.54,
+            "flagged": true
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "n": 5,
+            "mean_resid_ft": 4.7,
+            "se_ft": 0.28,
+            "flagged": true
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "n": 5,
+            "mean_resid_ft": 4.6,
+            "se_ft": 0.55,
+            "flagged": true
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "n": 5,
+            "mean_resid_ft": 4.79,
+            "se_ft": 0.4,
+            "flagged": true
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "n": 5,
+            "mean_resid_ft": 4.71,
+            "se_ft": 0.44,
+            "flagged": true
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "n": 5,
+            "mean_resid_ft": 5.31,
+            "se_ft": 0.83,
+            "flagged": true
+          },
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "n": 5,
+            "mean_resid_ft": 3.87,
+            "se_ft": 0.86,
+            "flagged": true
+          },
+          {
+            "from_wy": 2011,
+            "to_wy": 2015,
+            "n": 5,
+            "mean_resid_ft": -0.0,
+            "se_ft": 0.25,
+            "flagged": false
+          },
+          {
+            "from_wy": 2016,
+            "to_wy": 2020,
+            "n": 5,
+            "mean_resid_ft": -0.17,
+            "se_ft": 0.28,
+            "flagged": false
+          },
+          {
+            "from_wy": 2021,
+            "to_wy": 2025,
+            "n": 5,
+            "mean_resid_ft": 0.17,
+            "se_ft": 0.14,
+            "flagged": false
+          }
+        ],
+        "steps": [
+          {
+            "from_wy": 2006,
+            "to_wy": 2010,
+            "shift_ft": 3.87
+          },
+          {
+            "from_wy": 2001,
+            "to_wy": 2005,
+            "shift_ft": 5.31
+          },
+          {
+            "from_wy": 1996,
+            "to_wy": 2000,
+            "shift_ft": 4.71
+          },
+          {
+            "from_wy": 1991,
+            "to_wy": 1995,
+            "shift_ft": 4.79
+          },
+          {
+            "from_wy": 1986,
+            "to_wy": 1990,
+            "shift_ft": 4.6
+          },
+          {
+            "from_wy": 1981,
+            "to_wy": 1985,
+            "shift_ft": 4.7
+          },
+          {
+            "from_wy": 1976,
+            "to_wy": 1980,
+            "shift_ft": 5.61
+          },
+          {
+            "from_wy": 1971,
+            "to_wy": 1975,
+            "shift_ft": 4.31
+          },
+          {
+            "from_wy": 1966,
+            "to_wy": 1970,
+            "shift_ft": 3.08
+          }
+        ],
+        "suggested_record_start": 2011
+      },
+      "site_meta": {
+        "site": "08075770",
+        "name": "Hunting Bayou at IH 610, Houston, TX",
+        "lat": 29.79328217,
+        "lon": -95.2679907,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 16.1
+      }
+    },
+    {
+      "site": "08069000",
+      "problems": [],
+      "iv_recent": {
+        "readings": 10,
+        "latest": "2026-10-10T22:00:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2977,
+        "max_stage_ft": 97.12
+      },
+      "peaks": {
+        "n": 82,
+        "first_wy": 1929,
+        "last_wy": 2024,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 24.33,
+        "p80_ft": 31.32
+      },
+      "comparability": {
+        "usable": false,
+        "verdict": "inconclusive",
+        "reason": "recent stage-discharge fit too weak (R2 0.42)",
+        "fit": {
+          "a": -140.15,
+          "b": 24.019,
+          "r2": 0.424
+        },
+        "suggested_record_start": 1929,
+        "steps": []
+      },
+      "site_meta": {
+        "site": "08069000",
+        "name": "Cypress Ck nr Westfield, TX",
+        "lat": 30.0357753,
+        "lon": -95.428827,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 285.0
+      }
+    },
+    {
+      "site": "08068500",
+      "problems": [],
+      "iv_recent": {
+        "readings": 9,
+        "latest": "2026-10-10T21:45:00+00:00",
+        "has_stage": true
+      },
+      "iv_harvey": {
+        "readings": 2975,
+        "max_stage_ft": 111.52
+      },
+      "peaks": {
+        "n": 87,
+        "first_wy": 1929,
+        "last_wy": 2024,
+        "dropped_no_stage": 0,
+        "has_2017": true,
+        "p50_ft": 22.54,
+        "p80_ft": 30.29
+      },
+      "comparability": {
+        "usable": false,
+        "verdict": "inconclusive",
+        "reason": "recent stage-discharge fit too weak (R2 0.29)",
+        "fit": {
+          "a": -82.651,
+          "b": 17.264,
+          "r2": 0.291
+        },
+        "suggested_record_start": 1929,
+        "steps": []
+      },
+      "site_meta": {
+        "site": "08068500",
+        "name": "Spring Ck nr Spring, TX",
+        "lat": 30.11049517,
+        "lon": -95.4363275,
+        "alt_ft": 0.0,
+        "alt_datum": "NAVD88",
+        "drain_sqmi": 409.0
+      }
+    }
+  ],
+  "nws": {
+    "stages": {
+      "08075000": {
+        "lid": "HBMT2",
+        "usgs_id": "08075000",
+        "name": "Brays Bayou at Houston",
+        "stage_units": "ft",
+        "action": 38,
+        "minor": 41,
+        "moderate": 42,
+        "major": 43
+      },
+      "08074500": {
+        "lid": "HGTT2",
+        "usgs_id": "08074500",
+        "name": "White Oak Bayou at Houston",
+        "stage_units": "ft",
+        "action": 29,
+        "minor": 32,
+        "moderate": 33.5,
+        "major": 36
+      },
+      "08074000": {
+        "lid": "BBST2",
+        "usgs_id": "08074000",
+        "name": "Buffalo Bayou at Shepherd Drive",
+        "stage_units": "ft",
+        "action": 17,
+        "minor": 28,
+        "moderate": 29.5,
+        "major": 32
+      },
+      "08076000": {
+        "lid": "GBHT2",
+        "usgs_id": "08076000",
+        "name": "Greens Bayou at Houston",
+        "stage_units": "ft",
+        "action": 52,
+        "minor": 55,
+        "moderate": 56.5,
+        "major": 59.5
+      },
+      "08075500": {
+        "lid": "HSIT2",
+        "usgs_id": "08075500",
+        "name": "Sims Bayou at Houston",
+        "stage_units": "ft",
+        "action": 23.2,
+        "minor": 26.2,
+        "moderate": 27.2,
+        "major": 28.2
+      },
+      "08076500": null,
+      "08075770": null,
+      "08069000": {
+        "lid": "WFDT2",
+        "usgs_id": "08069000",
+        "name": "Cypress Creek near Westfield",
+        "stage_units": "ft",
+        "action": 82.5,
+        "minor": 85.5,
+        "moderate": 88,
+        "major": 90
+      },
+      "08068500": {
+        "lid": "SPNT2",
+        "usgs_id": "08068500",
+        "name": "Spring Creek near Spring",
+        "stage_units": "ft",
+        "action": 88,
+        "minor": 91.5,
+        "moderate": 95,
+        "major": 100
+      }
+    },
+    "alerts": {
+      "08075000": {
+        "active_flood_alerts": []
+      },
+      "08074500": {
+        "active_flood_alerts": []
+      },
+      "08074000": {
+        "active_flood_alerts": []
+      },
+      "08076000": {
+        "active_flood_alerts": []
+      },
+      "08075500": {
+        "active_flood_alerts": []
+      },
+      "08076500": {
+        "active_flood_alerts": []
+      },
+      "08075770": {
+        "active_flood_alerts": []
+      },
+      "08069000": {
+        "active_flood_alerts": []
+      },
+      "08068500": {
+        "active_flood_alerts": []
+      }
+    },
+    "matched_by": {
+      "08075000": "location",
+      "08074500": "location",
+      "08074000": "location",
+      "08076000": "location",
+      "08075500": "location",
+      "08076500": null,
+      "08075770": null,
+      "08069000": "location",
+      "08068500": "location"
+    },
+    "problems": [],
+    "listing_shape": {
+      "top_level": [
+        "gauges"
+      ],
+      "n_items": 36,
+      "first_item": "{\"lid\": \"ADDT2\", \"name\": \"Langham Creek at Addicks Reservoir\", \"rfc\": {\"abbreviation\": \"WGRFC\", \"name\": \"West Gulf River Forecast Center\"}, \"wfo\": {\"abbreviation\": \"HGX\", \"name\": \"Dickinson\"}, \"state\": {\"abbreviation\": \"TX\", \"name\": \"Texas\"}, \"latitude\": 29.791111111111, \"longitude\": -95.623333333333, \"pedts\": {\"observed\": \"HPIRG\", \"forecast\": \"\"}, \"status\": {\"observed\": {\"primary\": 85.06, \"primaryUnit\": \"ft\", \"secondary\": 7.53, \"secondaryUnit\": \"kcfs\", \"floodCategory\": \"no_flooding\", \"validTime\": \"2026-10-10T21:30:00Z\"}, \"forecast\": {\"primary\": -999, \"primaryUnit\": \"\", \"secondary\": -999, \"sec"
+    }
+  }
+}
