@@ -6,7 +6,9 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 
 - Idea chosen: **Atlas**, parametric flood protection for Houston.
 - Build plan v2 written and red-teamed: [docs/plan/Atlas_Build_Plan_v2.pdf](plan/Atlas_Build_Plan_v2.pdf).
-- No code yet. No accounts created yet.
+- Build plan v3 is the working plan (`Atlas_Build_Plan_v3.pdf`; v2 files in `docs/plan/` are stale).
+- Person A data pipeline scaffolded in `/data` (schema, preflight checks, backfill, Harvey window). Fixture-tested only; first live run still to do. See `data/README.md`.
+- No accounts created yet.
 
 ## Key times
 
