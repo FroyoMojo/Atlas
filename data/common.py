@@ -23,16 +23,55 @@ REPORT_DIR = DATA_DIR / "reports"
 UA = "atlas-hackathon/0.1 (CodeRED Orion student project)"
 
 
-def load_env(path: Path = ROOT / ".env") -> None:
-    """Minimal .env loader. Real environment variables win."""
-    if not path.exists():
+def _read_text_any(path: Path) -> str:
+    """Read a text file whatever Windows saved it as: UTF-8, UTF-8 with BOM, or UTF-16
+    (PowerShell's `>` redirection writes UTF-16)."""
+    raw = path.read_bytes()
+    for bom, enc in ((b"\xff\xfe", "utf-16"), (b"\xfe\xff", "utf-16"), (b"\xef\xbb\xbf", "utf-8-sig")):
+        if raw.startswith(bom):
+            return raw.decode(enc)
+    if b"\x00" in raw[:200]:  # UTF-16 without a BOM
+        return raw.decode("utf-16-le", errors="replace")
+    return raw.decode("utf-8", errors="replace")
+
+
+def env_file() -> Path | None:
+    """The .env at the repo root, or .env.txt if Notepad added an extension."""
+    for name in (".env", ".env.txt"):
+        if (ROOT / name).exists():
+            return ROOT / name
+    return None
+
+
+def load_env(path: Path | None = None) -> None:
+    """Minimal .env loader. Real environment variables win. Values are never printed."""
+    path = path or env_file()
+    if not path:
         return
-    for line in path.read_text().splitlines():
+    for line in _read_text_any(path).splitlines():
         line = line.split("  #")[0].strip()
+        if line.lower().startswith("export "):
+            line = line[7:].strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         k, v = line.split("=", 1)
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+def env_diagnosis() -> str:
+    """Say what was looked for and which variable NAMES were found (never values)."""
+    f = env_file()
+    if not f:
+        return (f"No .env file in {ROOT}. Files starting with .env there: "
+                f"{sorted(p.name for p in ROOT.glob('.env*')) or 'none'}. "
+                "Run PowerShell from that folder and create it there.")
+    names = []
+    for line in _read_text_any(f).splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            names.append(line.split("=", 1)[0].replace("export ", "").strip())
+    return (f"Read {f} ({f.stat().st_size} bytes). Variable names found: {names or 'none'}. "
+            "Need TIMESCALE_SERVICE_URL, DATABASE_URL, or PGHOST+PGPASSWORD.")
 
 
 @dataclass

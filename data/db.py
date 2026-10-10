@@ -67,8 +67,7 @@ def _url() -> str:
                 f"{quote(os.environ.get('PGPASSWORD', ''))}@{os.environ['PGHOST']}:"
                 f"{os.environ.get('PGPORT', '5432')}/{os.environ.get('PGDATABASE', 'tsdb')}"
                 f"?sslmode={os.environ.get('PGSSLMODE', 'require')}")
-    sys.exit("No database URL. Put the Tiger Cloud line (TIMESCALE_SERVICE_URL=...) or "
-             "DATABASE_URL=... in .env at the repo root.")
+    sys.exit("No database URL. " + common.env_diagnosis())
 
 
 def connect() -> Conn:
