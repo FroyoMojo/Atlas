@@ -28,15 +28,49 @@ def fetch_alerts_point(lat: float, lon: float, **kw) -> common.Result:
     return common.get(ALERTS_URL, {"point": f"{lat:.4f},{lon:.4f}"}, ext="json", **kw)
 
 
-def index_by_usgs(text: str) -> dict[str, dict]:
-    """Map USGS site number -> {lid, name} from a bbox gauge listing."""
+def _listing(text: str) -> list[dict]:
     doc = json.loads(text)
-    out = {}
-    for g in doc.get("gauges", []):
-        usgs = (g.get("usgsId") or "").strip()
-        if usgs:
-            out[usgs] = {"lid": g.get("lid"), "name": g.get("name")}
+    if isinstance(doc, list):
+        return doc
+    for key in ("gauges", "features", "items", "data"):
+        if isinstance(doc.get(key), list):
+            return doc[key]
+    return []
+
+
+def index_gauges(text: str) -> list[dict]:
+    """Every gauge in a bbox listing as {lid, usgs, name, lat, lon}, tolerant of key names."""
+    out = []
+    for g in _listing(text):
+        out.append({"lid": g.get("lid"), "usgs": (g.get("usgsId") or "").strip() or None,
+                    "name": g.get("name"),
+                    "lat": g.get("latitude", g.get("lat")), "lon": g.get("longitude", g.get("lon"))})
     return out
+
+
+def match(site: str, lat: float | None, lon: float | None, index: list[dict],
+          max_deg: float = 0.003) -> tuple[dict | None, str]:
+    """Match a USGS site to an NWPS gauge: by usgsId, else nearest within ~300 m."""
+    for g in index:
+        if g["usgs"] == site:
+            return g, "usgsId"
+    if lat is None or lon is None:
+        return None, ""
+    near = [(abs(g["lat"] - lat) + abs(g["lon"] - lon), g) for g in index
+            if isinstance(g["lat"], (int, float)) and isinstance(g["lon"], (int, float))
+            and abs(g["lat"] - lat) <= max_deg and abs(g["lon"] - lon) <= max_deg]
+    return (min(near, key=lambda t: t[0])[1], "location") if near else (None, "")
+
+
+def describe_listing(text: str) -> dict:
+    """Shape of a listing response, for diagnosing a parser mismatch."""
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return {"not_json": text[:300]}
+    items = _listing(text)
+    return {"top_level": sorted(doc) if isinstance(doc, dict) else "list",
+            "n_items": len(items), "first_item": json.dumps(items[0])[:600] if items else None}
 
 
 def parse_flood_stages(text: str) -> dict:

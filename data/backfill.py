@@ -59,8 +59,8 @@ def cmd_gauges(args) -> None:
         comp = g.get("comparability") or {}
         rs = (args.record_start or {}).get(site) or comp.get("suggested_record_start") \
             or pk["first_wy"]
-        note = (f"trigger from {basis}. F11 screen: {len(comp.get('steps', []))} step(s) "
-                f"{[s['shift_ft'] for s in comp.get('steps', [])]}; record_start {rs} "
+        note = (f"trigger from {basis}. F11 screen: {comp.get('verdict', 'not run')}; "
+                f"{len(comp.get('steps', []))} flagged block(s); record_start {rs} "
                 f"({'screen suggestion' if site not in (args.record_start or {}) else 'manual'}). "
                 f"Datum history on the USGS site page NOT yet read unless this note says so.")
         rows.append((site, meta["name"], meta["lat"], meta["lon"], trigger, nws_stage, rs, note))

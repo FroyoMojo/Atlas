@@ -110,34 +110,46 @@ def _pct(xs: list[float], p: float) -> float | None:
 
 
 def check_nws(gauges: list[dict], args) -> dict:
-    """Checks 2 and 3: flood stages by USGS id, and alerts by point."""
+    """Checks 2 and 3: flood stages (matched by usgsId, else by location) and alerts by point.
+    The two are independent: alerts are tested for every gauge whether or not a stage was found."""
     kw = {"offline": args.offline}
-    res: dict = {"stages": {}, "alerts": {}, "problems": []}
+    res: dict = {"stages": {}, "alerts": {}, "matched_by": {}, "problems": []}
     w, s, e, n = (float(x) for x in CFG["bbox_w_s_e_n"].split(","))
     r = nws.fetch_gauges_bbox(w, s, e, n, **kw)
-    index = {}
+    index: list[dict] = []
     if r.ok:
+        res["listing_shape"] = nws.describe_listing(r.text)
         try:
-            index = nws.index_by_usgs(r.text)
-        except (ValueError, KeyError) as ex:
+            index = nws.index_gauges(r.text)
+        except (ValueError, KeyError, AttributeError) as ex:
             res["problems"].append(f"NWPS bbox listing did not parse: {ex}")
+        with_usgs = sum(1 for g in index if g["usgs"])
+        print(f"NWPS listing: {len(index)} gauges, {with_usgs} with a usgsId "
+              f"(shape: {res['listing_shape'].get('top_level')})")
+        if not index:
+            res["problems"].append("NWPS bbox listing returned no gauges; see listing_shape in "
+                                   "the report")
     else:
         res["problems"].append(f"NWPS bbox listing failed: {r.error}")
     for g in gauges:
         site = g["site"]
-        hit = index.get(site)
-        if not hit:
-            res["stages"][site] = None
-            continue
-        gr = nws.fetch_gauge(hit["lid"], **kw)
-        res["stages"][site] = nws.parse_flood_stages(gr.text) if gr.ok else None
         meta = g.get("site_meta") or {}
+        hit, how = nws.match(site, meta.get("lat"), meta.get("lon"), index)
+        res["matched_by"][site] = how or None
+        res["stages"][site] = None
+        if hit:
+            gr = nws.fetch_gauge(hit["lid"], **kw)
+            if gr.ok:
+                try:
+                    res["stages"][site] = nws.parse_flood_stages(gr.text)
+                except (ValueError, KeyError, AttributeError) as ex:
+                    res["problems"].append(f"{site}: stage parse failed: {ex}")
+            else:
+                res["problems"].append(f"{site}: NWPS gauge {hit['lid']} failed: {gr.error}")
         if meta.get("lat") is not None:
             ar = nws.fetch_alerts_point(meta["lat"], meta["lon"], offline=args.offline)
-            if ar.ok:
-                res["alerts"][site] = {"active_flood_alerts": nws.flood_alerts(ar.text)}
-            else:
-                res["alerts"][site] = {"error": ar.error}
+            res["alerts"][site] = ({"active_flood_alerts": nws.flood_alerts(ar.text)} if ar.ok
+                                   else {"error": ar.error})
     return res
 
 
@@ -149,20 +161,25 @@ def cmd_check(args) -> None:
         "generated": datetime.now(timezone.utc).isoformat(), "gauges": gauges, "nws": nws_res})
 
     print(f"{'site':<10} {'recent':>7} {'harvey':>7} {'peaks':>6} {'first':>6} {'2017':>5} "
-          f"{'p50':>6} {'p80':>6} {'NWS fld':>8} {'F11 steps':>10}  verdict")
+          f"{'p50':>6} {'p80':>6} {'NWS fld':>8} {'F11 steps->start':>17}  verdict")
     for g in gauges:
         pk = g.get("peaks") or {}
         st = (nws_res["stages"].get(g["site"]) or {}).get("minor")
-        steps = len((g.get("comparability") or {}).get("steps", []))
+        comp = g.get("comparability") or {}
+        steps = f"{len(comp.get('steps', []))}->{comp.get('suggested_record_start', '-')}"
         recent = (g.get("iv_recent") or {}).get("readings", "-")
         hv = (g.get("iv_harvey") or {}).get("readings", "-")
         verdict = "OK" if not g["problems"] else "CHECK: " + "; ".join(g["problems"])
         print(f"{g['site']:<10} {recent!s:>7} {hv!s:>7} {pk.get('n', '-')!s:>6} "
               f"{pk.get('first_wy', '-')!s:>6} {'yes' if pk.get('has_2017') else 'no':>5} "
               f"{pk.get('p50_ft', '-')!s:>6} {pk.get('p80_ft', '-')!s:>6} "
-              f"{st if st is not None else '-'!s:>8} {steps:>10}  {verdict}")
+              f"{st if st is not None else '-'!s:>8} {steps:>17}  {verdict}")
     for p in nws_res["problems"]:
         print("NWS:", p)
+    for g in gauges:
+        c = g.get("comparability") or {}
+        print(f"F11 {g['site']}: {c.get('verdict', '-')}"
+              f"{' (' + c['reason'] + ')' if c.get('reason') else ''}")
     flooded = {k: v for k, v in nws_res["alerts"].items() if v.get("active_flood_alerts")}
     print(f"\nNWS alerts endpoint answered for {sum(1 for v in nws_res['alerts'].values() if 'error' not in v)}"
           f"/{len(gauges)} points; {len(flooded)} have an active flood alert right now.")

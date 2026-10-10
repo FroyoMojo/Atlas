@@ -9,7 +9,7 @@ import json
 import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from statistics import mean
+from statistics import mean, stdev
 
 import common
 
@@ -173,39 +173,72 @@ def parse_site(text: str) -> dict | None:
 
 # ---------------------------------------------------- comparability (F11)
 
-def comparability(peaks: list[Peak], block_years: int = 5, step_flag_ft: float = 1.0) -> dict:
+def comparability(peaks: list[Peak], recent_years: int = 15, block_years: int = 5,
+                  min_shift_ft: float = 1.0, min_r2: float = 0.5) -> dict:
     """Screen for datum or channel change using the stage-discharge relation at annual peaks.
 
-    Fit stage = a + b*ln(Q) on all peaks that have discharge, then average the residual in
-    consecutive blocks of `block_years`. A step between neighbouring blocks above `step_flag_ft`
-    suggests a datum shift or channel project. This is a screen, not proof: read the site's
-    datum history on the USGS site page before accepting the suggested record_start.
+    Fit stage = a + b*ln(Q) on the most recent `recent_years` of peaks (the current channel and
+    datum), then measure how far each earlier `block_years` block sits from that relation. A block
+    is flagged when its mean residual exceeds max(min_shift_ft, 2 standard errors). The suggested
+    record_start is the start of the earliest block such that it and every later block are
+    unflagged. This is a screen, not proof: read the site's datum history on its USGS page before
+    accepting it, and treat an `inconclusive` verdict as 'check by hand or price from discharge'.
     """
-    pts = [(p.water_year, p.stage_ft, math.log(p.discharge_cfs)) for p in peaks
-           if p.discharge_cfs and p.discharge_cfs > 0]
-    if len(pts) < 10:
-        return {"usable": False, "reason": f"only {len(pts)} peaks with discharge",
-                "suggested_record_start": peaks[0].water_year if peaks else None, "steps": []}
-    xs = [x for _, _, x in pts]
-    ys = [y for _, y, _ in pts]
+    pts = sorted((p.water_year, p.stage_ft, math.log(p.discharge_cfs)) for p in peaks
+                 if p.discharge_cfs and p.discharge_cfs > 0)
+    first = peaks[0].water_year if peaks else None
+    if len(pts) < 20:
+        return {"usable": False, "verdict": "inconclusive",
+                "reason": f"only {len(pts)} peaks with discharge",
+                "suggested_record_start": first, "steps": []}
+    last = pts[-1][0]
+    recent = [pt for pt in pts if pt[0] > last - recent_years]
+    if len(recent) < 8:
+        return {"usable": False, "verdict": "inconclusive",
+                "reason": f"only {len(recent)} recent peaks with discharge",
+                "suggested_record_start": first, "steps": []}
+    xs = [x for _, _, x in recent]
+    ys = [y for _, y, _ in recent]
     mx, my = mean(xs), mean(ys)
     sxx = sum((x - mx) ** 2 for x in xs)
     b = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx if sxx else 0.0
     a = my - b * mx
+    ss_res = sum((y - (a + b * x)) ** 2 for x, y in zip(xs, ys))
+    ss_tot = sum((y - my) ** 2 for y in ys)
+    r2 = 1 - ss_res / ss_tot if ss_tot else 0.0
+    if r2 < min_r2:
+        return {"usable": False, "verdict": "inconclusive",
+                "reason": f"recent stage-discharge fit too weak (R2 {r2:.2f})",
+                "fit": {"a": round(a, 3), "b": round(b, 3), "r2": round(r2, 3)},
+                "suggested_record_start": first, "steps": []}
     blocks: dict[int, list[float]] = {}
-    first = pts[0][0]
     for wy, y, x in pts:
-        blocks.setdefault((wy - first) // block_years, []).append(y - (a + b * x))
-    ordered = [(first + k * block_years, mean(v), len(v)) for k, v in sorted(blocks.items())]
-    steps, suggested = [], peaks[0].water_year
-    for (y0, m0, n0), (y1, m1, n1) in zip(ordered, ordered[1:]):
-        if n0 >= 2 and n1 >= 2 and abs(m1 - m0) >= step_flag_ft:
-            steps.append({"between_blocks_starting": [y0, y1], "shift_ft": round(m1 - m0, 2)})
-            suggested = y1
-    return {"usable": True, "fit": {"a": round(a, 3), "b": round(b, 3)},
-            "block_mean_residual_ft": [{"from_wy": y, "mean_resid_ft": round(m, 2), "n": n}
-                                       for y, m, n in ordered],
-            "steps": steps, "suggested_record_start": suggested}
+        blocks.setdefault((last - wy) // block_years, []).append(y - (a + b * x))
+    table, flagged_idx = [], set()
+    for k in sorted(blocks):
+        v = blocks[k]
+        m = mean(v)
+        se = (stdev(v) / math.sqrt(len(v))) if len(v) >= 3 else float("inf")
+        flag = k > 0 and len(v) >= 3 and abs(m) > max(min_shift_ft, 2 * se)
+        if flag:
+            flagged_idx.add(k)
+        table.append({"from_wy": last - (k + 1) * block_years + 1, "to_wy": last - k * block_years,
+                      "n": len(v), "mean_resid_ft": round(m, 2),
+                      "se_ft": round(se, 2) if se != float("inf") else None, "flagged": flag})
+    k = 0
+    while k + 1 in blocks and (k + 1) not in flagged_idx:
+        k += 1
+    start = max(first, min(wy for wy, _, _ in pts if (last - wy) // block_years == k))
+    steps = [{"from_wy": t["from_wy"], "to_wy": t["to_wy"], "shift_ft": t["mean_resid_ft"]}
+             for t in table if t["flagged"]]
+    comparable_years = last - start + 1
+    verdict = ("consistent over the full record" if not flagged_idx
+               else f"consistent since {start}" if comparable_years >= 20
+               else f"only {comparable_years} comparable years since {start}: price from discharge")
+    return {"usable": True, "verdict": verdict,
+            "fit": {"a": round(a, 3), "b": round(b, 3), "r2": round(r2, 3)},
+            "blocks": sorted(table, key=lambda t: t["from_wy"]), "steps": steps,
+            "suggested_record_start": start}
 
 
 # -------------------------------------------------------- quality guard

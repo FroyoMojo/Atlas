@@ -59,17 +59,35 @@ def test_flag_jumps_rejects_spike_and_accepts_real_step_after_gap():
     assert len(out) == 5  # the stage-less reading is dropped; 60 min gap lets 15.0 through
 
 
-def test_comparability_flags_a_datum_step():
+def _synthetic_peaks(step_from_i=None, noise=0.0, n=30, seed=1):
+    import math, random
+    rnd = random.Random(seed)
     base = datetime(1990, 1, 1, tzinfo=timezone.utc)
-    import math
-    peaks = []
-    for i in range(30):
-        q = 3000 + 400 * (i % 7)
-        stage = 2 + 4 * math.log(q / 1000) + (3.0 if i >= 15 else 0)  # +3 ft after year 15
-        peaks.append(usgs.Peak(1990 + i, stage, base, q))
-    c = usgs.comparability(peaks)
+    out = []
+    for i in range(n):
+        q = 1000 * math.exp(0.15 * ((i * 7) % 20))  # wide, shuffled discharge range
+        stage = 2 + 4 * math.log(q / 1000) + rnd.gauss(0, noise)
+        if step_from_i is not None and i < step_from_i:
+            stage -= 3.0  # older record sits 3 ft below today's relation (datum/channel change)
+        out.append(usgs.Peak(1990 + i, stage, base, q))
+    return out
+
+
+def test_comparability_flags_old_block_and_suggests_start():
+    c = usgs.comparability(_synthetic_peaks(step_from_i=15))
     assert c["usable"] and c["steps"]
-    assert 1990 < c["suggested_record_start"] <= 2005
+    assert c["suggested_record_start"] == 2005  # years 1990-2004 are off by 3 ft
+
+
+def test_comparability_clean_record_is_not_flagged_even_with_scatter():
+    c = usgs.comparability(_synthetic_peaks(noise=1.2, n=60))
+    assert c["usable"] and not c["steps"]
+    assert c["suggested_record_start"] == 1990 and "full record" in c["verdict"]
+
+
+def test_comparability_inconclusive_when_relation_is_noise():
+    c = usgs.comparability(_synthetic_peaks(noise=15.0))
+    assert not c["usable"] and c["verdict"] == "inconclusive"
 
 
 def test_nws_flood_stage_and_alert_parsing():
@@ -82,9 +100,13 @@ def test_nws_flood_stage_and_alert_parsing():
     al = json.dumps({"features": [{"properties": {"event": "Flood Watch", "severity": "Moderate"}},
                                   {"properties": {"event": "Heat Advisory"}}]})
     assert [a["event"] for a in nws.flood_alerts(al)] == ["Flood Watch"]
-    idx = nws.index_by_usgs(json.dumps({"gauges": [{"lid": "A", "usgsId": "1"},
-                                                   {"lid": "B", "usgsId": ""}]}))
-    assert list(idx) == ["1"]
+    idx = nws.index_gauges(json.dumps({"gauges": [
+        {"lid": "A", "usgsId": "1", "latitude": 29.70, "longitude": -95.40},
+        {"lid": "B", "usgsId": "", "latitude": 29.80, "longitude": -95.50}]}))
+    assert [g["usgs"] for g in idx] == ["1", None]
+    assert nws.match("1", None, None, idx)[1] == "usgsId"
+    assert nws.match("zzz", 29.8005, -95.5005, idx)[0]["lid"] == "B"      # by location
+    assert nws.match("zzz", 29.90, -95.50, idx)[0] is None                 # too far
 
 
 def test_sql_splitter_keeps_statements_whole():
