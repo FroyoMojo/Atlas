@@ -47,7 +47,7 @@ See the architecture diagram in [the build plan](docs/plan/Atlas_Build_Plan_v2.p
 | File | What it is |
 | --- | --- |
 | [docs/handoff.md](docs/handoff.md) | **Start here.** Current status, who owns what, next steps |
-| [docs/plan/Atlas_Build_Plan_v3.pdf](docs/plan/Atlas_Build_Plan_v3.pdf) | The current build plan. v1 and v2 kept for reference. |
+| [docs/plan/Atlas_Build_Plan_v3.1.pdf](docs/plan/Atlas_Build_Plan_v3.1.pdf) | The current build plan (LaTeX source alongside). v1 to v3 kept for reference. |
 | [docs/api.md](docs/api.md) | API contract, who writes which table, ledger entries, reconciliation |
 | [docs/evidence.md](docs/evidence.md) | Canonical evidence preimage, code in both languages, test vector |
 | [docs/decisions.md](docs/decisions.md) | Hour 0 to 1.5 checks and the fallback chosen for each |

@@ -5,7 +5,7 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 ## Status (Oct 10, 2026)
 
 - Idea chosen: **Atlas**, parametric flood protection for Houston.
-- Build plan **v3** is current: [docs/plan/Atlas_Build_Plan_v3.pdf](plan/Atlas_Build_Plan_v3.pdf). Code and docs are aligned to it; deviations and audit fixes are in [decisions.md](decisions.md).
+- Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Code and docs are aligned to it; its fix list (V1 to V17) matches [decisions.md](decisions.md).
 - **Jesse's side built to v3** and tested end to end on a local validator:
   - [`chain/`](../chain/README.md): chain service (Flow A and B purchase, bond, reset with refill, balances), storm payout bot (interim + true-up, intents, crash recovery), ledger writes.
   - [`web/`](../web/README.md): map, gauge, pool, verify, phone view with the payout banner, admin-gated Start/Reset; mock engine in v3 shapes.
