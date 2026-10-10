@@ -1,0 +1,15 @@
+[Unit]
+Description=Atlas storm payout bot
+After=network-online.target atlas-chain.service
+Wants=network-online.target
+
+[Service]
+User=atlas
+WorkingDirectory=/opt/atlas/chain
+ExecStart=/usr/bin/npx tsx src/bot/payout-bot.ts
+Restart=always
+RestartSec=2
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

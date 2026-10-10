@@ -29,3 +29,5 @@ dist/
 # Web
 web/.env.local
 web/dist/
+web/.env.production.local
+deploy/.hosts

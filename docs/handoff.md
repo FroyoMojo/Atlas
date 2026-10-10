@@ -43,13 +43,14 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [ ] Both: do the pre-flight checklist (plan section 3).
 - [ ] Both: confirm the API shapes in [api.md](api.md).
 - [ ] Ezekiel: pick 6 to 10 gauges with real USGS site numbers and start caching raw data.
-- [ ] Jesse: get devnet SOL for the treasury (faucet.solana.com), then run the setup in `chain/README.md` on devnet.
-- [ ] Jesse: commit `chain/state/devnet.json` (public addresses only).
-- [ ] Jesse: Vultr box + Caddy + domain (or sslip.io); deploy chain service, bot, web. Then the Hour-0 Phantom Flow A test (decision #11).
+- [ ] Jesse: devnet SOL via faucet.solana.com, then the devnet setup; commit `chain/state/devnet.json` ([deploy/README.md](../deploy/README.md) step 0).
+- [ ] Jesse: Vultr + domain + `setup-server.sh` + `deploy.sh` ([deploy/README.md](../deploy/README.md) steps 1 to 5).
+- [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)).
+- [ ] Jesse: once Zeke names the 4 demo gauges, `npm run migrate` and `npm run precreate` on the server.
 - [ ] Ezekiel: schema from plan v3 6.2; `gauge_events.preimage`/`evidence_hash` per [evidence.md](evidence.md) (check the test vector).
 - [ ] Ezekiel: set `storms.f_int` at storm open and `f_fin` + `closed` at close; the bot pays from those.
 - [ ] Ezekiel: `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
-- [ ] Both: G2 with Ezekiel's minimal insert script once devnet setup is done.
+- [ ] Both: G2 with [`tools/g2_storm.py`](../tools/g2_storm.py) (ready; tested locally with interim 0.6 and true-up 1.0).
 - [ ] Both: fill in [decisions.md](decisions.md) by Hour 1.5.
 
 ## Accounts and addresses
