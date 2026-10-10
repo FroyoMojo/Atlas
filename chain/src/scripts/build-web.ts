@@ -6,11 +6,14 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { REPO_DIR, env, loadState } from "../env.js";
 
+// The browser bundle is public: never ship SOLANA_RPC_URL (it carries the provider API key).
+// WEB_RPC_URL is for a key locked to the site's domain; the public devnet RPC otherwise.
+const webRpc = process.env.WEB_RPC_URL || "https://api.devnet.solana.com";
 const vars = {
   VITE_USE_MOCKS: process.env.VITE_USE_MOCKS ?? "false",
-  VITE_RPC_URL: env.rpcUrl,
+  VITE_RPC_URL: webRpc,
   VITE_AUSD_MINT: loadState().ausdMint ?? "",
-  VITE_EXPLORER_CLUSTER: /devnet/.test(env.rpcUrl) ? "devnet" : "custom",
+  VITE_EXPLORER_CLUSTER: /devnet/.test(webRpc) ? "devnet" : "custom",
   VITE_PURCHASE_FLOW: env.purchaseFlow,
 };
 if (!vars.VITE_AUSD_MINT) console.warn("No aUSD mint in chain/state yet; the phone view will show no balance.");
