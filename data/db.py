@@ -19,10 +19,11 @@ common.load_env()
 
 
 def connect(autocommit: bool = True) -> psycopg.Connection:
-    url = os.environ.get("DATABASE_URL")
+    # DATABASE_URL, or TIMESCALE_SERVICE_URL exactly as Tiger Cloud's credentials file names it.
+    url = os.environ.get("DATABASE_URL") or os.environ.get("TIMESCALE_SERVICE_URL")
     if not url or "user:password@host" in url:
-        sys.exit("DATABASE_URL is not set. Copy .env.example to .env and paste the Tiger Cloud "
-                 "connection string (or the local Docker one).")
+        sys.exit("No database URL. Put the Tiger Cloud line (TIMESCALE_SERVICE_URL=...) or "
+                 "DATABASE_URL=... in .env at the repo root.")
     return psycopg.connect(url, autocommit=autocommit)
 
 

@@ -7,7 +7,7 @@
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r data/requirements.txt
-cp .env.example .env        # paste the Tiger Cloud DATABASE_URL
+cp .env.example .env        # replace DATABASE_URL, or append the TIMESCALE_SERVICE_URL line from Tiger's credentials file
 
 python data/db.py check     # decisions.md check 8, and the F19 columnstore API answer
 python data/db.py schema
