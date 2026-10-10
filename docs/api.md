@@ -22,6 +22,12 @@ as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 | `POST /replay/start` | `{run_id}`. Header `X-Admin-Token`. Records the run's opening balances from `GET /chain/balances`. |
 | `POST /replay/reset` | `{run_id}`. Header `X-Admin-Token`. Stops the run, marks it `reset`, calls `POST /chain/reset`, then reconciles. |
 
+Implemented in [`engine/`](../engine/README.md). Additions to the shapes above (extra fields only):
+`latest_ft` is `null` before a gauge's first reading; `/quote` also returns `years` and
+`exceedances`, and `k` is `k_i` in aUSD; `/pool` `onchain` also returns `reconcile_detail`, `vault`
+and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payout `owner` and
+`gauge_id`; `/stress` also returns `water_year`, `capital` and `reserve`; `GET /health`.
+
 ## Chain service (TypeScript, Jesse, default `:8787`)
 
 | Endpoint | Purpose |

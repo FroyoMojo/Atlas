@@ -7,7 +7,7 @@ export interface Gauge {
   lat: number;
   lon: number;
   trigger_ft: number;
-  latest_ft: number;
+  latest_ft: number | null; // null until the gauge has a reading
   status: GaugeStatus;
   demo_ready: boolean;
 }

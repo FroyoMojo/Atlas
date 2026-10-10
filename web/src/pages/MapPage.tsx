@@ -39,7 +39,7 @@ export function MapPage() {
               <Tooltip>
                 <b>{g.name}</b>
                 <br />
-                {g.latest_ft.toFixed(1)} ft · trigger {g.trigger_ft.toFixed(1)} ft
+                {g.latest_ft == null ? "–" : g.latest_ft.toFixed(1)} ft · trigger {g.trigger_ft.toFixed(1)} ft
               </Tooltip>
             </CircleMarker>
           ))}
@@ -72,7 +72,7 @@ export function MapPage() {
                 <li key={g.gauge_id} onClick={() => navigate(`/gauge/${encodeURIComponent(g.gauge_id)}`)}>
                   <span className="dot" style={{ background: COLORS[g.status] }} />
                   <span className="grow">{g.name}</span>
-                  <span className="num">{g.latest_ft.toFixed(1)} ft</span>
+                  <span className="num">{g.latest_ft == null ? "–" : g.latest_ft.toFixed(1)} ft</span>
                 </li>
               ))}
           </ul>

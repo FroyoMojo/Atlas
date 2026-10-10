@@ -10,7 +10,9 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
   - [`web/`](../web/README.md): map, gauge, pool, verify and phone view with the payout banner; Start/Reset behind the admin token; mock engine in v3.1 shapes.
   - [`deploy/`](../deploy/README.md): laptop hosting with a gateway and Cloudflare Tunnel (no Vultr); routing tested locally.
   - [`tools/g2_storm.py`](../tools/g2_storm.py): opens a storm for G2; tested with interim 0.6 and true-up 1.0.
-- **Not done:** devnet setup, public URL and domain, phone test, and Ezekiel's engine (`data/`, `engine/`).
+  - [`engine/`](../engine/README.md) (started for Ezekiel): `sql/schema.sql` (one command), FastAPI with every read endpoint, `/replay/start` and `/replay/reset`; tested on TimescaleDB, and the dashboard runs on it with mocks off.
+- **Devnet:** set up and checked; addresses below.
+- **Not done:** public URL and domain, phone test, and Ezekiel's data side: ingestion and backfill, replay streamer, events and storms (`f_int`/`f_fin`), the real simulated book and pricing review.
 - Commits go straight to `main` (no pull requests).
 
 ## Key times
@@ -49,9 +51,12 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)); record #10 and #11 in [decisions.md](decisions.md).
 - [ ] Ezekiel: share the Tiger connection string, the four `demo_ready` gauge IDs and one `ADMIN_TOKEN`.
 - [ ] Jesse: on the demo laptop, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
-- [ ] Ezekiel: schema from plan v3.1 section 6.2 (including `runs.opening_vault`, `runs.opening_float`); preimage per [evidence.md](evidence.md), checked against the test vector.
+- [x] Schema: `psql "$DATABASE_URL" -f engine/sql/schema.sql`, then `cd chain && npm run migrate`.
+- [ ] Ezekiel: load `gauges`, `annual_peaks`, live `gauge_readings` and `sim_policies`; review the reference economics in [engine/README.md](../engine/README.md).
+- [ ] Ezekiel: replay streamer (`REPLAY_CMD`, gets `RUN_ID`) writing `gauge_readings` and `runs.clock`; events with the preimage per [evidence.md](evidence.md) (`engine/app/evidence.py` has it).
 - [ ] Ezekiel: set `storms.f_int` at storm open and `f_fin` + `closed` at close; the bot pays from those.
-- [ ] Ezekiel: `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
+- [x] `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
+- [ ] Jesse: run the dashboard with `VITE_USE_MOCKS=false` once Tiger has data.
 - [ ] Both: G2 with [`tools/g2_storm.py`](../tools/g2_storm.py) on devnet.
 
 ## Accounts and addresses
