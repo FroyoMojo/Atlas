@@ -102,22 +102,22 @@ def _windows(start: datetime, end: datetime):
 
 
 def _insert(conn, site: str, readings: list[usgs.Reading], max_jump: float) -> tuple[int, int]:
+    """Insert in chunks via unnest() arrays: one round trip per 5,000 rows, and it works on any
+    driver (no COPY)."""
     flagged = usgs.flag_jumps(readings, max_jump_ft=max_jump)
-    if not flagged:
-        return 0, 0
-    with conn.cursor() as cur:
-        cur.execute("CREATE TEMP TABLE IF NOT EXISTS _stage (LIKE gauge_readings "
-                    "INCLUDING DEFAULTS) ON COMMIT PRESERVE ROWS")
-        cur.execute("TRUNCATE _stage")
-        with cur.copy("COPY _stage (event_time, gauge_id, stage_ft, discharge_cfs, source, "
-                      "run_id, rejected) FROM STDIN") as cp:
-            for r, rej in flagged:
-                cp.write_row((r.event_time, site, r.stage_ft, r.discharge_cfs, "usgs", "live", rej))
-        cur.execute("INSERT INTO gauge_readings (event_time, gauge_id, stage_ft, discharge_cfs, "
-                    "source, run_id, rejected) SELECT event_time, gauge_id, stage_ft, "
-                    "discharge_cfs, source, run_id, rejected FROM _stage "
-                    "ON CONFLICT (gauge_id, event_time, source, run_id) DO NOTHING")
-        inserted = cur.rowcount
+    inserted = 0
+    for i in range(0, len(flagged), 5000):
+        chunk = flagged[i:i + 5000]
+        cur = conn.execute(
+            "INSERT INTO gauge_readings (event_time, gauge_id, stage_ft, discharge_cfs, "
+            "source, run_id, rejected) "
+            "SELECT u.t, %s::text, u.s, u.q, 'usgs', 'live', u.j "
+            "FROM unnest(%s::timestamptz[], %s::float8[], %s::float8[], %s::bool[]) "
+            "AS u(t, s, q, j) "
+            "ON CONFLICT (gauge_id, event_time, source, run_id) DO NOTHING",
+            (site, [r.event_time for r, _ in chunk], [r.stage_ft for r, _ in chunk],
+             [r.discharge_cfs for r, _ in chunk], [rej for _, rej in chunk]))
+        inserted += max(cur.rowcount, 0)
     return inserted, sum(1 for _, rej in flagged if rej)
 
 

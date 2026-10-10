@@ -1,16 +1,47 @@
 {
-  "_note": "Candidate USGS stream gauges in Harris County. Site numbers were written from memory and are NOT verified: run `python data/preflight.py discover` and `check` and delete or replace any that fail. Names, coordinates and record spans come from USGS at runtime, not from this file.",
+  "_note": "Shortlist picked from `preflight.py discover` output (all have instantaneous gage height since 2007-10-01). Peak-record length, Harvey crossings and NWS flood stage are NOT yet checked: run `preflight.py check`, drop any that fail.",
   "bbox_w_s_e_n": "-95.90,29.45,-94.95,30.20",
-  "harvey_fetch_window": {"start": "2017-08-15T00:00:00Z", "end": "2017-09-15T00:00:00Z"},
+  "harvey_fetch_window": {
+    "start": "2017-08-15T00:00:00Z",
+    "end": "2017-09-15T00:00:00Z"
+  },
   "iv_history_start_year": 2007,
   "candidates": [
-    {"site": "08075000", "hint": "Brays Bayou at Houston. Preferred demo gauge (Meyerland sits on Brays)."},
-    {"site": "08074500", "hint": "Whiteoak Bayou at Houston"},
-    {"site": "08074000", "hint": "Buffalo Bayou at Houston"},
-    {"site": "08073600", "hint": "Buffalo Bayou at W Belt Dr, Houston"},
-    {"site": "08076000", "hint": "Greens Bayou near Houston"},
-    {"site": "08068500", "hint": "Spring Creek near Spring"},
-    {"site": "08075770", "hint": "Sims Bayou area, low confidence"},
-    {"site": "08075400", "hint": "Unknown, low confidence, drop if check fails"}
+    {
+      "site": "08075000",
+      "hint": "Brays Bayou at Houston. Preferred demo gauge (Meyerland sits on Brays)."
+    },
+    {
+      "site": "08074500",
+      "hint": "Whiteoak Bayou at Houston"
+    },
+    {
+      "site": "08074000",
+      "hint": "Buffalo Bayou at Houston"
+    },
+    {
+      "site": "08076000",
+      "hint": "Greens Bayou nr Houston"
+    },
+    {
+      "site": "08075500",
+      "hint": "Sims Bayou at Houston"
+    },
+    {
+      "site": "08076500",
+      "hint": "Halls Bayou at Houston"
+    },
+    {
+      "site": "08075770",
+      "hint": "Hunting Bayou at IH 610, Houston (flooded badly in Harvey)"
+    },
+    {
+      "site": "08069000",
+      "hint": "Cypress Ck nr Westfield (long record)"
+    },
+    {
+      "site": "08068500",
+      "hint": "Spring Ck nr Spring (iv from 2011 only, long peak record)"
+    }
   ]
 }

@@ -27,7 +27,7 @@ WITH r AS (
          lag(x.stage_ft) OVER w AS prev_stage
   FROM gauges g JOIN gauge_readings x USING (gauge_id)
   WHERE x.source = 'usgs' AND x.run_id = 'live' AND NOT x.rejected
-    AND x.event_time >= %(a)s AND x.event_time < %(b)s
+    AND x.event_time >= %s AND x.event_time < %s
   WINDOW w AS (PARTITION BY g.gauge_id ORDER BY x.event_time)
 )
 SELECT gauge_id, name, trigger_ft, max(stage_ft) AS peak_ft,
@@ -52,7 +52,7 @@ def main() -> None:
     ap.add_argument("--apply", action="store_true", help="write demo_ready to gauges")
     a = ap.parse_args()
     with db.connect() as conn:
-        rows = conn.execute(CROSSINGS, {"a": SCAN_START, "b": SCAN_END}).fetchall()
+        rows = conn.execute(CROSSINGS, (SCAN_START, SCAN_END)).fetchall()
         print(f"{'gauge':<10} {'trigger':>8} {'peak':>7} {'margin':>7} {'opened (UTC)':<22} "
               f"{'peak time (UTC)':<22} n   name")
         for gid, name, trig, peak, ptime, opened, n in rows:

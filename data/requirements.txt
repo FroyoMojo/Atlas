@@ -1,3 +1,5 @@
 requests>=2.31
-psycopg[binary]>=3.1
+pg8000>=1.31
 pytest>=8
+# optional, faster, but its native DLL is blocked on some managed Windows machines:
+# psycopg[binary]>=3.1
