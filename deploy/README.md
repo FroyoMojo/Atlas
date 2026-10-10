@@ -29,8 +29,8 @@ at the IP. DNS can lag; the setup also serves `<ip-with-dashes>.sslip.io` with H
 ## 3. One-time setup (on the server, as root)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/FroyoMojo/Rug-Radar/claude/gallant-volta-hnfqcu/deploy/setup-server.sh -o setup.sh
-bash setup.sh claude/gallant-volta-hnfqcu your-domain.com      # or leave the domain empty
+curl -fsSL https://raw.githubusercontent.com/FroyoMojo/Rug-Radar/main/deploy/setup-server.sh -o setup.sh
+bash setup.sh main your-domain.com      # or leave the domain empty
 ```
 
 ## 4. Secrets and config (from your laptop)

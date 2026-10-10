@@ -5,7 +5,7 @@
 # Then copy the keypairs and .env (see deploy/README.md) and run deploy.sh.
 set -euo pipefail
 
-BRANCH="${1:-claude/gallant-volta-hnfqcu}"
+BRANCH="${1:-main}"
 DOMAIN="${2:-}"
 ROOT=/opt/atlas
 REPO=https://github.com/FroyoMojo/Rug-Radar.git
