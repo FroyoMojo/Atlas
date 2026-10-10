@@ -25,3 +25,7 @@ dist/
 
 # OS
 .DS_Store
+
+# Web
+web/.env.local
+web/dist/
