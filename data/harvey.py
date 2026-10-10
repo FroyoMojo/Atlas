@@ -1,12 +1,15 @@
 """Decision check 4: the exact Harvey replay window and the gauges that cross trigger_ft in it.
 Reads only stored data in Tiger (never the live APIs).
 
-  python data/harvey.py                    # report only
-  python data/harvey.py --demo 08075000 08074500 08074000 08076000 --apply
+  python data/harvey.py                         # report: crossings, data gaps, suggested demo four
+  python data/harvey.py --show-rejected         # readings the jump guard threw out, with neighbours
+  python data/harvey.py --demo 08075000 08076000 08069000 08068500 --apply
 
 Window (plan 6.5): from 48 h before the first demo gauge crosses trigger to 24 h after the last
 demo gauge peaks. 'Crosses' uses the event-open rule: two consecutive accepted readings at or
-above trigger_ft. REPLAY_SECONDS / readings gives the seconds per reading.
+above trigger_ft. A gauge with a reading gap longer than GAP_HOURS inside the scan range is marked
+GAPPY: its 'crossing' may be an artifact of missing data, so it is not picked by default and
+--demo refuses it unless --allow-gaps is given.
 """
 from __future__ import annotations
 
@@ -20,6 +23,9 @@ import db
 common.load_env()
 
 SCAN_START, SCAN_END = "2017-08-20T00:00:00Z", "2017-09-10T00:00:00Z"
+GAP_HOURS = 2
+MIN_MARGIN_FT = 2.0  # a demo gauge must clear trigger by this much, or the demo is fragile
+PREFERRED = "08075000"  # Brays Bayou at Houston: Meyerland sits on it
 
 CROSSINGS = """
 WITH r AS (
@@ -39,6 +45,26 @@ FROM r GROUP BY gauge_id, name, trigger_ft
 ORDER BY opened_at NULLS LAST, gauge_id
 """
 
+GAPS = """
+SELECT gauge_id, count(*), max(gap) FROM (
+  SELECT gauge_id, event_time - lag(event_time) OVER (PARTITION BY gauge_id ORDER BY event_time)
+         AS gap
+  FROM gauge_readings
+  WHERE source = 'usgs' AND run_id = 'live' AND NOT rejected
+    AND event_time >= %s AND event_time < %s) t
+GROUP BY gauge_id
+"""
+
+REJECTED = """
+SELECT gauge_id, event_time, stage_ft, prev_stage, next_stage FROM (
+  SELECT gauge_id, event_time, stage_ft, rejected,
+         lag(stage_ft) OVER w AS prev_stage, lead(stage_ft) OVER w AS next_stage
+  FROM gauge_readings
+  WHERE source = 'usgs' AND run_id = 'live' AND event_time >= %s AND event_time < %s
+  WINDOW w AS (PARTITION BY gauge_id ORDER BY event_time)) t
+WHERE rejected ORDER BY gauge_id, event_time
+"""
+
 COUNT_IN_WINDOW = """
 SELECT gauge_id, count(*) FROM gauge_readings
 WHERE source='usgs' AND run_id='live' AND NOT rejected AND gauge_id = ANY(%s)
@@ -50,24 +76,48 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--demo", nargs="*", help="four gauge ids to mark demo_ready")
     ap.add_argument("--apply", action="store_true", help="write demo_ready to gauges")
+    ap.add_argument("--allow-gaps", action="store_true", help="permit a GAPPY demo gauge")
+    ap.add_argument("--show-rejected", action="store_true")
     a = ap.parse_args()
     with db.connect() as conn:
+        if a.show_rejected:
+            rows = conn.execute(REJECTED, (SCAN_START, SCAN_END)).fetchall()
+            print(f"{len(rows)} rejected reading(s) in the scan range")
+            for gid, t, st, prev, nxt in rows:
+                print(f"{gid} {str(t)[:19]}Z  stage {st}  prev {prev}  next {nxt}")
+            print("If these look like a real rapid rise (neighbours on both sides agree with "
+                  "the reading), raise --max-jump in backfill and reload.")
+            return
+
         rows = conn.execute(CROSSINGS, (SCAN_START, SCAN_END)).fetchall()
-        print(f"{'gauge':<10} {'trigger':>8} {'peak':>7} {'margin':>7} {'opened (UTC)':<22} "
-              f"{'peak time (UTC)':<22} n   name")
+        gaps = {g: (n, gap) for g, n, gap in conn.execute(GAPS, (SCAN_START, SCAN_END)).fetchall()}
+        gappy = {g for g, (_n, gap) in gaps.items() if gap and gap > timedelta(hours=GAP_HOURS)}
+        print(f"{'gauge':<9} {'trigger':>7} {'peak':>6} {'margin':>6} {'opened (UTC)':<17} "
+              f"{'peak time (UTC)':<17} {'n':>5} {'max gap':>8}  name")
         for gid, name, trig, peak, ptime, opened, n in rows:
-            mark = "CROSSES" if opened else "no"
-            print(f"{gid:<10} {trig:>8.2f} {peak:>7.2f} {peak - trig:>7.2f} "
-                  f"{str(opened)[:19] if opened else '-':<22} {str(ptime)[:19]:<22} {n:<4}{name} "
-                  f"[{mark}]")
+            gap = gaps.get(gid, (0, None))[1]
+            gap_s = f"{gap.total_seconds() / 3600:.1f}h" if gap else "-"
+            flags = ("CROSSES" if opened else "no") + (" GAPPY" if gid in gappy else "")
+            print(f"{gid:<9} {trig:>7.2f} {peak:>6.2f} {peak - trig:>6.2f} "
+                  f"{str(opened)[:16] if opened else '-':<17} {str(ptime)[:16]:<17} {n:>5} "
+                  f"{gap_s:>8}  {name} [{flags}]")
         crossing = [r for r in rows if r[5]]
-        print(f"\n{len(crossing)} of {len(rows)} gauges cross trigger in the scan range.")
-        if len(crossing) < 4:
-            print("Fewer than 4 crossings: pick different gauges or revisit trigger_ft (plan 6.1).")
-        demo = a.demo or [r[0] for r in crossing[:4]]
-        d_rows = [r for r in crossing if r[0] in demo]
-        if len(d_rows) < len(demo):
-            raise SystemExit(f"demo gauges that do not cross: {set(demo) - {r[0] for r in d_rows}}")
+        eligible = [r for r in crossing if r[0] not in gappy and r[3] - r[2] >= MIN_MARGIN_FT]
+        print(f"\n{len(crossing)} of {len(rows)} gauges cross trigger; {len(eligible)} also have "
+              f"no gap over {GAP_HOURS}h and clear trigger by {MIN_MARGIN_FT} ft (demo-eligible).")
+        if len(eligible) < 4:
+            print("Fewer than 4 demo-eligible gauges: pick different gauges or revisit trigger_ft.")
+        ordered = sorted(eligible, key=lambda r: (r[0] != PREFERRED, r[5]))
+        demo = a.demo or [r[0] for r in ordered[:4]]
+        by_id = {r[0]: r for r in crossing}
+        bad = [d for d in demo if d not in by_id]
+        if bad:
+            raise SystemExit(f"demo gauges that do not cross: {bad}")
+        risky = [d for d in demo if d in gappy or by_id[d][3] - by_id[d][2] < MIN_MARGIN_FT]
+        if risky and not a.allow_gaps:
+            raise SystemExit(f"demo gauges that are gappy or marginal: {risky} "
+                             "(add --allow-gaps to override)")
+        d_rows = [by_id[d] for d in demo]
         start = min(r[5] for r in d_rows) - timedelta(hours=48)
         end = max(r[4] for r in d_rows) + timedelta(hours=24)
         counts = dict(conn.execute(COUNT_IN_WINDOW, (demo, start, end)).fetchall())
@@ -82,6 +132,7 @@ def main() -> None:
         path = common.write_report("harvey_window.json", {
             "demo_gauges": demo, "window_start": start, "window_end": end,
             "readings_per_gauge": counts, "replay_seconds": replay_s,
+            "gappy": sorted(gappy),
             "crossings": [{"gauge": r[0], "trigger_ft": r[2], "peak_ft": r[3],
                            "opened_at": r[5]} for r in crossing]})
         print("Report:", path)

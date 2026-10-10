@@ -3,6 +3,8 @@
   python data/db.py check      # connect, report PG and TimescaleDB versions, columnstore API
   python data/db.py schema     # apply schema.sql
   python data/db.py finalize   # policies.sql + compress backfilled chunks + print stats
+  python data/db.py tables     # list public tables and row counts
+  python data/db.py gauges     # gauges table: trigger, NWS stage, record_start, record_note
 
 Driver: psycopg 3 if it imports, otherwise pure-Python pg8000. The fallback exists because
 locked-down Windows machines block psycopg's native libpq DLL (Application Control). All SQL in
@@ -176,8 +178,34 @@ def cmd_finalize() -> None:
                 continue
 
 
+def cmd_tables() -> None:
+    with connect() as conn:
+        names = sorted(r[0] for r in conn.execute(
+            "SELECT tablename FROM pg_tables WHERE schemaname='public'").fetchall())
+        for n in names:
+            cnt = conn.execute(f'SELECT count(*) FROM "{n}"').fetchone()[0]
+            print(f"{n:<16} {cnt:>10}")
+        print(f"{len(names)} tables")
+
+
+def cmd_gauges() -> None:
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT gauge_id, trigger_ft, nws_flood_ft, record_start, demo_ready, name, "
+            "record_note FROM gauges ORDER BY gauge_id").fetchall()
+        print(f"{'gauge':<10} {'trigger':>8} {'NWS stage':>10} {'rec_start':>9} {'demo':>5}  name")
+        for g, trig, nws_ft, rs, demo, name, note in rows:
+            src = "NWS" if nws_ft is not None else "pctile"
+            print(f"{g:<10} {trig:>8} {nws_ft if nws_ft is not None else '-':>10} {rs:>9} "
+                  f"{'yes' if demo else '':>5}  {name}  [trigger: {src}]")
+        print()
+        for g, *_rest, note in rows:
+            print(f"{g}: {note}")
+
+
 if __name__ == "__main__":
-    cmds = {"check": cmd_check, "schema": cmd_schema, "finalize": cmd_finalize}
+    cmds = {"check": cmd_check, "schema": cmd_schema, "finalize": cmd_finalize,
+            "tables": cmd_tables, "gauges": cmd_gauges}
     if len(sys.argv) != 2 or sys.argv[1] not in cmds:
         sys.exit(__doc__)
     cmds[sys.argv[1]]()
