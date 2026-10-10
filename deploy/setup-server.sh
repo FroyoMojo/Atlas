@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-time setup of a fresh Vultr Ubuntu 24.04 instance for Atlas. Run as root:
-#   curl -fsSL https://raw.githubusercontent.com/FroyoMojo/Rug-Radar/<branch>/deploy/setup-server.sh -o setup.sh
+#   curl -fsSL https://raw.githubusercontent.com/FroyoMojo/Atlas/<branch>/deploy/setup-server.sh -o setup.sh
 #   bash setup.sh <branch> <domain-or-empty>
 # Then copy the keypairs and .env (see deploy/README.md) and run deploy.sh.
 set -euo pipefail
@@ -8,7 +8,7 @@ set -euo pipefail
 BRANCH="${1:-main}"
 DOMAIN="${2:-}"
 ROOT=/opt/atlas
-REPO=https://github.com/FroyoMojo/Rug-Radar.git
+REPO=https://github.com/FroyoMojo/Atlas.git
 
 apt-get update -y
 apt-get install -y curl git ca-certificates gnupg debian-keyring debian-archive-keyring apt-transport-https python3-venv
