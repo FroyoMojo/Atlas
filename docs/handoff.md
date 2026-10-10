@@ -24,7 +24,7 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 | Person | Owns |
 | --- | --- |
 | Ezekiel (Person A, data and risk) | Tiger schema, ingestion and cache, trigger logic, replay engine, pricing, simulated book, stress tests, bond maths, FastAPI read endpoints. Every number on stage. |
-| Person B (chain and product) | `aUSD`, policy mints, atomic purchase, Squads vault, payout bot, Memo evidence, bond token, dashboard, Vultr deploy, domain. The live demo flow. |
+| Jesse (Person B, chain and product) | `aUSD`, policy mints, atomic purchase, Squads vault, payout bot, Memo evidence, bond token, dashboard, Vultr deploy, domain. The live demo flow. |
 | Both | Integration at each gate, pitch, Q&A, fallback video, Devpost write-up |
 
 ## Rules we agreed
@@ -40,7 +40,7 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [ ] Both: do the pre-flight checklist (plan section 3).
 - [ ] Both: confirm the API shapes in [api.md](api.md).
 - [ ] Ezekiel: pick 6 to 10 gauges with real USGS site numbers and start caching raw data.
-- [ ] Person B: create the `aUSD` mint, fund the wallets, create the 2-of-3 Squads multisig, run the Token-2022 extension test.
+- [ ] Jesse: create the `aUSD` mint, fund the wallets, create the 2-of-3 Squads multisig, run the Token-2022 extension test.
 - [ ] Both: fill in [decisions.md](decisions.md) by Hour 1.5.
 
 ## Accounts and addresses

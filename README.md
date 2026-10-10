@@ -2,7 +2,7 @@
 
 > **Status: planning.** There is no code yet. This repo currently holds the build plan and the team notes. The repo is named `Rug-Radar` after an earlier idea; the project is **Atlas**.
 
-Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by a team of two: Ezekiel (data and risk) and Person B (chain and product).
+Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by a team of two: Ezekiel (data and risk) and Jesse (chain and product).
 
 ## The pitch
 
