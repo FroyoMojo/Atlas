@@ -69,6 +69,11 @@ function parseAccount(value: unknown): PublicKey {
 // ---------- abuse limits (plan v3 9.3) ----------
 
 const hits = new Map<string, number[]>();
+setInterval(() => {
+  const cutoff = Date.now() - 60_000;
+  for (const [key, times] of hits) if (times.every((t) => t < cutoff)) hits.delete(key);
+}, 60_000).unref();
+
 function rateLimit(perMinute: number) {
   return (req: Request, res: Response, next: NextFunction) => {
     const key = `${req.path}:${req.ip}`;
@@ -235,6 +240,7 @@ app.post(
       depositUnits: toUnits(amount),
       navPerUnit,
     });
+    for (const [k, v] of pendingBonds) if (v.expires < Date.now()) pendingBonds.delete(k);
     pendingBonds.set(sha256Hex(tx.serializeMessage().toString("base64")), {
       investor: investor.toBase58(),
       amount,
@@ -436,9 +442,9 @@ async function confirmPurchases(): Promise<void> {
 
 setInterval(() => void confirmPurchases().catch((e) => console.warn("confirmer", e)), 4_000);
 
-app.listen(env.port, () => {
+app.listen(env.port, env.host, () => {
   console.log(
-    `atlas chain service on :${env.port} (demo mode ${env.demoMode ? "on" : "off"}, purchase flow ${env.purchaseFlow.toUpperCase()})`,
+    `atlas chain service on ${env.host}:${env.port} (demo mode ${env.demoMode ? "on" : "off"}, purchase flow ${env.purchaseFlow.toUpperCase()})`,
   );
   if (env.demoMode && env.demoWallets.length === 0) console.warn("DEMO_WALLETS is empty: buy and bond accept any wallet.");
   if (!env.adminToken) console.warn("ADMIN_TOKEN is empty: /chain/reset is disabled.");

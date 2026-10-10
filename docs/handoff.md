@@ -2,56 +2,56 @@
 
 Read this first when you pick up the repo. Update the **Status** and **Next steps** sections whenever you stop working.
 
-## Status (Oct 10, 2026)
+## Status (Oct 10, about Hour 4.5)
 
-- Idea chosen: **Atlas**, parametric flood protection for Houston.
-- Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Code and docs are aligned to it; its fix list (V1 to V17) matches [decisions.md](decisions.md).
-- **Jesse's side built to v3** and tested end to end on a local validator:
-  - [`chain/`](../chain/README.md): chain service (Flow A and B purchase, bond, reset with refill, balances), storm payout bot (interim + true-up, intents, crash recovery), ledger writes.
-  - [`web/`](../web/README.md): map, gauge, pool, verify, phone view with the payout banner, admin-gated Start/Reset; mock engine in v3 shapes.
-- **Not done yet:** Ezekiel's engine (`/data`, `/engine`); running the chain setup on real devnet; hosting on Vultr; the domain.
+- Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Code and docs follow it; its fixes (V1 to V17) are logged in [decisions.md](decisions.md).
+- **Built and tested on a local validator (Jesse):**
+  - [`chain/`](../chain/README.md): chain service (purchase Flow A and B, bond, reset with refill, balances), storm payout bot (interim and true-up, intents, crash recovery), ledger writes.
+  - [`web/`](../web/README.md): map, gauge, pool, verify and phone view with the payout banner; Start/Reset behind the admin token; mock engine in v3.1 shapes.
+  - [`deploy/`](../deploy/README.md): Caddy, systemd and deploy scripts; routing tested locally.
+  - [`tools/g2_storm.py`](../tools/g2_storm.py): opens a storm for G2; tested with interim 0.6 and true-up 1.0.
+- **Not done:** devnet setup, Vultr and domain, phone test, and Ezekiel's engine (`data/`, `engine/`).
+- Commits go straight to `main` (no pull requests).
 
 ## Key times
 
 | When | What |
 | --- | --- |
-| Oct 10, 1:00 pm CDT | Hacking starts (Hour 0) |
-| Hour 1.5 | Gate G1: every check in `decisions.md` answered |
-| Hour 5 | Gate G2: a replay run pays a real devnet policy end to end |
-| Hour 16 | Gate G3: feature freeze; replay runs twice on the hosted URL |
-| Hour 19.5 | Target submission |
+| Oct 10, 1:00 pm CDT | Hacking started (Hour 0) |
+| Now (overdue) | Gate G1: every check in `decisions.md` answered, including the phone test |
+| Hour 6.5 (7:30 pm) | Gate G2: a storm pays a real devnet policy; ledger and chain agree |
+| Hour 16 (5:00 am) | Gate G3: feature freeze; start, run, reset, run again on the hosted URL |
+| Hour 19.5 (8:30 am) | Target submission |
 | Oct 11, 1:00 pm CDT | Devpost deadline (Hour 24) |
 
 ## Who owns what
 
 | Person | Owns |
 | --- | --- |
-| Ezekiel (Person A, data and risk) | Tiger schema, ingestion and cache, trigger logic, replay engine, pricing, simulated book, stress tests, bond maths, FastAPI read endpoints. Every number on stage. |
-| Jesse (Person B, chain and product) | `aUSD`, policy mints, atomic purchase, Squads vault, payout bot, Memo evidence, bond token, dashboard, Vultr deploy, domain. The live demo flow. |
-| Both | Integration at each gate, pitch, Q&A, fallback video, Devpost write-up |
+| Ezekiel (data and risk) | Tiger schema, ingestion and cache, event and storm logic, `f_int` and `f_fin`, replay and run clock, pricing, scenarios, simulated book, ledger reads and reconciliation, FastAPI (read-only), NWS freeze. Every number on stage. |
+| Jesse (chain, product, hosting) | Chain service and all signing, aUSD and policy mints, Squads vault, payout bot, Memo evidence, ledger writes, dashboard and phone view, Vultr, Caddy, domain, deploys. The live demo flow. |
+| Both | Gates, pitch, Q&A, fallback video, Devpost write-up |
 
 ## Rules we agreed
 
-- If something blocks you for 45 minutes, say so and switch to its fallback (plan section 12).
-- Optional upgrades (Switchboard, Squads spending limit, Blink) get 1 hour each, only after Gate G2. Miss the hour, drop it.
+- Blocked for 45 minutes: say so and switch to the fallback (plan section 12).
+- Upgrades: at most one after G2 (Solana Pay QR, only with Flow A). Switchboard, spending limit and Blink are cut.
 - Nothing on stage calls USGS live. Everything reads from Tiger or `/data/cache/`.
-- Never commit secrets. Keys live in `.env`, which is git-ignored.
-- Press **Reset** before every judge group.
+- Python never builds or signs a Solana transaction.
+- Never commit secrets. Keys live in `secrets/` and `.env`, both git-ignored.
+- Press **Reset** before every judge group and check the reconciliation badge is green.
 
 ## Next steps
 
-- [ ] Both: do the pre-flight checklist (plan section 3).
-- [ ] Both: confirm the API shapes in [api.md](api.md).
-- [ ] Ezekiel: pick 6 to 10 gauges with real USGS site numbers and start caching raw data.
 - [ ] Jesse: devnet SOL via faucet.solana.com, then the devnet setup; commit `chain/state/devnet.json` ([deploy/README.md](../deploy/README.md) step 0).
-- [ ] Jesse: Vultr + domain + `setup-server.sh` + `deploy.sh` ([deploy/README.md](../deploy/README.md) steps 1 to 5).
-- [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)).
-- [ ] Jesse: once Zeke names the 4 demo gauges, `npm run migrate` and `npm run precreate` on the server.
-- [ ] Ezekiel: schema from plan v3 6.2; `gauge_events.preimage`/`evidence_hash` per [evidence.md](evidence.md) (check the test vector).
+- [ ] Jesse: Vultr, domain, `setup-server.sh`, `deploy.sh` ([deploy/README.md](../deploy/README.md) steps 1 to 5).
+- [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)); record #10 and #11 in [decisions.md](decisions.md).
+- [ ] Ezekiel: share the Tiger connection string, the four `demo_ready` gauge IDs and one `ADMIN_TOKEN`.
+- [ ] Jesse: on the server, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
+- [ ] Ezekiel: schema from plan v3.1 section 6.2 (including `runs.opening_vault`, `runs.opening_float`); preimage per [evidence.md](evidence.md), checked against the test vector.
 - [ ] Ezekiel: set `storms.f_int` at storm open and `f_fin` + `closed` at close; the bot pays from those.
 - [ ] Ezekiel: `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
-- [ ] Both: G2 with [`tools/g2_storm.py`](../tools/g2_storm.py) (ready; tested locally with interim 0.6 and true-up 1.0).
-- [ ] Both: fill in [decisions.md](decisions.md) by Hour 1.5.
+- [ ] Both: G2 with [`tools/g2_storm.py`](../tools/g2_storm.py) on devnet.
 
 ## Accounts and addresses
 

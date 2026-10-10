@@ -6,7 +6,6 @@ export const config = {
   chainUrl: e.VITE_CHAIN_URL ?? "http://localhost:8787",
   rpcUrl: e.VITE_RPC_URL ?? "https://api.devnet.solana.com",
   ausdMint: e.VITE_AUSD_MINT ?? "",
-  demoMode: (e.VITE_DEMO_MODE ?? "true") === "true",
   explorerCluster: e.VITE_EXPLORER_CLUSTER ?? "devnet",
   // Plan v3 8.3: "a" = server signs first, "b" = wallet signs first. Set from the Hour-0 phone test.
   purchaseFlow: ((e.VITE_PURCHASE_FLOW ?? "a").toLowerCase() === "b" ? "b" : "a") as "a" | "b",

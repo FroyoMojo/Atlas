@@ -2,7 +2,7 @@
 
 Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour 1.5)**. Later decisions go in the log at the bottom.
 
-## Hour 0 to 1.5 checks
+## Gate G1 checks (overdue; answer as soon as possible)
 
 | # | Check | Owner | Result | Fallback if no |
 | --- | --- | --- | --- | --- |
@@ -37,3 +37,7 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | Bond deposits always use wallet-first signing with server submit | Lets the server write the ledger entry with the signature | Jesse |
 | Oct 10 | No metadata for aUSD | Classic SPL has no metadata extension; Metaplex costs an hour; the phone view is the money moment | Jesse |
 | Oct 10 | `GET /replay/status` added to the engine contract | v3 omitted it; every page needs the current run and clock | Jesse |
+| Oct 10 | Plan v3.1: hosting, Caddy, domain and deploys move to Jesse; timeline re-based from Hour 4.5, G2 at Hour 6.5 | Jesse's code was done; Zeke was the bottleneck | Both |
+| Oct 10 | Commits go straight to `main` | Faster than pull requests during the build | Jesse |
+| Oct 10 | Chain service listens on 127.0.0.1 only | Caddy is the only public entry point | Jesse |
+| Oct 10 | Old plan versions moved to `docs/plan/archive/` | One current plan at the top level | Jesse |
