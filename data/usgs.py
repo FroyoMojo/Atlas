@@ -245,17 +245,29 @@ def comparability(peaks: list[Peak], recent_years: int = 15, block_years: int = 
 
 def flag_jumps(readings: list[Reading], max_jump_ft: float = 3.0,
                window: timedelta = timedelta(minutes=15)) -> list[tuple[Reading, bool]]:
-    """Data-quality guard (plan 6.4): a stage that jumps more than `max_jump_ft` from the previous
-    accepted reading within `window` is stored with rejected = true. Rejected readings never
-    become the baseline, so a real step is accepted once the gap exceeds the window.
-    Readings without a stage are dropped."""
+    """Data-quality guard: flag spikes, keep real rises.
+
+    Plan 6.4 says to reject a reading that jumps more than N ft from the previous accepted
+    reading within 15 minutes. On Harvey data that rejects genuine flash-flood rises (Brays rose
+    27.0 -> 30.4 -> 34.9 ft in two steps). So the rule here is a spike test: a reading is rejected
+    only if it jumps more than `max_jump_ft` away from the previous accepted reading AND differs
+    from the next reading by more than that in the same direction (it goes up or down and comes
+    straight back). A sustained rise or fall passes. The last reading of a series cannot be judged
+    and is accepted. Rejected readings never become the baseline. Readings without a stage are
+    dropped.
+    """
+    rs = [r for r in readings if r.stage_ft is not None]
     out: list[tuple[Reading, bool]] = []
     prev: Reading | None = None
-    for r in readings:
-        if r.stage_ft is None:
-            continue
-        rejected = bool(prev and r.event_time - prev.event_time <= window
-                        and abs(r.stage_ft - prev.stage_ft) > max_jump_ft)
+    for i, r in enumerate(rs):
+        nxt = rs[i + 1] if i + 1 < len(rs) else None
+        rejected = False
+        if prev and nxt and r.event_time - prev.event_time <= window \
+                and nxt.event_time - r.event_time <= window:
+            d_prev = r.stage_ft - prev.stage_ft
+            d_next = r.stage_ft - nxt.stage_ft
+            rejected = (abs(d_prev) > max_jump_ft and abs(d_next) > max_jump_ft
+                        and (d_prev > 0) == (d_next > 0))
         out.append((r, rejected))
         if not rejected:
             prev = r

@@ -50,13 +50,19 @@ def test_parse_peaks_water_year_stage_and_drops():
     assert by[1990].stage_ft == 28.0  # unknown month/day tolerated
 
 
-def test_flag_jumps_rejects_spike_and_accepts_real_step_after_gap():
+def test_flag_jumps_rejects_spike_keeps_real_rise():
     t0 = datetime(2017, 1, 1, tzinfo=timezone.utc)
     mk = lambda m, s: usgs.Reading(t0 + timedelta(minutes=m), s, None)
-    out = usgs.flag_jumps([mk(0, 5.0), mk(15, 5.2), mk(30, 20.0), mk(45, 5.4),
-                           mk(60, None), mk(120, 15.0)])
+    # spike (up and straight back) is rejected; stage-less reading dropped
+    out = usgs.flag_jumps([mk(0, 5.0), mk(15, 5.2), mk(30, 20.0), mk(45, 5.4), mk(60, None),
+                           mk(75, 5.5)])
     assert [rej for _, rej in out] == [False, False, True, False, False]
-    assert len(out) == 5  # the stage-less reading is dropped; 60 min gap lets 15.0 through
+    # Harvey-style rise: 27.0 -> 30.4 -> 34.9 -> 36.0 must all pass
+    out = usgs.flag_jumps([mk(0, 27.0), mk(15, 30.4), mk(30, 34.9), mk(45, 36.0)])
+    assert not any(rej for _, rej in out)
+    # a real step after a long gap is accepted too; last reading is never judged
+    out = usgs.flag_jumps([mk(0, 5.0), mk(15, 5.2), mk(200, 15.0), mk(215, 15.2), mk(230, 40.0)])
+    assert not any(rej for _, rej in out)
 
 
 def _synthetic_peaks(step_from_i=None, noise=0.0, n=30, seed=1):

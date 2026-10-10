@@ -102,8 +102,9 @@ def _windows(start: datetime, end: datetime):
 
 
 def _insert(conn, site: str, readings: list[usgs.Reading], max_jump: float) -> tuple[int, int]:
-    """Insert in chunks via unnest() arrays: one round trip per 5,000 rows, and it works on any
-    driver (no COPY)."""
+    """Upsert in chunks via unnest() arrays: one round trip per 5,000 rows, works on any driver
+    (no COPY). Existing rows are rewritten only if the value or the rejected flag changed, so a
+    reload fixes flags and picks up USGS revisions without churning identical rows."""
     flagged = usgs.flag_jumps(readings, max_jump_ft=max_jump)
     inserted = 0
     for i in range(0, len(flagged), 5000):
@@ -114,7 +115,12 @@ def _insert(conn, site: str, readings: list[usgs.Reading], max_jump: float) -> t
             "SELECT u.t, %s::text, u.s, u.q, 'usgs', 'live', u.j "
             "FROM unnest(%s::timestamptz[], %s::float8[], %s::float8[], %s::bool[]) "
             "AS u(t, s, q, j) "
-            "ON CONFLICT (gauge_id, event_time, source, run_id) DO NOTHING",
+            "ON CONFLICT (gauge_id, event_time, source, run_id) DO UPDATE SET "
+            "stage_ft = EXCLUDED.stage_ft, discharge_cfs = EXCLUDED.discharge_cfs, "
+            "rejected = EXCLUDED.rejected "
+            "WHERE gauge_readings.rejected IS DISTINCT FROM EXCLUDED.rejected "
+            "OR gauge_readings.stage_ft IS DISTINCT FROM EXCLUDED.stage_ft "
+            "OR gauge_readings.discharge_cfs IS DISTINCT FROM EXCLUDED.discharge_cfs",
             (site, [r.event_time for r, _ in chunk], [r.stage_ft for r, _ in chunk],
              [r.discharge_cfs for r, _ in chunk], [rej for _, rej in chunk]))
         inserted += max(cur.rowcount, 0)

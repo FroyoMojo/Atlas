@@ -3,6 +3,7 @@
   python data/preflight.py discover   # list active Houston-area gauges with iv gage height
   python data/preflight.py check      # test every candidate in gauges.json, write the report
   python data/preflight.py check --offline   # re-run parsing from /data/cache only
+  python data/preflight.py peakcodes         # USGS's own datum/channel flags from the peak files
 
 Run from a machine that can reach USGS and NWS. Raw responses land in data/cache/ first.
 The report goes to data/reports/preflight_report.json; paste the summary into decisions.md.
@@ -153,6 +154,42 @@ def check_nws(gauges: list[dict], args) -> dict:
     return res
 
 
+def cmd_peakcodes(args) -> None:
+    """Print what USGS itself says about each gauge's annual peaks: the legend lines that mention
+    datum, site or channel changes, and which water years carry each code. This is the authoritative
+    input for the F11 record_start decision; the stage-discharge screen is only a cross-check."""
+    sites = args.sites or [c["site"] for c in CFG["candidates"]]
+    cols = ("gage_ht_cd", "ag_gage_ht_cd", "peak_cd")
+    shown_legend = False
+    for site in sites:
+        r = usgs.fetch_peaks(site, offline=args.offline)
+        if not r.ok:
+            print(f"{site}: peak file failed: {r.error}")
+            continue
+        if not shown_legend:
+            keys = ("datum", "channel", "urban", "different site", "backwater", "regulat")
+            legend = [ln for ln in r.text.splitlines()
+                      if ln.startswith("#") and any(k in ln.lower() for k in keys)]
+            print("Legend lines mentioning datum, site, channel or urbanization:")
+            for ln in legend[:40]:
+                print("  ", ln[:150])
+            print(f"  ({len(legend)} matching lines)\n")
+            shown_legend = True
+        rows = usgs.parse_rdb(r.text)
+        print(f"{site}: {len(rows)} peak rows")
+        by_code: dict[tuple[str, str], list[str]] = {}
+        for row in rows:
+            yr = (row.get("peak_dt") or "")[:4]
+            for col in cols:
+                for code in (row.get(col) or "").replace(" ", "").split(","):
+                    if code:
+                        by_code.setdefault((col, code), []).append(yr)
+        for (col, code), yrs in sorted(by_code.items()):
+            shown = ",".join(yrs) if len(yrs) <= 14 else f"{','.join(yrs[:6])},...,{','.join(yrs[-6:])}"
+            print(f"   {col}={code:<2} x{len(yrs):<3} {shown}")
+        print()
+
+
 def cmd_check(args) -> None:
     sites = args.sites or [c["site"] for c in CFG["candidates"]]
     gauges = [check_gauge(s, args) for s in sites]
@@ -190,9 +227,9 @@ def cmd_check(args) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    ap.add_argument("command", choices=["discover", "check"])
+    ap.add_argument("command", choices=["discover", "check", "peakcodes"])
     ap.add_argument("--offline", action="store_true", help="use data/cache only")
     ap.add_argument("--force", action="store_true", help="refetch discover output")
     ap.add_argument("--sites", nargs="*", help="override the candidate list")
     a = ap.parse_args()
-    {"discover": cmd_discover, "check": cmd_check}[a.command](a)
+    {"discover": cmd_discover, "check": cmd_check, "peakcodes": cmd_peakcodes}[a.command](a)
