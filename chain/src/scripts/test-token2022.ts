@@ -43,9 +43,9 @@ if (state.ausdMint && state.vault) {
 }
 
 await sendIxs(connection, setPolicyStatusIxs(plan.mint.publicKey, issuer.publicKey, "PAID"), [issuer]);
-const paid = await readPolicy(connection, plan.mint.publicKey);
+const paid = await readPolicy(connection, plan.mint.publicKey, loadKeypair("holder1").publicKey);
 console.log(`after PAID: name="${paid.name}" status=${paid.fields.status}`);
 await sendIxs(connection, setPolicyStatusIxs(plan.mint.publicKey, issuer.publicKey, "ACTV"), [issuer]);
-const p = await readPolicy(connection, plan.mint.publicKey);
+const p = await readPolicy(connection, plan.mint.publicKey, loadKeypair("holder1").publicKey);
 console.log(`read back: name="${p.name}" supply=${p.supply} holder=${p.holder} fields=${JSON.stringify(p.fields)}`);
 console.log("name + status ACTV -> PAID -> ACTV round trip OK");

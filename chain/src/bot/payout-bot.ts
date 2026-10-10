@@ -196,7 +196,7 @@ async function processStorm(storm: dbq.Storm): Promise<void> {
   for (const t of todo) {
     if (t.kind === "interim") {
       // On-chain cross-check before the first payment (plan v3 8.5 step 2).
-      const onchain = await readPolicy(connection, new PublicKey(t.mint));
+      const onchain = await readPolicy(connection, new PublicKey(t.mint), new PublicKey(t.owner));
       if (onchain.holder !== t.owner || onchain.fields.status !== "ACTV" || onchain.fields.gauge_id !== t.gaugeId) {
         warnOnce(
           `xcheck:${t.mint}:${storm.storm_id}`,

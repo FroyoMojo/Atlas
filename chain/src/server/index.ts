@@ -289,7 +289,8 @@ app.get(
 app.get(
   "/policies/:mint/onchain",
   wrap(async (req, res) => {
-    const policy = await readPolicy(connection, parseAccount(req.params.mint));
+    const owner = req.query.owner ? parseAccount(req.query.owner) : undefined;
+    const policy = await readPolicy(connection, parseAccount(req.params.mint), owner);
     res.json({ ...policy, supply: policy.supply.toString(), explorer: explorer(policy.mint, "address") });
   }),
 );
@@ -402,7 +403,7 @@ async function confirmPurchases(): Promise<void> {
   for (const row of await dbq.reservedMints()) {
     try {
       const mint = new PublicKey(row.policy_mint);
-      const policy = await readPolicy(connection, mint);
+      const policy = await readPolicy(connection, mint, new PublicKey(row.reserved_by));
       if (policy.supply !== 1n || !policy.holder) continue;
       const [latest] = await connection.getSignaturesForAddress(mint, { limit: 1 }, "confirmed");
       const txSig = latest?.signature ?? null;

@@ -43,7 +43,8 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 
 ## Next steps
 
-- [ ] Jesse: fund the treasury at faucet.solana.com; the devnet setup then runs and `chain/state/devnet.json` is committed.
+- [x] Jesse: devnet setup done (aUSD, wallets, 2-of-3 vault, bond mint, Token-2022 and Squads checks on real devnet); addresses below.
+- [ ] Jesse: get a free devnet RPC URL (Helius or QuickNode) for `SOLANA_RPC_URL`; the public RPC rate-limits hard.
 - [ ] Jesse: laptop hosting, tunnel URL, then the domain on Cloudflare ([deploy/README.md](../deploy/README.md)).
 - [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)); record #10 and #11 in [decisions.md](decisions.md).
 - [ ] Ezekiel: share the Tiger connection string, the four `demo_ready` gauge IDs and one `ADMIN_TOKEN`.
@@ -63,10 +64,10 @@ Fill these in as they are created. Public addresses only; never paste private ke
 | Domain | |
 | Tunnel URL (trycloudflare) | |
 | Tiger Cloud service | (connection string in `.env` only) |
-| `aUSD` mint | |
-| Squads multisig | |
-| Squads vault | |
-| Bot public key | |
-| Bond token mint | |
-| Demo policyholder wallets | Jesse phone (Phantom): `72t74q3nTQDM6t9CqNMDhSiL9ykzxPnoQKudDs3Bu5co` |
-| Investor wallet | |
+| `aUSD` mint | `8rcNwXHnYbUG9Nm9gb3dXEJujPXsdkQAnCiL8UbnBbxo` |
+| Squads multisig | `3EWJH9r4uo9AoV8LiDRthFQZ6PpWx89c9SqWFuwkaKoU` (2-of-3, 60 s time lock) |
+| Squads vault | `AC2BQCvsmLeaYSwWwQw6PvU7GN7y2q6bDNjLfx2C265o` |
+| Bot public key | `4XfPahYq4Yq1n89tECuMC7fzxjRBwnRkFjKqpJa9BA66` |
+| Bond token mint | `CkLe9NUaKPLAdhHM3dZFDVdqWuNena2ow5zHKdDrtc8T` |
+| Demo policyholder wallets | Jesse phone (Phantom): `72t74q3nTQDM6t9CqNMDhSiL9ykzxPnoQKudDs3Bu5co`; backups holder1 `GX5R6aJMni9UVmCg6EtsWKzrG5h2fVitn6U2X1YwBtDL`, holder2 `7e1DzCBHLDYxGaCQWQ1qWTVUn2MdFmqrupJfcuDxt6Mp`, holder3 `2JKWpyXV714myXxfavMmHmj5BqjZ3FGA6Fmsm8a5Ghuz` |
+| Investor wallet | `EtTzE688JinGzBD2iUSis6uYCeaMc4QYyGzKvdDhajUw` |

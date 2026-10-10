@@ -10,9 +10,9 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | 2 | NWS flood-stage access path for our forecast points | Ezekiel | | Set `trigger_ft` from USGS annual-peak percentiles |
 | 3 | `api.weather.gov/alerts` returns flood watches and warnings by point | Ezekiel | | Manual sales-freeze toggle in demo mode |
 | 4 | Exact Harvey replay window, and which 4 gauges cross `trigger_ft` in it, read from stored data | Ezekiel | | Pick different gauges |
-| 5 | Token-2022 NonTransferable + MetadataPointer + TokenMetadata (+ PermanentDelegate) on one mint via JS; name and status updates at fixed width | Jesse | Yes, all four on one mint, and name/status `ACTV` -> `PAID` -> `ACTV` round trip (local validator, Oct 10). Recheck on devnet with `npm run test:token2022`. | Drop PermanentDelegate |
-| 6 | Purchase transaction fits under 1,232 bytes with our metadata | Jesse | Yes: create 985 bytes, purchase 670 bytes. | Fewer metadata fields; terms in the `uri` JSON |
-| 7 | Squads v4 multisig, vault token account and time lock work on devnet with `@sqds/multisig` on `@solana/web3.js` 1.x | Jesse | Yes on a local validator with the devnet Squads program cloned: create, 2 approvals, time lock, execute. | Plain multisig, bot hot wallet |
+| 5 | Token-2022 NonTransferable + MetadataPointer + TokenMetadata (+ PermanentDelegate) on one mint via JS; name and status updates at fixed width | Jesse | **Yes on devnet** (Oct 10): all four extensions on one mint; name and status `ACTV` -> `PAID` -> `ACTV`. | Drop PermanentDelegate |
+| 6 | Purchase transaction fits under 1,232 bytes with our metadata | Jesse | **Yes on devnet:** create 974 bytes, purchase 670 bytes. | Fewer metadata fields; terms in the `uri` JSON |
+| 7 | Squads v4 multisig, vault token account and time lock work on devnet with `@sqds/multisig` on `@solana/web3.js` 1.x | Jesse | **Yes on devnet:** multisig created; 100 aUSD moved vault -> bot through create, 2 approvals, 60 s time lock, execute. | Plain multisig, bot hot wallet |
 | 8 | Tiger Cloud free-tier limits; whether the Tiger Data track requires Tiger Cloud | Ezekiel | | Local Docker TimescaleDB |
 | 9 | Devpost allows one project in several tracks | Jesse | | Pick Overall, Solana, Tiger Data first |
 | 10 | Phantom on the demo phone works in Testnet Mode and shows the policy name (`Atlas Policy ACTV` / `PAID`) | Jesse | | Phone view is the money moment anyway |
@@ -38,6 +38,8 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | No metadata for aUSD | Classic SPL has no metadata extension; Metaplex costs an hour; the phone view is the money moment | Jesse |
 | Oct 10 | `GET /replay/status` added to the engine contract | v3 omitted it; every page needs the current run and clock | Jesse |
 | Oct 10 | Plan v3.1: hosting, Caddy, domain and deploys move to Jesse; timeline re-based from Hour 4.5, G2 at Hour 6.5 | Jesse's code was done; Zeke was the bottleneck | Both |
+| Oct 10 | Policy holder is read from the expected owner's token account, not `getTokenLargestAccounts` | Public devnet RPC rate-limits that method; it broke the status round trip | Jesse |
+| Oct 10 | Use a provider devnet RPC URL (Helius or QuickNode free tier) for the demo | Public devnet returns 429s under the confirmer and bot load | Jesse |
 | Oct 10 | Commits go straight to `main` | Faster than pull requests during the build | Jesse |
 | Oct 10 | Chain service listens on 127.0.0.1 only | The gateway is the only public entry point | Jesse |
 | Oct 10 | No Vultr: host on the demo laptop behind Cloudflare Tunnel; keep the GoDaddy domain via Cloudflare DNS; Vultr track dropped | Team decision; no server to run, one command starts the stack | Jesse |

@@ -13,11 +13,15 @@ export function priorityFeeIx(): TransactionInstruction {
   return ComputeBudgetProgram.setComputeUnitPrice({ microLamports: env.priorityMicroLamports });
 }
 
+/**
+ * Send with a priority fee. Retries expired blockhashes and RPC rate limits (429) with
+ * exponential backoff; the public devnet RPC rate-limits hard, so use a provider URL for the demo.
+ */
 export async function sendIxs(
   connection: Connection,
   ixs: TransactionInstruction[],
   signers: Signer[],
-  attempts = 3,
+  attempts = 6,
 ): Promise<string> {
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
@@ -30,7 +34,8 @@ export async function sendIxs(
       const msg = String(err);
       const retryable = /blockhash|expired|timed out|429|Too Many Requests|fetch failed/i.test(msg);
       if (!retryable) throw err;
-      await new Promise((r) => setTimeout(r, 1_000 * (i + 1)));
+      const rateLimited = /429|Too Many Requests/i.test(msg);
+      await new Promise((r) => setTimeout(r, rateLimited ? 2_000 * 2 ** i : 1_000 * (i + 1)));
     }
   }
   throw lastError;

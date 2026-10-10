@@ -35,7 +35,7 @@ cp .env.example .env   # then edit
 
 In `.env` set at least: `DATABASE_URL` (Tiger), `ADMIN_TOKEN` (same as Ezekiel's),
 `DEMO_WALLETS` (demo wallets and your phone, comma separated), `PURCHASE_FLOW=a`,
-`PUBLIC_BASE_URL` (the public URL from step 4 or 5), `SOLANA_RPC_URL` (a devnet provider URL if you have one).
+`PUBLIC_BASE_URL` (the public URL from step 4 or 5), `SOLANA_RPC_URL` (a free Helius or QuickNode devnet URL; the public devnet RPC returns 429s under load).
 
 ## 3. Build and start
 

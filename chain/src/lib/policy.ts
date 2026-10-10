@@ -230,18 +230,30 @@ export interface OnChainPolicy {
   uri: string;
 }
 
-export async function readPolicy(connection: Connection, mint: PublicKey): Promise<OnChainPolicy> {
+/**
+ * Read a policy's on-chain state. Pass the expected owner whenever it is known (buyer, DB owner):
+ * policies are non-transferable and minted into the buyer's associated account, so checking that
+ * one account is exact and cheap. Without it we fall back to getTokenLargestAccounts, which the
+ * public devnet RPC rate-limits hard; avoid that path in loops.
+ */
+export async function readPolicy(connection: Connection, mint: PublicKey, expectedOwner?: PublicKey): Promise<OnChainPolicy> {
   const [mintInfo, metadata] = await Promise.all([
     getMint(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID),
     getTokenMetadata(connection, mint, "confirmed", TOKEN_2022_PROGRAM_ID),
   ]);
   let holder: string | null = null;
   if (mintInfo.supply > 0n) {
-    const largest = await connection.getTokenLargestAccounts(mint, "confirmed");
-    const top = largest.value.find((a) => a.uiAmount === 1);
-    if (top) {
-      const account = await getAccount(connection, top.address, "confirmed", TOKEN_2022_PROGRAM_ID);
-      holder = account.owner.toBase58();
+    if (expectedOwner) {
+      try {
+        const account = await getAccount(connection, policyAta(mint, expectedOwner), "confirmed", TOKEN_2022_PROGRAM_ID);
+        if (account.amount === 1n) holder = account.owner.toBase58();
+      } catch {
+        holder = null; // no account for that owner: not the holder
+      }
+    } else {
+      const largest = await connection.getTokenLargestAccounts(mint, "confirmed");
+      const top = largest.value.find((a) => a.uiAmount === 1);
+      if (top) holder = (await getAccount(connection, top.address, "confirmed", TOKEN_2022_PROGRAM_ID)).owner.toBase58();
     }
   }
   return {
