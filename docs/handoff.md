@@ -68,5 +68,5 @@ Fill these in as they are created. Public addresses only; never paste private ke
 | Squads vault | |
 | Bot public key | |
 | Bond token mint | |
-| Demo policyholder wallets | |
+| Demo policyholder wallets | Jesse phone (Phantom): `72t74q3nTQDM6t9CqNMDhSiL9ykzxPnoQKudDs3Bu5co` |
 | Investor wallet | |
