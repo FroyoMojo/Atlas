@@ -56,25 +56,43 @@ class Conn:
 
 
 def _url() -> str:
-    # DATABASE_URL, or TIMESCALE_SERVICE_URL exactly as Tiger Cloud's credentials file names it.
+    """DATABASE_URL, or TIMESCALE_SERVICE_URL as Tiger's credentials file names it, or the PG*
+    variables from the same file (PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE)."""
     url = os.environ.get("DATABASE_URL") or os.environ.get("TIMESCALE_SERVICE_URL")
-    if not url or "user:password@host" in url:
-        sys.exit("No database URL. Put the Tiger Cloud line (TIMESCALE_SERVICE_URL=...) or "
-                 "DATABASE_URL=... in .env at the repo root.")
-    return url
+    if url and "user:password@host" not in url:
+        return url
+    if os.environ.get("PGHOST"):
+        from urllib.parse import quote
+        return (f"postgres://{quote(os.environ.get('PGUSER', 'tsdbadmin'))}:"
+                f"{quote(os.environ.get('PGPASSWORD', ''))}@{os.environ['PGHOST']}:"
+                f"{os.environ.get('PGPORT', '5432')}/{os.environ.get('PGDATABASE', 'tsdb')}"
+                f"?sslmode={os.environ.get('PGSSLMODE', 'require')}")
+    sys.exit("No database URL. Put the Tiger Cloud line (TIMESCALE_SERVICE_URL=...) or "
+             "DATABASE_URL=... in .env at the repo root.")
 
 
 def connect() -> Conn:
     url = _url()
-    if psycopg is not None:
-        return Conn(psycopg.connect(url, autocommit=True))
     u = urlparse(url)
-    sslmode = parse_qs(u.query).get("sslmode", ["require"])[0]
-    raw = pg8000.dbapi.connect(
-        user=unquote(u.username or ""), password=unquote(u.password or ""),
-        host=u.hostname, port=u.port or 5432, database=(u.path or "/postgres").lstrip("/"),
-        ssl_context=ssl.create_default_context() if sslmode != "disable" else None,
-        timeout=600)
+    password = unquote(u.password) if u.password else os.environ.get("PGPASSWORD", "")
+    if not password:
+        sys.exit("The database URL has no password. It must look like "
+                 "postgres://tsdbadmin:PASSWORD@host:port/tsdb?sslmode=require. Copy the whole "
+                 "TIMESCALE_SERVICE_URL line from Tiger's credentials file (the password sits "
+                 "between 'tsdbadmin:' and '@'), or add the PGPASSWORD line from that file.")
+    try:
+        if psycopg is not None:
+            return Conn(psycopg.connect(url if u.password else
+                                        url.replace("@", f":{password}@", 1), autocommit=True))
+        sslmode = parse_qs(u.query).get("sslmode", ["require"])[0]
+        raw = pg8000.dbapi.connect(
+            user=unquote(u.username or ""), password=password, host=u.hostname,
+            port=u.port or 5432, database=(u.path or "/postgres").lstrip("/"),
+            ssl_context=ssl.create_default_context() if sslmode != "disable" else None,
+            timeout=600)
+    except Exception as e:  # never echo the URL: it carries the password
+        sys.exit(f"Could not connect to {u.hostname}:{u.port} as {u.username} "
+                 f"({type(e).__name__}): {str(e)[:300]}")
     raw.autocommit = True
     return Conn(raw)
 
