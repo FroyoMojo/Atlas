@@ -149,12 +149,12 @@ SELECT add_continuous_aggregate_policy('gauge_hourly',
 -- ---------- columnstore (TimescaleDB 2.18+) [F19] ----------
 -- Decades of backfill compress; future-dated replay rows stay in the rowstore.
 -- On an older service use instead:
---   ALTER TABLE gauge_readings SET (timescaledb.compress, timescaledb.compress_segmentby = 'gauge_id, source',
+--   ALTER TABLE gauge_readings SET (timescaledb.compress, timescaledb.compress_segmentby = 'gauge_id, source, run_id',
 --                                   timescaledb.compress_orderby = 'event_time DESC');
 --   SELECT add_compression_policy('gauge_readings', INTERVAL '7 days', if_not_exists => true);
 ALTER TABLE gauge_readings SET (
   timescaledb.enable_columnstore = true,
-  timescaledb.segmentby = 'gauge_id, source',
+  timescaledb.segmentby = 'gauge_id, source, run_id',
   timescaledb.orderby = 'event_time DESC');
 CALL add_columnstore_policy('gauge_readings', after => INTERVAL '7 days', if_not_exists => true);
 

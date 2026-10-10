@@ -53,8 +53,8 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [ ] Jesse: on the demo laptop, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
 - [x] Schema: `psql "$DATABASE_URL" -f engine/sql/schema.sql`, then `cd chain && npm run migrate`.
 - [ ] Ezekiel: load `gauges`, `annual_peaks`, live `gauge_readings` and `sim_policies`; review the reference economics in [engine/README.md](../engine/README.md).
-- [ ] Ezekiel: replay streamer (`REPLAY_CMD`, gets `RUN_ID`) writing `gauge_readings` and `runs.clock`; events with the preimage per [evidence.md](evidence.md) (`engine/app/evidence.py` has it).
-- [ ] Ezekiel: set `storms.f_int` at storm open and `f_fin` + `closed` at close; the bot pays from those.
+- [x] Replay streamer with events, storms, `f_int`/`f_fin` and the sales freeze (`engine/app/replay.py`); tested on real Harvey data.
+- [ ] Ezekiel: confirm the demo gauges and trigger levels (NWS flood stage), then load them: `python3 data/usgs.py gauges ...`, `peaks`, `iv` ([data/README.md](../data/README.md)). Whiteoak went dark in Harvey: not a demo gauge.
 - [x] `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
 - [ ] Jesse: run the dashboard with `VITE_USE_MOCKS=false` once Tiger has data.
 - [ ] Both: G2 with [`tools/g2_storm.py`](../tools/g2_storm.py) on devnet.

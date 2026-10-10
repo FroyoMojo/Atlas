@@ -7,6 +7,7 @@ transaction; reset goes through the chain service's POST /chain/reset.
 """
 import datetime as dt
 import hmac
+import logging
 import os
 import shlex
 import subprocess
@@ -18,10 +19,12 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import db, pricing, settings
+from . import db, pricing, replay, settings
 from .db import num
 from .evidence import self_test
 
+logging.getLogger("atlas").setLevel(logging.INFO)
+logging.getLogger("atlas").addHandler(logging.StreamHandler())
 self_test()  # refuse to start if the evidence format drifted from docs/evidence.md
 
 
@@ -141,7 +144,7 @@ def replay_status():
         return {"run_id": None, "status": None, "clock": None}
     clock = run["clock"] or (db.one(
         "SELECT max(event_time) AS t FROM gauge_readings WHERE run_id = %s", (run["run_id"],)) or {}).get("t")
-    return {"run_id": run["run_id"], "status": run["status"], "clock": iso(clock)}
+    return {"run_id": run["run_id"], "status": run["status"], "clock": iso(clock), "streaming": replay.running()}
 
 
 @app.get("/gauges")
@@ -374,6 +377,7 @@ _streamer: subprocess.Popen | None = None
 
 def _stop_streamer() -> None:
     global _streamer
+    replay.stop_thread()
     if _streamer and _streamer.poll() is None:
         _streamer.terminate()
         try:
@@ -396,11 +400,13 @@ def replay_start(x_admin_token: str | None = Header(default=None)):
         """INSERT INTO runs (run_id, source, started_wall, status, opening_vault, opening_float)
            VALUES (%s, 'replay', %s, 'running', %s, %s)""",
         (run_id, now, bal["vault"] if bal else None, bal["float"] if bal else None))
-    if settings.REPLAY_CMD:
+    if settings.REPLAY_CMD:   # an external streamer instead of the built-in one
         _streamer = subprocess.Popen(shlex.split(settings.REPLAY_CMD), env={**os.environ, "RUN_ID": run_id},
                                      cwd=settings.ROOT)
+    else:
+        replay.start_thread(run_id)
     return {"run_id": run_id, "opening": {"vault": bal["vault"], "float": bal["float"]} if bal else None,
-            "streamer": bool(settings.REPLAY_CMD)}
+            "streamer": settings.REPLAY_CMD or "built-in"}
 
 
 @app.post("/replay/reset")

@@ -1,6 +1,6 @@
 # Atlas: parametric flood protection for Houston
 
-> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on a local validator, and laptop hosting (`deploy/`) is ready. Devnet setup is done. The engine's schema and read API (`engine/`) are built and tested. Next: the public URL, the phone test, and Ezekiel's ingestion, replay and storm logic (`data/`). The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
+> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on a local validator, and laptop hosting (`deploy/`) is ready. Devnet setup is done. The engine's schema and read API (`engine/`) are built and tested. The replay streamer replays real Harvey data. Next: the public URL, the phone test, and Ezekiel's final gauges and triggers. The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
 
 Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Ezekiel (data and risk) and Jesse (chain, product and hosting).
 
@@ -39,8 +39,8 @@ web/      Dashboard and phone view (Vite + React)                              [
 deploy/   Laptop hosting: gateway + Cloudflare Tunnel guide                     [built]
 tools/    g2_storm.py: opens a storm for Gate G2 before the replay exists       [built]
 docs/     Plan, API contract, evidence format, decisions, demo, guides
-data/     Ingestion, cache, replay streamer (Python)                           [Ezekiel, next]
-engine/   FastAPI over Tiger: schema, read API, pricing, stress, replay controls [built; events/storms: Ezekiel]
+data/     USGS loader: gauges, annual peaks, Harvey window (Python)            [built; live poller: Ezekiel]
+engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms  [built]
 ```
 
 ## Docs

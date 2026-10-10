@@ -91,7 +91,7 @@ def client():
 
 
 def test_replay_status(client):
-    assert client.get("/replay/status").json() == {"run_id": "run-t", "status": "running", "clock": "2026-10-11T06:00:00Z"}
+    assert client.get("/replay/status").json() == {"run_id": "run-t", "status": "running", "clock": "2026-10-11T06:00:00Z", "streaming": False}
 
 
 def test_gauges(client):
