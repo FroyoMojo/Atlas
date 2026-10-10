@@ -59,6 +59,8 @@ See the architecture diagram in [the build plan](docs/plan/Atlas_Build_Plan_v2.p
 
 - Chain service and payout bot: [chain/README.md](chain/README.md)
 - Dashboard and phone view: [web/README.md](web/README.md)
+- Deploy to Vultr: [deploy/README.md](deploy/README.md); phone test: [docs/phone-test.md](docs/phone-test.md)
+- G2 storm script: [tools/g2_storm.py](tools/g2_storm.py)
 - Engine: not written yet
 
 ## Limitations (short version)

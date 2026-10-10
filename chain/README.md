@@ -90,6 +90,7 @@ Ledger entries and reconciliation: see `docs/api.md`.
 solana-test-validator --reset --url devnet \
   --clone-upgradeable-program SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf \
   --clone BSTq9w3kZwNwpBXJEvTZz2G9ZTNyKBvoSeXMvwb4cNZr
+# Add --gossip-port 8011 if anything (e.g. the engine) already uses port 8000.
 # SOLANA_RPC_URL=http://127.0.0.1:8899, then the setup above.
 # Throwaway Postgres only: npm run migrate -- --dev-stub (creates v3 engine tables; never on Tiger).
 ```

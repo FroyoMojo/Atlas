@@ -48,3 +48,7 @@ CREATE TABLE IF NOT EXISTS ledger (
 CREATE TABLE IF NOT EXISTS replay_alerts (
   run_id TEXT, gauge_id TEXT, starts_at TIMESTAMPTZ, ends_at TIMESTAMPTZ, kind TEXT
 );
+
+-- v3.1 [V3]: opening balances recorded at Start for per-run reconciliation.
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_vault NUMERIC;
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_float NUMERIC;
