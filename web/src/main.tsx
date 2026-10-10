@@ -10,6 +10,7 @@ import ReactDOM from "react-dom/client";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { config } from "./config";
+import { AdminPage } from "./pages/AdminPage";
 import { GaugePage } from "./pages/GaugePage";
 import { MapPage } from "./pages/MapPage";
 import { PhonePage } from "./pages/PhonePage";
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/gauge/:id" element={<GaugePage />} />
                 <Route path="/pool" element={<PoolPage />} />
                 <Route path="/verify" element={<VerifyPage />} />
+                <Route path="/admin" element={<AdminPage />} />
               </Route>
             </Routes>
           </HashRouter>

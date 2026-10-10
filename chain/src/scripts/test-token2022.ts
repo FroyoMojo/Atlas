@@ -3,7 +3,7 @@
 //   npm run test:token2022 -- [--no-delegate]
 import { Transaction } from "@solana/web3.js";
 import { connection, explorer, loadKeypair, loadState } from "../env.js";
-import { buildPurchaseTx, planPolicyMint, readPolicy, setPolicyStatusIx, termsHash } from "../lib/policy.js";
+import { buildPurchaseTx, planPolicyMint, readPolicy, setPolicyStatusIxs, termsHash } from "../lib/policy.js";
 import { priorityFeeIx, sendIxs } from "../lib/tx.js";
 import { toUnits } from "../lib/ausd.js";
 import { PublicKey } from "@solana/web3.js";
@@ -29,10 +29,10 @@ const state = loadState();
 if (state.ausdMint && state.vault) {
   const buyer = loadKeypair("holder1");
   const tx = await buildPurchaseTx({
-    connection, buyer: buyer.publicKey, policyMint: plan.mint.publicKey, policyId, issuer,
+    connection, buyer: buyer.publicKey, policyMint: plan.mint.publicKey, policyId, issuer: issuer.publicKey,
     ausdMint: new PublicKey(state.ausdMint), vault: new PublicKey(state.vault), premiumUnits: toUnits(1),
   });
-  tx.partialSign(buyer);
+  tx.partialSign(issuer, buyer);
   const raw = tx.serialize();
   console.log(`purchase tx size: ${raw.length} / 1232 bytes`);
   const sig = await connection.sendRawTransaction(raw);
@@ -42,8 +42,10 @@ if (state.ausdMint && state.vault) {
   console.log("skip purchase test: run setup:ausd, fund and setup:multisig first");
 }
 
-await sendIxs(connection, [setPolicyStatusIx(plan.mint.publicKey, issuer.publicKey, "paid")], [issuer]);
-await sendIxs(connection, [setPolicyStatusIx(plan.mint.publicKey, issuer.publicKey, "active")], [issuer]);
+await sendIxs(connection, setPolicyStatusIxs(plan.mint.publicKey, issuer.publicKey, "PAID"), [issuer]);
+const paid = await readPolicy(connection, plan.mint.publicKey);
+console.log(`after PAID: name="${paid.name}" status=${paid.fields.status}`);
+await sendIxs(connection, setPolicyStatusIxs(plan.mint.publicKey, issuer.publicKey, "ACTV"), [issuer]);
 const p = await readPolicy(connection, plan.mint.publicKey);
-console.log(`read back: supply=${p.supply} holder=${p.holder} fields=${JSON.stringify(p.fields)}`);
-console.log("status paid -> active round trip OK");
+console.log(`read back: name="${p.name}" supply=${p.supply} holder=${p.holder} fields=${JSON.stringify(p.fields)}`);
+console.log("name + status ACTV -> PAID -> ACTV round trip OK");

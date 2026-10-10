@@ -5,6 +5,7 @@ export interface Quote {
   premium: number;
   p_payout: number;
   band: [number, number];
+  k?: number;
   waiting_days: number;
   sales_open: boolean;
   reason?: string | null;
@@ -38,7 +39,7 @@ export async function getQuote(gaugeId: string, payout: number): Promise<Quote &
 /** Bond NAV per unit from the engine's /pool. 1.0 if unavailable. */
 export async function getNavPerUnit(): Promise<number> {
   try {
-    const pool = await getJson<{ onchain?: { nav_per_unit?: number } }>("/pool");
+    const pool = await getJson<{ onchain?: { nav_per_unit?: number } }>("/pool"); // NAV from the ledger (plan v3 7.4)
     return pool.onchain?.nav_per_unit ?? 1;
   } catch {
     return 1;

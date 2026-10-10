@@ -21,6 +21,7 @@ import {
   getTokenMetadata,
 } from "@solana/spl-token";
 import {
+  Field,
   TokenMetadata,
   createInitializeInstruction,
   createUpdateFieldInstruction,
@@ -44,11 +45,16 @@ export function termsHash(gaugeId: string): string {
   return createHash("sha256").update(`atlas-terms-v1|${gaugeId}`).digest("hex");
 }
 
-export type PolicyStatus = "active" | "paid" | "expired";
+// Plan v3 8.2: fixed-width status codes, shown in the token name because Phantom displays the
+// name but not custom fields. Fixed width means updates never grow the account.
+export type PolicyStatus = "ACTV" | "PAID" | "EXPD";
 
-// Extra metadata bytes paid for up front so a status change (e.g. "paid" -> "active" on reset)
-// never needs a rent top-up.
-const METADATA_SLACK_BYTES = 64;
+export function policyName(status: PolicyStatus): string {
+  return `Atlas Policy ${status}`;
+}
+
+// Pre-funded metadata space (plan v3 F13): rent for 256 extra bytes is paid at creation.
+const METADATA_SLACK_BYTES = 256;
 
 export interface PolicyFields {
   policyId: string;
@@ -82,13 +88,13 @@ export async function planPolicyMint(
   const metadata: TokenMetadata = {
     mint: mint.publicKey,
     updateAuthority: issuer,
-    name: `Atlas policy ${fields.policyId}`,
+    name: policyName("ACTV"),
     symbol: "ATLAS",
     uri: fields.uri,
     additionalMetadata: [
       ["policy_id", fields.policyId],
       ["gauge_id", fields.gaugeId],
-      ["status", "active"],
+      ["status", "ACTV"],
       ["terms_hash", fields.termsHash],
     ],
   };
@@ -136,14 +142,24 @@ export async function planPolicyMint(
   return { mint, instructions: ixs };
 }
 
-export function setPolicyStatusIx(mint: PublicKey, issuer: PublicKey, status: PolicyStatus): TransactionInstruction {
-  return createUpdateFieldInstruction({
-    programId: TOKEN_2022_PROGRAM_ID,
-    metadata: mint,
-    updateAuthority: issuer,
-    field: "status",
-    value: status,
-  });
+/** Two metadata updates: the visible name and the status field. Signer: issuer. */
+export function setPolicyStatusIxs(mint: PublicKey, issuer: PublicKey, status: PolicyStatus): TransactionInstruction[] {
+  return [
+    createUpdateFieldInstruction({
+      programId: TOKEN_2022_PROGRAM_ID,
+      metadata: mint,
+      updateAuthority: issuer,
+      field: Field.Name,
+      value: policyName(status),
+    }),
+    createUpdateFieldInstruction({
+      programId: TOKEN_2022_PROGRAM_ID,
+      metadata: mint,
+      updateAuthority: issuer,
+      field: "status",
+      value: status,
+    }),
+  ];
 }
 
 export function policyAta(mint: PublicKey, owner: PublicKey): PublicKey {
@@ -155,7 +171,7 @@ export interface PurchaseParams {
   buyer: PublicKey;
   policyMint: PublicKey;
   policyId: string;
-  issuer: Keypair;
+  issuer: PublicKey;
   ausdMint: PublicKey;
   vault: PublicKey;
   premiumUnits: bigint;
@@ -163,7 +179,8 @@ export interface PurchaseParams {
 
 /**
  * One atomic transaction: premium to the vault + mint the policy + lock supply at 1.
- * The issuer partially signs; the buyer signs as fee payer and sends it.
+ * Returned unsigned. Flow A: the server partially signs as issuer, the wallet signs and sends.
+ * Flow B: the wallet signs first, the server checks the message hash, co-signs and sends.
  */
 export async function buildPurchaseTx(p: PurchaseParams): Promise<Transaction> {
   const buyerPolicyAta = policyAta(p.policyMint, p.buyer);
@@ -186,10 +203,10 @@ export async function buildPurchaseTx(p: PurchaseParams): Promise<Transaction> {
       [],
       AUSD_PROGRAM_ID,
     ),
-    createMintToInstruction(p.policyMint, buyerPolicyAta, p.issuer.publicKey, 1, [], TOKEN_2022_PROGRAM_ID),
+    createMintToInstruction(p.policyMint, buyerPolicyAta, p.issuer, 1, [], TOKEN_2022_PROGRAM_ID),
     createSetAuthorityInstruction(
       p.policyMint,
-      p.issuer.publicKey,
+      p.issuer,
       AuthorityType.MintTokens,
       null,
       [],
@@ -201,7 +218,6 @@ export async function buildPurchaseTx(p: PurchaseParams): Promise<Transaction> {
   tx.feePayer = p.buyer;
   tx.recentBlockhash = blockhash;
   tx.lastValidBlockHeight = lastValidBlockHeight;
-  tx.partialSign(p.issuer);
   return tx;
 }
 

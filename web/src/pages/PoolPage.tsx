@@ -3,18 +3,20 @@ import { useState } from "react";
 import { api } from "../api";
 import { explorer, short } from "../config";
 import { usePoll } from "../usePoll";
-import { useSendServerTx } from "../wallet";
+import { useServerTx } from "../wallet";
 
 const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
 export function PoolPage() {
-  const { data: pool, error } = usePoll(api.pool, 1500);
-  const { data: stress } = usePoll(api.stress, 30_000);
-  const { data: events } = usePoll(() => api.events(null), 1500);
-  const payouts = events?.flatMap((e) => e.payouts.map((p) => ({ ...p, gauge: e.gauge_id, factor: e.pay_factor }))) ?? [];
+  const { data: replay } = usePoll(api.replayStatus, 1000);
+  const runId = replay?.run_id ?? null;
+  const { data: pool, error } = usePoll(() => api.pool(runId), 1500, [runId]);
+  const { data: harvey } = usePoll(() => api.stress("harvey"), 30_000);
+  const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
+  const payouts = storms?.flatMap((s) => s.payouts.map((p) => ({ ...p, storm: s.storm_id }))) ?? [];
 
   const { publicKey } = useWallet();
-  const sendServerTx = useSendServerTx();
+  const { bond } = useServerTx();
   const [amount, setAmount] = useState(5000);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -22,7 +24,7 @@ export function PoolPage() {
     if (!publicKey) return setMsg("Connect a wallet first.");
     try {
       const { transaction, nav_per_unit } = await api.bondDepositTx(publicKey.toBase58(), amount);
-      const sig = await sendServerTx(transaction);
+      const sig = await bond(transaction);
       setMsg(`Deposited ${amount} aUSD at NAV ${nav_per_unit}. ${explorer(sig)}`);
     } catch (e) {
       setMsg(String((e as Error).message ?? e));
@@ -34,33 +36,42 @@ export function PoolPage() {
       {error && <p className="error">{error}</p>}
       <div className="grid-2">
         <div className="card">
-          <h3>On-chain (devnet)</h3>
-          <p className="muted small">Real vault and token balances.</p>
+          <div className="row">
+            <h3 className="grow">On-chain (devnet)</h3>
+            {pool && <span className={`chip ${pool.onchain.reconciled ? "good" : "live"}`}>{pool.onchain.reconciled ? "Reconciled" : "Not reconciled"}</span>}
+          </div>
+          <p className="muted small">Real vault, float and token balances, from the ledger for this run.</p>
           {pool && (
             <dl className="stats">
-              <dt>Premium reserve</dt><dd>{fmt(pool.onchain.reserve)} aUSD</dd>
-              <dt>Bond capital</dt><dd>{fmt(pool.onchain.bond_capital)} aUSD</dd>
-              <dt>Bond NAV per unit</dt><dd className={pool.onchain.nav_per_unit < 1 ? "down" : ""}>{pool.onchain.nav_per_unit.toFixed(4)}</dd>
+              <dt>Seeded capital (not premiums)</dt><dd>{fmt(pool.onchain.seeded_capital)} aUSD</dd>
               <dt>Premiums in</dt><dd>{fmt(pool.onchain.premiums_in)} aUSD</dd>
+              <dt>Reserve</dt><dd>{fmt(pool.onchain.reserve)} aUSD</dd>
+              <dt>Bond capital</dt><dd>{fmt(pool.onchain.bond_capital)} aUSD</dd>
+              <dt>Payout float</dt><dd>{fmt(pool.onchain.float)} aUSD</dd>
+              <dt>Bond NAV per unit</dt><dd className={pool.onchain.nav_per_unit < 1 ? "down" : ""}>{pool.onchain.nav_per_unit.toFixed(4)}</dd>
               <dt>Payouts out</dt><dd>{fmt(pool.onchain.payouts_out)} aUSD</dd>
             </dl>
           )}
         </div>
         <div className="card">
           <h3>Simulated book</h3>
-          <p className="muted small">A simulated portfolio used for catastrophe numbers. Not real sales.</p>
+          <p className="muted small">A simulated 2,000-policy portfolio for catastrophe numbers. Not real sales.</p>
           {pool && (
             <dl className="stats">
               <dt>Policies</dt><dd>{fmt(pool.simulated.policies)}</dd>
-              <dt>Aggregate loss</dt><dd>${fmt(pool.simulated.aggregate_loss)}</dd>
+              <dt>Worst observed year loss</dt><dd>${fmt(pool.simulated.worst_year_loss)}</dd>
+              <dt>Harvey loss (this run)</dt><dd>${fmt(pool.simulated.harvey_loss)}</dd>
               <dt>Reserve used</dt><dd>${fmt(pool.simulated.reserve_used)}</dd>
               <dt>Bond used</dt><dd>${fmt(pool.simulated.bond_used)}</dd>
-              <dt>Pro-rata cut</dt><dd>{(pool.simulated.prorata_cut * 100).toFixed(0)}%</dd>
+              <dt>Interim share f_int</dt><dd>{pool.simulated.f_int.toFixed(2)}</dd>
+              <dt>Final share f_fin</dt><dd>{pool.simulated.f_fin.toFixed(2)}</dd>
+              <dt>Investor loss</dt><dd>{pool.simulated.investor_loss_pct}%</dd>
             </dl>
           )}
-          {stress && (
+          {harvey && (
             <p className="muted small">
-              Full Harvey stress test: ${fmt(stress.aggregate_loss)} loss, bond investors lose {stress.investor_loss_pct}%.
+              Full Harvey stress test: ${fmt(harvey.aggregate_loss)} loss, final share {harvey.f_fin.toFixed(2)}, bond investors lose{" "}
+              {harvey.investor_loss_pct}%.
             </p>
           )}
         </div>
@@ -71,15 +82,15 @@ export function PoolPage() {
         {!payouts.length && <p className="muted">No payouts yet.</p>}
         <table className="table">
           <thead>
-            <tr><th>Gauge</th><th>Holder</th><th>Amount</th><th>Pay factor</th><th>Transaction</th></tr>
+            <tr><th>Storm</th><th>Policy</th><th>Kind</th><th>Amount</th><th>Transaction</th></tr>
           </thead>
           <tbody>
             {payouts.map((p) => (
               <tr key={p.tx_sig}>
-                <td>{p.gauge}</td>
-                <td>{short(p.owner)}</td>
+                <td>{p.storm}</td>
+                <td>{short(p.policy)}</td>
+                <td>{p.kind === "trueup" ? "true-up" : "interim"}</td>
                 <td>{p.amount} aUSD</td>
-                <td>{p.factor.toFixed(3)}</td>
                 <td><a href={explorer(p.tx_sig)} target="_blank" rel="noreferrer">{short(p.tx_sig, 6)}</a></td>
               </tr>
             ))}
@@ -89,7 +100,7 @@ export function PoolPage() {
 
       <div className="card">
         <h3>Invest in the catastrophe bond</h3>
-        <p className="muted small">Earns the coupon from premiums; absorbs losses after the reserve. Units are issued at NAV.</p>
+        <p className="muted small">Coupons from premiums accrue into NAV; the bond absorbs losses after the reserve. Units are issued at NAV.</p>
         <div className="row">
           <input type="number" value={amount} min={1} onChange={(e) => setAmount(Number(e.target.value))} />
           <button className="primary" onClick={deposit}>Deposit aUSD</button>

@@ -1,57 +1,74 @@
-# API contract
+# API contract (plan v3 section 4.2)
 
-Agreed shapes between the engine (Ezekiel) and the dashboard and chain services (Jesse). The dashboard builds against mock JSON in `/web/mocks` with these exact shapes until the real endpoints are live. Field names can change only if both of us agree, at Gate G1 at the latest.
+Agreed shapes between the engine (Ezekiel, read-only FastAPI) and the chain service and web app
+(Jesse). The web app builds against mocks with these exact shapes until the engine is live.
+Python never builds or signs a Solana transaction; only the chain service and the bot hold keys.
 
-Every read that involves the replay takes a `run_id`.
+All engine reads take `run_id` (default: the latest run). Times are ISO 8601 UTC. Money is aUSD
+as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 
-| Endpoint | Returns | Owner |
+## Engine (FastAPI, Ezekiel, default `:8000`)
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /gauges?run_id=` | `[{gauge_id, name, lat, lon, trigger_ft, latest_ft, status, demo_ready}]`; status `normal` / `near` / `triggered` |
+| `GET /gauges/{id}/series?run_id=` | `{points: [{event_time, stage_ft}], trigger_ft, rejected_count}` |
+| `GET /quote?gauge=&payout=&run_id=` | `{premium, p_payout, band: [p5, p95], k, waiting_days, sales_open, reason}` |
+| `GET /pool?run_id=` | `{onchain: {seeded_capital, premiums_in, reserve, bond_capital, float, nav_per_unit, payouts_out, reconciled}, simulated: {policies, worst_year_loss, harvey_loss, reserve_used, bond_used, f_int, f_fin, investor_loss_pct}}` |
+| `GET /storms?run_id=` | `[{storm_id, status, f_int, f_fin, events: [{event_id, gauge_id, opened_at, closed_at, value, evidence_hash, preimage}], payouts: [{policy, kind, amount, tx_sig}]}]`. `payouts` = confirmed rows of `payout_intents`. |
+| `GET /stress?scenario=harvey\|worst_year` | `{aggregate_loss, reserve_used, bond_used, f_fin, investor_loss_pct}` |
+| `GET /ledger?run_id=` | Ledger rows and totals by account |
+| `GET /replay/status` | `{run_id, status, clock}`. **Proposed addition**: v3 omits it, but every page needs the current run and its clock. |
+| `POST /replay/start` | `{run_id}`. Header `X-Admin-Token`. Records the run's opening balances from `GET /chain/balances`. |
+| `POST /replay/reset` | `{run_id}`. Header `X-Admin-Token`. Stops the run, marks it `reset`, calls `POST /chain/reset`, then reconciles. |
+
+## Chain service (TypeScript, Jesse, default `:8787`)
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/actions/buy?gauge=&payout=` | Solana Action metadata with the live quote |
+| `POST /api/actions/buy?gauge=&payout=&flow=a\|b` | Body `{account}`. Flow A: transaction already signed by the server. Flow B: unsigned; the wallet signs, then `POST /api/purchase/submit`. 5/min/IP. Demo allowlist; one reservation per wallet. |
+| `POST /api/purchase/submit` | Flow B. Body `{transaction}` (wallet-signed, base64). Co-signs only if the message hash matches what the server built; sends; returns `{signature}`. |
+| `POST /api/bond/deposit` | Body `{account, amount}`. Returns an unsigned transaction; the wallet signs, then `POST /api/bond/submit`. |
+| `POST /api/bond/submit` | Body `{transaction}`. Checks, co-signs, sends, writes the ledger entry. |
+| `GET /policies?owner=` | `[{policy_mint, gauge_id, gauge_name, payout, status, paid_amount, last_payout: {amount, kind, tx_sig, at}}]` |
+| `GET /policies/:mint/onchain` | On-chain name, metadata fields, supply, holder |
+| `GET /chain/balances` | `{vault, float, bond_units, ausd_supply, at}` for reconciliation |
+| `POST /chain/reset` | Localhost only, header `X-Admin-Token`, body `{run_id}`. Mints aUSD to refill vault and float to the snapshot, sets demo policies to `ACTV` (name and status), releases reservations, writes `seeded` ledger rows. Returns `{before, after, policies_reset}`. |
+| `GET /terms/:policyId.json`, `/actions.json`, `/icon.svg`, `/health` | Terms JSON for metadata `uri`, Actions rules, icon, health |
+
+## Tables: who writes what
+
+| Table | Engine (Ezekiel) | Chain side (Jesse) |
 | --- | --- | --- |
-| `GET /gauges` | `[{gauge_id, name, lat, lon, trigger_ft, latest_ft, status}]`, where `status` is `normal`, `near` or `triggered` | Ezekiel |
-| `GET /gauges/{id}/series?run_id=` | `{trigger_ft, points: [{time, stage_ft}]}` | Ezekiel |
-| `GET /quote?gauge=&payout=` | `{premium, p_payout, band: [p5, p95], waiting_days, sales_open, reason}` | Ezekiel |
-| `GET /pool` | `{onchain: {reserve, bond_capital, nav_per_unit, premiums_in, payouts_out}, simulated: {policies, aggregate_loss, reserve_used, bond_used, prorata_cut}}` | Ezekiel |
-| `GET /events?run_id=` | `[{time, gauge_id, run_id, wave_id, reading_ft, feed_value, feed_account, feed_slot, evidence_hash, pay_factor, payouts: [{policy_mint, owner, amount, tx_sig, memo_sig}]}]`. `run_id` optional, defaults to the latest run. `payouts` comes from the `payouts` table the bot writes. | Ezekiel |
-| `GET /stress?scenario=harvey` | `{aggregate_loss, reserve_used, bond_used, prorata_cut, investor_loss_pct}` | Ezekiel |
-| `GET /replay/status` | `{run_id, running, replay_time}`. Used by every page to know the current run. | Ezekiel |
-| `POST /replay/start` | `{run_id}` | Ezekiel |
-| `POST /replay/reset` | `{ok}`. Stops the run, deletes its replay rows and events, then calls the chain server's `POST /internal/demo/reset-policies` with header `x-internal-token: $INTERNAL_TOKEN` to set demo policies back to `active` | Ezekiel |
-| `GET /replay/feed/{gauge_id}` | `{gauge_id, time, stage_ft}` at the current replay cursor. Public, for the optional Switchboard feed | Ezekiel |
-| `GET /policies?owner=` | `[{policy_mint, gauge_id, payout, starts_at, ends_at, status}]` | Jesse |
-| `GET /api/actions/buy?gauge=&payout=` | Solana Action metadata (title, icon, quote) | Jesse |
-| `POST /api/actions/buy?gauge=&payout=` | Body `{account}`. Returns `{type, transaction, message, policy_mint}`: base64, partially signed purchase transaction | Jesse |
-| `POST /api/bond/deposit` | Body `{account, amount}`. Returns `{type, transaction, nav_per_unit}` | Jesse |
-| `POST /internal/demo/reset-policies` | Header `x-internal-token`. Returns `{ok, reset: [policy_mint]}` | Jesse |
+| `gauges`, `gauge_readings`, `runs`, `replay_alerts`, `sim_policies` | writes | reads `gauges` |
+| `storms` | writes; sets `f_int` at open, `f_fin` and `closed` at close | sets `trued_up` once every true-up confirms |
+| `gauge_events` | writes, including `preimage` and `evidence_hash` | reads; re-hashes before paying |
+| `policies` | reads | writes on purchase, payout and reset |
+| `ledger` | reads; computes reserve/bond split, NAV, reconciliation | writes every money movement (below) |
+| `payout_intents`, `policy_pool` | reads `payout_intents` for `/storms` | owns (`chain/sql/001_chain_tables.sql`) |
 
-Engine routes are served by FastAPI (default `:8000`). Jesse's routes are served by the chain server (`chain/`, default `:8787`).
+## Ledger entries the chain side writes
 
-## What the chain side reads and writes in Tiger
+Each entry's rows sum to zero. `run_id` is the running run, or `session` when no run is running
+(purchases made before Start; audit fix).
 
-| Table | Chain side | Notes |
-| --- | --- | --- |
-| `gauges` | reads `feed_pubkey` | Owned by Ezekiel |
-| `trigger_events` | reads | The bot pays one wave at a time. Every row needs `run_id`, `wave_id`, `reading_ft`; please fill `evidence_hash` (recipe below). |
-| `policies` | writes on purchase, updates `status` on payout and reset | Schema from plan 6.2 |
-| `payouts` | writes one row per payout | `tx_sig` = `memo_sig` (the Memo is in the payout transaction) |
-| `policy_pool`, `bot_waves` | owns | `chain/sql/001_chain_tables.sql` |
+| Movement | Rows |
+| --- | --- |
+| Policy purchase | `holders −π`, `premiums +π` |
+| Bond deposit | `investors −D`, `bond +D` |
+| Payout (interim or true-up) | `float −amount`, `holders +amount` |
+| Reset refill of the vault | `seeded −x`, `reserve +x` |
+| Reset refill of the float | `seeded −y`, `float +y` |
+| Vault to float by proposal (`npm run fund:bot`) | `reserve −z`, `float +z` |
 
-## Evidence hash recipe
+## Reconciliation (audit fix)
 
-Must be byte-identical in Python (engine), TypeScript (bot) and the browser (verify page):
+Reset only tops balances up to the snapshot, so premiums from earlier runs stay in the vault and
+absolute totals drift. Reconcile per run instead: at `POST /replay/start` record
+`GET /chain/balances` as opening balances; then for vault and float,
+`opening + sum(ledger rows for this run) = GET /chain/balances now`.
 
-```
-sha256_hex( gauge_id | value_ft | unix_seconds | run_id | wave_id | feed_account | feed_slot )
-```
+## Evidence
 
-- `|` is a literal pipe between fields; no spaces.
-- `value_ft` is the value acted on, formatted with exactly 2 decimals (`31.46`): `feed_value` if Switchboard is used, else `reading_ft`.
-- `unix_seconds` is the event time as whole seconds since the epoch.
-- `feed_account` and `feed_slot` are empty strings when Switchboard is not used.
-- Python: `hashlib.sha256("|".join([gid, f"{v:.2f}", str(int(t.timestamp())), run_id, wave_id, acct or "", str(slot) if slot is not None else ""]).encode()).hexdigest()`
-- Memo text on-chain: `atlas:v1:<hash>`.
-- Test vector: `08074500|31.46|1791814500|run-7|w3||` hashes to `59c4a1d3774f1f5be91fa0dc2734422ce0df62c3a399301b01ddbb9f6a90fb1d`.
-
-## Notes
-
-- Times are ISO 8601 with a time zone.
-- Money is in `aUSD` units as decimal numbers, for example `500.0`.
-- Replay timestamps are shifted to the present, so they look like live data.
+See [evidence.md](evidence.md): canonical preimage, Python and TypeScript code, test vector.

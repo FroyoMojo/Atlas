@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
+import { getAdminToken } from "../admin";
 import { api } from "../api";
-import { config } from "../config";
 import type { GaugeStatus } from "../types";
 import { usePoll } from "../usePoll";
 
@@ -9,9 +10,15 @@ const COLORS: Record<GaugeStatus, string> = { normal: "#2e9e5b", near: "#d99a0b"
 
 export function MapPage() {
   const navigate = useNavigate();
-  const { data: gauges, error } = usePoll(api.gauges, 1000);
-  const { data: events } = usePoll(() => api.events(null), 1500);
   const { data: replay } = usePoll(api.replayStatus, 1000);
+  const runId = replay?.run_id ?? null;
+  const { data: gauges, error } = usePoll(() => api.gauges(runId), 1000, [runId]);
+  const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const isAdmin = !!getAdminToken();
+  const nameOf = (id: string) => gauges?.find((g) => g.gauge_id === id)?.name ?? id;
+
+  const act = (fn: () => Promise<unknown>) => () => fn().then(() => setAdminError(null)).catch((e) => setAdminError(String(e.message ?? e)));
 
   return (
     <div className="map-page">
@@ -26,7 +33,7 @@ export function MapPage() {
               key={g.gauge_id}
               center={[g.lat, g.lon]}
               radius={g.status === "triggered" ? 16 : 11}
-              pathOptions={{ color: COLORS[g.status], fillColor: COLORS[g.status], fillOpacity: 0.65, weight: 2 }}
+              pathOptions={{ color: COLORS[g.status], fillColor: COLORS[g.status], fillOpacity: 0.65, weight: g.demo_ready ? 3 : 1 }}
               eventHandlers={{ click: () => navigate(`/gauge/${encodeURIComponent(g.gauge_id)}`) }}
             >
               <Tooltip>
@@ -40,45 +47,56 @@ export function MapPage() {
       </section>
 
       <aside className="side">
-        {config.demoMode && (
+        {isAdmin && (
           <div className="card">
             <h3>Harvey replay</h3>
             <p className="muted">Plays the 2017 flood peak through the full pipeline in about 90 seconds.</p>
             <div className="row">
-              <button className="primary" onClick={() => api.replayStart()} disabled={replay?.running}>
+              <button className="primary" onClick={act(api.replayStart)} disabled={replay?.status === "running"}>
                 Start replay
               </button>
-              <button onClick={() => api.replayReset()}>Reset</button>
+              <button onClick={act(api.replayReset)}>Reset</button>
             </div>
-            {replay?.run_id && <p className="muted small">run {replay.run_id}</p>}
+            {replay?.run_id && <p className="muted small">run {replay.run_id} · {replay.status}</p>}
+            {adminError && <p className="error small">{adminError}</p>}
           </div>
         )}
 
         <div className="card">
-          <h3>Gauges</h3>
+          <h3>Demo gauges</h3>
           {error && <p className="error">{error}</p>}
           <ul className="gauge-list">
-            {gauges?.map((g) => (
-              <li key={g.gauge_id} onClick={() => navigate(`/gauge/${encodeURIComponent(g.gauge_id)}`)}>
-                <span className="dot" style={{ background: COLORS[g.status] }} />
-                <span className="grow">{g.name}</span>
-                <span className="num">{g.latest_ft.toFixed(1)} ft</span>
-              </li>
-            ))}
+            {gauges
+              ?.filter((g) => g.demo_ready)
+              .map((g) => (
+                <li key={g.gauge_id} onClick={() => navigate(`/gauge/${encodeURIComponent(g.gauge_id)}`)}>
+                  <span className="dot" style={{ background: COLORS[g.status] }} />
+                  <span className="grow">{g.name}</span>
+                  <span className="num">{g.latest_ft.toFixed(1)} ft</span>
+                </li>
+              ))}
           </ul>
         </div>
 
         <div className="card">
-          <h3>Triggers</h3>
-          {!events?.length && <p className="muted">No gauge has crossed its trigger in this run.</p>}
-          <ul className="events">
-            {events?.map((e) => (
-              <li key={`${e.run_id}-${e.wave_id}-${e.gauge_id}`}>
-                <b>{gauges?.find((g) => g.gauge_id === e.gauge_id)?.name ?? e.gauge_id}</b> crossed at{" "}
-                {e.reading_ft.toFixed(1)} ft · {e.payouts.length} payout(s)
-              </li>
-            ))}
-          </ul>
+          <h3>Storm</h3>
+          {!storms?.length && <p className="muted">No gauge has crossed its trigger in this run.</p>}
+          {storms?.map((s) => (
+            <div key={s.storm_id}>
+              <p className="small muted">
+                {s.storm_id} · {s.status.replace("_", " ")} · interim share {s.f_int ?? "–"} · final {s.f_fin ?? "–"} ·{" "}
+                {s.payouts.length} payout(s)
+              </p>
+              <ul className="events">
+                {s.events.map((e) => (
+                  <li key={e.event_id}>
+                    <b>{nameOf(e.gauge_id)}</b> crossed at {e.value.toFixed(2)} ft
+                    {e.closed_at ? " · closed" : " · open"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </aside>
     </div>

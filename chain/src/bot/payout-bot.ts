@@ -1,134 +1,224 @@
-// Payout bot (plan 8.5). Polls trigger_events for new waves and pays every eligible policy
-// in a wave with the same pay factor. Each payout is one transaction: aUSD transfer + evidence
-// Memo + metadata status "paid". Never pays a policy twice in the same run.
+// Payout bot (plan v3 7.5, 8.5, 8.6).
+//
+// Per storm: every policy on a triggered gauge gets the interim amount f_int * B as soon as its
+// gauge's event opens, whatever order gauges cross in. When the engine closes the storm and sets
+// f_fin, every interim-paid policy gets the true-up (f_fin - f_int) * B. f_int and f_fin come
+// from the engine (storms table); the bot never computes them.
+//
+// Idempotency: intent_id = sha256(policy_mint|storm_id|kind). Each transaction is signed, the
+// intent is written with its signature, and only then sent. On restart every unsettled intent is
+// checked on-chain before anything new is built.
 import { getAccount } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
+import bs58 from "bs58";
 import * as dbq from "../db.js";
 import { connection, env, explorer, loadKeypair, requireState } from "../env.js";
 import { AUSD_PROGRAM_ID, ausdAta, fromUnits, toUnits } from "../lib/ausd.js";
-import { evidenceHash } from "../lib/memo.js";
-import { payFactor, payoutIxs } from "../lib/payout.js";
+import { writeLedgerEntry } from "../lib/ledger.js";
+import { sha256Hex } from "../lib/memo.js";
+import { PayoutKind, payoutIxs, payoutSigners } from "../lib/payout.js";
 import { readPolicy } from "../lib/policy.js";
-import { sendIxs } from "../lib/tx.js";
+import { priorityFeeIx } from "../lib/tx.js";
 
 const bot = loadKeypair("bot");
 const issuer = loadKeypair("issuer");
 const ausdMint = requireState("ausdMint");
-const vault = requireState("vault");
 
-async function balanceUnits(owner: PublicKey, offCurve = false): Promise<bigint> {
+const intentIdFor = (mint: string, stormId: string, kind: PayoutKind) => sha256Hex(`${mint}|${stormId}|${kind}`);
+
+async function floatUnits(): Promise<bigint> {
   try {
-    const acct = await getAccount(connection, ausdAta(ausdMint, owner, offCurve), "confirmed", AUSD_PROGRAM_ID);
-    return acct.amount;
+    return (await getAccount(connection, ausdAta(ausdMint, bot.publicKey), "confirmed", AUSD_PROGRAM_ID)).amount;
   } catch {
     return 0n;
   }
 }
 
-function groupByWave(events: dbq.WaveEvent[]): Map<string, dbq.WaveEvent[]> {
-  const waves = new Map<string, dbq.WaveEvent[]>();
-  for (const e of events) {
-    const key = `${e.run_id}::${e.wave_id}`;
-    waves.set(key, [...(waves.get(key) ?? []), e]);
+// Ledger entry for a confirmed payout: money leaves the float to a holder.
+const payoutEntry = (c: Parameters<Parameters<typeof dbq.confirmIntent>[1]>[0], i: dbq.Intent) =>
+  writeLedgerEntry(
+    {
+      runId: i.run_id,
+      entryId: `payout:${i.intent_id}`,
+      memo: `${i.kind} payout, storm ${i.storm_id}, gauge ${i.gauge_id}`,
+      txSig: i.tx_sig,
+      rows: [
+        { account: "float", amount: -i.amount },
+        { account: "holders", amount: i.amount },
+      ],
+    },
+    c,
+  );
+
+async function finalize(i: dbq.Intent): Promise<void> {
+  if (await dbq.confirmIntent(i.intent_id, payoutEntry)) {
+    console.log(`  ${i.kind} ${i.amount} aUSD to ${i.owner} confirmed: ${explorer(i.tx_sig)}`);
   }
-  return waves;
 }
 
-function hashFor(e: dbq.WaveEvent): string {
-  if (e.evidence_hash) return e.evidence_hash;
-  return evidenceHash({
-    gaugeId: e.gauge_id,
-    valueFt: e.feed_value ?? e.reading_ft,
-    time: new Date(e.time),
-    runId: e.run_id,
-    waveId: e.wave_id,
-    feedAccount: e.feed_value != null ? (e.feed_pubkey ?? undefined) : undefined,
-    feedSlot: e.feed_slot != null ? Number(e.feed_slot) : undefined,
+/** Plan v3 8.6 step 4: settle anything signed or sent before the last stop. */
+async function recoverIntents(): Promise<void> {
+  const open = await dbq.unsettledIntents();
+  if (!open.length) return;
+  const statuses = await connection.getSignatureStatuses(open.map((i) => i.tx_sig), { searchTransactionHistory: true });
+  const height = await connection.getBlockHeight("confirmed");
+  for (const [n, i] of open.entries()) {
+    const st = statuses.value[n];
+    if (st && !st.err && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) {
+      await finalize(i);
+    } else if (st?.err) {
+      console.warn(`  intent ${i.intent_id.slice(0, 8)} failed on-chain (${JSON.stringify(st.err)}); will retry`);
+      await dbq.setIntentStatus(i.intent_id, "expired");
+    } else if (!st && height > Number(i.last_valid_block_height)) {
+      await dbq.setIntentStatus(i.intent_id, "expired"); // never landed; blockhash gone; rebuild
+    }
+    // not found and blockhash still valid: wait
+  }
+}
+
+async function pay(p: {
+  kind: PayoutKind;
+  storm: dbq.Storm;
+  event: dbq.GaugeEvent;
+  policyMint: string;
+  owner: string;
+  amount: number;
+}): Promise<void> {
+  const intentId = intentIdFor(p.policyMint, p.storm.storm_id, p.kind);
+  const existing = await dbq.getIntent(intentId);
+  if (existing && existing.status !== "expired") return;
+
+  const params = {
+    kind: p.kind,
+    bot,
+    issuer,
+    ausdMint,
+    holder: new PublicKey(p.owner),
+    policyMint: new PublicKey(p.policyMint),
+    amountUnits: toUnits(p.amount),
+    evidenceHash: p.event.evidence_hash,
+  };
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+  const tx = new Transaction({ feePayer: bot.publicKey, blockhash, lastValidBlockHeight }).add(
+    priorityFeeIx(),
+    ...payoutIxs(params),
+  );
+  tx.sign(...payoutSigners(params));
+  const sig = bs58.encode(tx.signature!);
+
+  const recorded = await dbq.upsertSignedIntent({
+    intent_id: intentId,
+    run_id: p.storm.run_id,
+    storm_id: p.storm.storm_id,
+    event_id: p.event.event_id,
+    policy_mint: p.policyMint,
+    owner: p.owner,
+    gauge_id: p.event.gauge_id,
+    kind: p.kind,
+    amount: p.amount,
+    tx_sig: sig,
+    last_valid_block_height: String(lastValidBlockHeight),
   });
+  if (!recorded) return; // another attempt is already in flight
+
+  try {
+    await connection.sendRawTransaction(tx.serialize());
+    await dbq.setIntentStatus(intentId, "sent");
+    const res = await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    if (res.value.err) throw new Error(JSON.stringify(res.value.err));
+    const intent = await dbq.getIntent(intentId);
+    if (intent) await finalize(intent);
+  } catch (err) {
+    // Leave it to recoverIntents: it decides confirmed / expired from chain state.
+    console.warn(`  ${p.kind} for ${p.policyMint.slice(0, 8)} not confirmed yet: ${String(err).slice(0, 160)}`);
+  }
 }
 
-// Waves already reported as short of float, so the log isn't flooded every poll.
-const warnedShort = new Set<string>();
+const warned = new Set<string>();
+function warnOnce(key: string, msg: string) {
+  if (warned.has(key)) return;
+  warned.add(key);
+  console.warn(msg);
+}
 
-async function processWave(events: dbq.WaveEvent[]): Promise<void> {
-  const { run_id: runId, wave_id: waveId } = events[0];
-  const eventTime = new Date(Math.max(...events.map((e) => new Date(e.time).getTime())));
-  const byGauge = new Map(events.map((e) => [e.gauge_id, e]));
-  const policies = await dbq.eligiblePolicies([...byGauge.keys()], eventTime, runId);
+async function processStorm(storm: dbq.Storm): Promise<void> {
+  if (storm.f_int == null) return warnOnce(`fint:${storm.storm_id}`, `storm ${storm.storm_id}: waiting for f_int from the engine`);
+  const fInt = storm.f_int;
+  const events = await dbq.stormEvents(storm.storm_id);
+  const byEvent = new Map(events.map((e) => [e.event_id, e]));
+  type Todo = { kind: PayoutKind; event: dbq.GaugeEvent; mint: string; owner: string; gaugeId: string; amount: number };
+  const todo: Todo[] = [];
 
-  // Pay factor over everything the pool holds (reserve + bond capital, all in the vault)
-  // plus the bot's float. The bot can only pay from its float, so check that too.
-  const botUnits = await balanceUnits(bot.publicKey);
-  const available = (await balanceUnits(vault, true)) + botUnits;
-  const payoutUnits = toUnits(policies[0]?.payout_usd ?? env.defaultPayout);
-  const factor = payFactor(available, payoutUnits, policies.length);
-  const perPolicy = BigInt(Math.floor(Number(payoutUnits) * factor));
-  const needed = perPolicy * BigInt(policies.length);
+  // Interim: every ACTV policy on a gauge whose event is in this storm.
+  for (const event of events) {
+    if (sha256Hex(event.preimage) !== event.evidence_hash) {
+      warnOnce(`hash:${event.event_id}`, `event ${event.event_id}: evidence_hash != sha256(preimage); not paying`);
+      continue;
+    }
+    for (const p of await dbq.interimCandidates(event.gauge_id, new Date(event.opened_at), storm.storm_id)) {
+      todo.push({ kind: "interim", event, mint: p.policy_mint, owner: p.owner, gaugeId: p.gauge_id, amount: round6(fInt * p.payout_usd) });
+    }
+  }
 
-  const key = `${runId}::${waveId}`;
-  if (botUnits < needed) {
-    if (!warnedShort.has(key)) {
-      warnedShort.add(key);
-      console.warn(
-        `wave ${waveId} (run ${runId}) needs ${fromUnits(needed)} aUSD but the bot float is ` +
-          `${fromUnits(botUnits)}. Fund it with \`npm run fund:bot\`; retrying quietly.`,
-      );
+  // True-up: once the engine has closed the storm and set f_fin.
+  const closed = storm.status === "closed" && storm.f_fin != null;
+  const interims = await dbq.intentsForStorm(storm.storm_id, "interim");
+  const trueups = await dbq.intentsForStorm(storm.storm_id, "trueup");
+  const delta = closed ? storm.f_fin! - fInt : 0;
+  if (closed && delta > 0) {
+    for (const i of interims.filter((x) => x.status === "confirmed")) {
+      if (trueups.some((t) => t.policy_mint === i.policy_mint && t.status !== "expired")) continue;
+      const benefit = i.amount / fInt;
+      todo.push({ kind: "trueup", event: byEvent.get(i.event_id)!, mint: i.policy_mint, owner: i.owner, gaugeId: i.gauge_id, amount: round6(delta * benefit) });
+    }
+  }
+
+  if (closed && !todo.length) {
+    const settled = interims.every((i) => i.status === "confirmed") && trueups.every((t) => t.status === "confirmed");
+    if (settled) {
+      await dbq.markStormTruedUp(storm.storm_id);
+      console.log(`storm ${storm.storm_id}: closed and trued up (f_int ${fInt}, f_fin ${storm.f_fin})`);
     }
     return;
   }
-  warnedShort.delete(key);
-  console.log(
-    `wave ${waveId} (run ${runId}): ${byGauge.size} gauge(s), ${policies.length} policy(ies), ` +
-      `pay factor ${factor.toFixed(4)}, ${fromUnits(perPolicy)} aUSD each`,
-  );
+  if (!todo.length) return;
 
-  for (const p of policies) {
-    const e = byGauge.get(p.gauge_id)!;
-    const mint = new PublicKey(p.policy_mint);
-    // Cross-check on-chain state before paying (plan 8.5 step 2).
-    const onchain = await readPolicy(connection, mint);
-    if (onchain.holder !== p.owner || onchain.fields.status !== "active" || onchain.fields.gauge_id !== p.gauge_id) {
-      console.warn(
-        `  skip ${p.policy_mint}: on-chain holder=${onchain.holder} status=${onchain.fields.status} ` +
-          `gauge=${onchain.fields.gauge_id} does not match the database`,
-      );
-      continue;
-    }
-    const sig = await sendIxs(
-      connection,
-      payoutIxs({
-        bot,
-        issuer,
-        ausdMint,
-        holder: new PublicKey(p.owner),
-        policyMint: mint,
-        amountUnits: perPolicy,
-        evidenceHash: hashFor(e),
-      }),
-      [bot, issuer],
+  const needed = toUnits(todo.reduce((s, t) => s + t.amount, 0));
+  const have = await floatUnits();
+  if (have < needed) {
+    return warnOnce(
+      `float:${storm.storm_id}:${needed}`,
+      `storm ${storm.storm_id}: needs ${fromUnits(needed)} aUSD, float holds ${fromUnits(have)}. ` +
+        "Refill with /chain/reset or npm run fund:bot; retrying quietly.",
     );
-    await dbq.recordPayout({
-      runId,
-      waveId,
-      policyMint: p.policy_mint,
-      owner: p.owner,
-      amountUsd: fromUnits(perPolicy),
-      payFactor: factor,
-      txSig: sig,
-    });
-    console.log(`  paid ${fromUnits(perPolicy)} aUSD to ${p.owner}: ${explorer(sig)}`);
   }
-  await dbq.markWaveProcessed(waveId, runId, policies.length, factor);
+
+  for (const t of todo) {
+    if (t.kind === "interim") {
+      // On-chain cross-check before the first payment (plan v3 8.5 step 2).
+      const onchain = await readPolicy(connection, new PublicKey(t.mint));
+      if (onchain.holder !== t.owner || onchain.fields.status !== "ACTV" || onchain.fields.gauge_id !== t.gaugeId) {
+        warnOnce(
+          `xcheck:${t.mint}:${storm.storm_id}`,
+          `  skip ${t.mint}: on-chain holder=${onchain.holder} status=${onchain.fields.status} gauge=${onchain.fields.gauge_id}`,
+        );
+        continue;
+      }
+    }
+    console.log(`storm ${storm.storm_id} ${t.kind}: ${t.amount} aUSD to ${t.owner} (${t.event.gauge_name ?? t.event.gauge_id})`);
+    await pay({ kind: t.kind, storm, event: t.event, policyMint: t.mint, owner: t.owner, amount: t.amount });
+  }
 }
+
+const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
 let running = false;
 async function tick(): Promise<void> {
   if (running) return;
   running = true;
   try {
-    for (const events of groupByWave(await dbq.pendingWaveEvents()).values()) {
-      await processWave(events);
-    }
+    await recoverIntents();
+    for (const storm of await dbq.stormsToProcess()) await processStorm(storm);
   } catch (err) {
     console.error("bot tick failed:", err);
   } finally {

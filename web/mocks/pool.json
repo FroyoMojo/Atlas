@@ -1,4 +1,4 @@
 {
-  "onchain": { "reserve": 300, "bond_capital": 5000, "nav_per_unit": 1.0, "premiums_in": 144, "payouts_out": 0 },
-  "simulated": { "policies": 2000, "aggregate_loss": 0, "reserve_used": 0, "bond_used": 0, "prorata_cut": 0 }
+  "onchain": { "seeded_capital": 7300, "premiums_in": 144, "reserve": 300, "bond_capital": 5000, "float": 2000, "nav_per_unit": 1.0, "payouts_out": 0, "reconciled": true },
+  "simulated": { "policies": 2000, "worst_year_loss": 0, "harvey_loss": 0, "reserve_used": 0, "bond_used": 0, "f_int": 1, "f_fin": 1, "investor_loss_pct": 0 }
 }

@@ -36,6 +36,7 @@ footer { padding: 12px 20px; color: var(--muted); font-size: 12px; text-align: c
 .chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: #eef2f6; color: var(--muted); }
 .chip.warn { background: #fdf3dc; color: #8a5a00; }
 .chip.live { background: #fde7e5; color: var(--bad); }
+.chip.good { background: #e3f5ea; color: #1d6b3d; }
 button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
 button.primary { background: var(--brand); border-color: var(--brand); color: white; }
 button:disabled { opacity: 0.5; cursor: default; }
@@ -70,10 +71,10 @@ input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--line);
 .phone-head { color: #9fb3c8; font-size: 16px; }
 .phone-balance { font-size: 64px; font-weight: 800; margin: 24px 0 8px; }
 .phone-balance span { font-size: 24px; font-weight: 500; color: #9fb3c8; }
-.phone-flash { display: inline-block; background: var(--ok); color: white; font-size: 28px; font-weight: 700; padding: 10px 18px; border-radius: 12px; margin-bottom: 16px; animation: pop 0.4s ease-out; }
+.phone-flash { text-decoration: none; display: inline-block; background: var(--ok); color: white; font-size: 28px; font-weight: 700; padding: 10px 18px; border-radius: 12px; margin-bottom: 16px; animation: pop 0.4s ease-out; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .phone-policies { list-style: none; padding: 0; margin: 24px auto; max-width: 420px; text-align: left; }
 .phone-policies li { background: #18293d; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
 .phone-policies .status { font-size: 22px; font-weight: 800; color: #9fb3c8; }
 .phone-policies li.paid .status { color: #4ade80; }
-.phone-policies li.active .status { color: #93c5fd; }
+.phone-policies li.actv .status { color: #93c5fd; }

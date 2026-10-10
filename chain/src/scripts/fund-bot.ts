@@ -20,3 +20,20 @@ const sig = await vaultTransferAusd({
   log: console.log,
 });
 console.log(`moved ${amount} aUSD from vault to bot: ${explorer(sig)}`);
+
+// Ledger: reserve -> float (plan v3 F2), if the database is configured.
+if (env.databaseUrl) {
+  const { currentRunId, closeDb } = await import("../db.js");
+  const { writeLedgerEntry } = await import("../lib/ledger.js");
+  await writeLedgerEntry({
+    runId: await currentRunId(),
+    entryId: `float:${sig}`,
+    memo: "vault to bot float (2-of-3 proposal)",
+    txSig: sig,
+    rows: [
+      { account: "reserve", amount: -amount },
+      { account: "float", amount },
+    ],
+  });
+  await closeDb();
+}

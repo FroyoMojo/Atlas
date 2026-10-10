@@ -20,7 +20,15 @@ export const env = {
   publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://localhost:8787",
   port: Number(process.env.CHAIN_PORT ?? 8787),
   demoMode: (process.env.DEMO_MODE ?? "true") === "true",
-  internalToken: process.env.INTERNAL_TOKEN ?? "",
+  // Plan v3 9.3: required on /chain/reset (and on the engine's /replay/* routes).
+  adminToken: process.env.ADMIN_TOKEN ?? "",
+  // Plan v3 6.6: balances reset refills to before each run.
+  snapshotVault: Number(process.env.SNAPSHOT_VAULT ?? 5_300),
+  snapshotFloat: Number(process.env.SNAPSHOT_FLOAT ?? 2_000),
+  // Plan v3 9.3: in demo mode, buy and bond accept only these wallets (comma-separated).
+  demoWallets: (process.env.DEMO_WALLETS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  // Plan v3 8.3: "a" = server signs first (default), "b" = wallet signs first, server co-signs.
+  purchaseFlow: (process.env.PURCHASE_FLOW ?? "a").toLowerCase() === "b" ? "b" : "a",
   priorityMicroLamports: Number(process.env.PRIORITY_MICROLAMPORTS ?? 10_000),
   squadsTimeLockSeconds: Number(process.env.SQUADS_TIMELOCK_SECONDS ?? 60),
   // Used when the engine's /quote is unreachable (demo mode only).

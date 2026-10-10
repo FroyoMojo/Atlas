@@ -6,7 +6,7 @@ import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { AUSD_DECIMALS, AUSD_PROGRAM_ID, ausdAta } from "./ausd.js";
 import { memoIx } from "./memo.js";
 import { priorityFeeIx } from "./tx.js";
@@ -16,7 +16,7 @@ export const BOND_DECIMALS = 6;
 export interface BondDepositParams {
   connection: Connection;
   investor: PublicKey;
-  issuer: Keypair;
+  issuer: PublicKey;
   ausdMint: PublicKey;
   bondMint: PublicKey;
   vault: PublicKey;
@@ -25,7 +25,10 @@ export interface BondDepositParams {
   navPerUnit: number;
 }
 
-/** Atomic: investor pays aUSD into the vault and receives deposit / NAV bond units. */
+/**
+ * Atomic: investor pays aUSD into the vault and receives deposit / NAV bond units. Returned
+ * unsigned; the investor signs first and the server co-signs on submit (plan v3 8.8).
+ */
 export async function buildBondDepositTx(p: BondDepositParams): Promise<Transaction> {
   if (p.navPerUnit <= 0) throw new Error("NAV must be positive");
   const units = BigInt(Math.floor(Number(p.depositUnits) / p.navPerUnit));
@@ -49,13 +52,12 @@ export async function buildBondDepositTx(p: BondDepositParams): Promise<Transact
       p.bondMint,
       TOKEN_PROGRAM_ID,
     ),
-    createMintToInstruction(p.bondMint, investorBondAta, p.issuer.publicKey, units, [], TOKEN_PROGRAM_ID),
+    createMintToInstruction(p.bondMint, investorBondAta, p.issuer, units, [], TOKEN_PROGRAM_ID),
     memoIx(`atlas:bond:deposit:${p.navPerUnit.toFixed(6)}`),
   );
   const { blockhash, lastValidBlockHeight } = await p.connection.getLatestBlockhash("confirmed");
   tx.feePayer = p.investor;
   tx.recentBlockhash = blockhash;
   tx.lastValidBlockHeight = lastValidBlockHeight;
-  tx.partialSign(p.issuer);
   return tx;
 }
