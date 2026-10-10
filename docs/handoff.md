@@ -5,8 +5,11 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 ## Status (Oct 10, 2026)
 
 - Idea chosen: **Atlas**, parametric flood protection for Houston.
-- Build plan v2 written and red-teamed: [docs/plan/Atlas_Build_Plan_v2.pdf](plan/Atlas_Build_Plan_v2.pdf).
-- No code yet. No accounts created yet.
+- Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Code and docs are aligned to it; its fix list (V1 to V17) matches [decisions.md](decisions.md).
+- **Jesse's side built to v3** and tested end to end on a local validator:
+  - [`chain/`](../chain/README.md): chain service (Flow A and B purchase, bond, reset with refill, balances), storm payout bot (interim + true-up, intents, crash recovery), ledger writes.
+  - [`web/`](../web/README.md): map, gauge, pool, verify, phone view with the payout banner, admin-gated Start/Reset; mock engine in v3 shapes.
+- **Not done yet:** Ezekiel's engine (`/data`, `/engine`); running the chain setup on real devnet; hosting on Vultr; the domain.
 
 ## Key times
 
@@ -40,7 +43,13 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [ ] Both: do the pre-flight checklist (plan section 3).
 - [ ] Both: confirm the API shapes in [api.md](api.md).
 - [ ] Ezekiel: pick 6 to 10 gauges with real USGS site numbers and start caching raw data.
-- [ ] Jesse: create the `aUSD` mint, fund the wallets, create the 2-of-3 Squads multisig, run the Token-2022 extension test.
+- [ ] Jesse: get devnet SOL for the treasury (faucet.solana.com), then run the setup in `chain/README.md` on devnet.
+- [ ] Jesse: commit `chain/state/devnet.json` (public addresses only).
+- [ ] Jesse: Vultr box + Caddy + domain (or sslip.io); deploy chain service, bot, web. Then the Hour-0 Phantom Flow A test (decision #11).
+- [ ] Ezekiel: schema from plan v3 6.2; `gauge_events.preimage`/`evidence_hash` per [evidence.md](evidence.md) (check the test vector).
+- [ ] Ezekiel: set `storms.f_int` at storm open and `f_fin` + `closed` at close; the bot pays from those.
+- [ ] Ezekiel: `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
+- [ ] Both: G2 with Ezekiel's minimal insert script once devnet setup is done.
 - [ ] Both: fill in [decisions.md](decisions.md) by Hour 1.5.
 
 ## Accounts and addresses

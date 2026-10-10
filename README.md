@@ -1,6 +1,6 @@
 # Atlas: parametric flood protection for Houston
 
-> **Status: planning.** There is no code yet. This repo currently holds the build plan and the team notes. The repo is named `Rug-Radar` after an earlier idea; the project is **Atlas**.
+> **Status: building (plan v3).** Chain service, payout bot and dashboard are in `chain/` and `web/`; the engine (`data/`, `engine/`) is next. The repo is named `Rug-Radar` after an earlier idea; the project is **Atlas**.
 
 Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by a team of two: Ezekiel (data and risk) and Jesse (chain and product).
 
@@ -14,8 +14,8 @@ Atlas sells a small policy tied to the nearest stream gauge. If that gauge cross
 
 1. Gauge readings (USGS) stream into **Tiger Data** hypertables. Decades of history are used to price each policy.
 2. When a gauge's last two readings cross its trigger level, the engine records a trigger event.
-3. A payout bot pays every active policy on that gauge in test stablecoin (`aUSD`) on **Solana devnet**. It writes a Memo hash of the reading it acted on and marks the policy `paid`.
-4. Losses come out of a premium reserve first, then a catastrophe bond token whose NAV falls.
+3. The first event in a run opens a **storm**. A payout bot pays every active policy on that gauge an interim share in test stablecoin (`aUSD`) on **Solana devnet**, writes a Memo hash of the exact reading it acted on, and marks the policy `PAID`.
+4. When the storm closes, everyone gets a true-up to the same final share. Losses come out of a premium reserve first, then a catastrophe bond token whose NAV falls. Every money movement is a ledger row that reconciles with the chain.
 5. For the demo, a **Harvey replay** plays the 2017 flood peak through the full pipeline in about 90 seconds.
 
 See the architecture diagram in [the build plan](docs/plan/Atlas_Build_Plan_v2.pdf), section 2.
@@ -47,8 +47,9 @@ See the architecture diagram in [the build plan](docs/plan/Atlas_Build_Plan_v2.p
 | File | What it is |
 | --- | --- |
 | [docs/handoff.md](docs/handoff.md) | **Start here.** Current status, who owns what, next steps |
-| [docs/plan/Atlas_Build_Plan_v2.pdf](docs/plan/Atlas_Build_Plan_v2.pdf) | The build plan (LaTeX source alongside). v1 kept for reference. |
-| [docs/api.md](docs/api.md) | API contract between the engine and the dashboard |
+| [docs/plan/Atlas_Build_Plan_v3.1.pdf](docs/plan/Atlas_Build_Plan_v3.1.pdf) | The current build plan (LaTeX source alongside). v1 to v3 kept for reference. |
+| [docs/api.md](docs/api.md) | API contract, who writes which table, ledger entries, reconciliation |
+| [docs/evidence.md](docs/evidence.md) | Canonical evidence preimage, code in both languages, test vector |
 | [docs/decisions.md](docs/decisions.md) | Hour 0 to 1.5 checks and the fallback chosen for each |
 | [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
 | [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
@@ -56,13 +57,16 @@ See the architecture diagram in [the build plan](docs/plan/Atlas_Build_Plan_v2.p
 
 ## Setup
 
-Not written yet. It will cover Tiger Data, Solana devnet wallets, the `aUSD` mint and how to run and reset the Harvey replay.
+- Chain service and payout bot: [chain/README.md](chain/README.md)
+- Dashboard and phone view: [web/README.md](web/README.md)
+- Engine: not written yet
 
 ## Limitations (short version)
 
 - **Basis risk:** payouts follow a gauge, not your property.
 - **Devnet and test money only.** Not a licensed insurance product; the bond token would likely be a security.
 - **Off-chain decision:** the payout bot decides to pay. The Memo makes that decision auditable, not enforced.
+- **No cash-out:** turning aUSD into money in a bank account is out of scope.
 - **Simulated book:** catastrophe numbers come from a simulated 2,000-policy portfolio. Only the 3 demo policies are real on-chain.
 
 The full list is in the build plan, section 13.
