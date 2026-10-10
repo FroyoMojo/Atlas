@@ -53,7 +53,7 @@ Addresses are saved to `chain/state/devnet.json` (public; commit it).
 ## Run
 
 ```bash
-npm run server      # chain service on 127.0.0.1:8787 (CHAIN_HOST to change; Caddy is the public entry)
+npm run server      # chain service on 127.0.0.1:8787 (npm run stack also starts the bot and the gateway; see deploy/README.md)
 npm run bot         # storm payout bot
 npm run status      # balances of every wallet and the vault
 npm run demo:buy -- <gaugeId> holder1 a   # buy without a browser (flow a or b)

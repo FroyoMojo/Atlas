@@ -1,80 +1,82 @@
-# Deploy to Vultr (Jesse)
+# Hosting on the demo laptop (Jesse)
 
-One Ubuntu 24.04 instance runs everything behind Caddy (plan v3.1 section 9). About 30 minutes.
-The Caddy routing was tested locally: chain routes, `/engine/*` with the prefix stripped, the
-dashboard, and `/chain/reset` blocked from outside (403).
+No server: everything runs on one laptop, and Cloudflare Tunnel gives it a public HTTPS URL
+(Devpost needs a hosted site). The GoDaddy Registry domain points at the same tunnel once its DNS
+is on Cloudflare. The site is up while the laptop is on, which is what in-person judging needs.
 
-## 0. Devnet SOL (do this first, it can take a while)
-
-The public faucet refuses scripts. On your laptop:
-
-```bash
-cd chain && npm install && npm run keygen      # prints the treasury address
+```
+phone / judges ──HTTPS──> Cloudflare ──tunnel──> laptop :8080 gateway
+                                                  ├─ /engine/*   -> FastAPI :8000 (Ezekiel)
+                                                  ├─ chain routes -> chain service :8787
+                                                  ├─ /chain/reset -> 403 (localhost only)
+                                                  └─ dashboard (web/dist)
+                                                 payout bot runs alongside
 ```
 
-Open https://faucet.solana.com, sign in with GitHub, choose **devnet**, paste the treasury
-address, request the maximum (repeat if allowed). Or ask Zeke to send 5 devnet SOL.
-Then, still on your laptop, follow the setup in `chain/README.md` from `setup:ausd` down to
-`setup:bond` and `test:token2022`. Commit `chain/state/devnet.json`.
+Tested here: the gateway routes, the dashboard, `/chain/reset` blocked through the gateway, and
+`cloudflared` issuing a tunnel URL. (This build machine's network can't hold the tunnel open;
+a normal laptop can.)
 
-## 1. Create the server
+## 1. Install (once, ~5 min)
 
-Vultr: Cloud Compute, Ubuntu 24.04, 2 GB RAM is enough. Note the IP. Claim the hackathon credits first.
+- Node 22 and git.
+- cloudflared: macOS `brew install cloudflared`; Windows `winget install --id Cloudflare.cloudflared`;
+  Linux: the `.deb` from https://github.com/cloudflare/cloudflared/releases.
+- Python 3.11 for Ezekiel's engine, if it runs on this laptop (recommended: one demo laptop).
 
-## 2. Domain
-
-GoDaddy Registry: register the domain, add an `A` record for `@` (and `www` if you want) pointing
-at the IP. DNS can lag; the setup also serves `<ip-with-dashes>.sslip.io` with HTTPS right away.
-
-## 3. One-time setup (on the server, as root)
+## 2. Code, keys, config
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/FroyoMojo/Atlas/main/deploy/setup-server.sh -o setup.sh
-bash setup.sh main your-domain.com      # or leave the domain empty
+git clone https://github.com/FroyoMojo/Atlas.git && cd Atlas
+(cd chain && npm install) && (cd web && npm install)
+mkdir -p secrets       # put issuer.json, treasury.json, bot.json here (sent separately; never commit)
+cp .env.example .env   # then edit
 ```
 
-## 4. Secrets and config (from your laptop)
+In `.env` set at least: `DATABASE_URL` (Tiger), `ADMIN_TOKEN` (same as Ezekiel's),
+`DEMO_WALLETS` (demo wallets and your phone, comma separated), `PURCHASE_FLOW=a`,
+`PUBLIC_BASE_URL` (the public URL from step 4 or 5), `SOLANA_RPC_URL` (a devnet provider URL if you have one).
+
+## 3. Build and start
 
 ```bash
-scp secrets/issuer.json secrets/treasury.json secrets/bot.json root@IP:/opt/atlas/secrets/
-scp chain/state/devnet.json root@IP:/opt/atlas/chain/state/
-ssh root@IP 'chown -R atlas:atlas /opt/atlas/secrets /opt/atlas/chain/state && chmod 600 /opt/atlas/secrets/*'
-ssh root@IP 'nano /opt/atlas/.env'
+cd chain
+npm run migrate                              # chain tables in Tiger (once)
+npm run precreate -- G1,G2,G3,G4 10          # Ezekiel's four demo gauge IDs (once)
+npm run web:build                            # dashboard for hosting (same-origin API calls)
+npm run stack                                # chain service + payout bot + gateway, auto-restart
 ```
 
-In `/opt/atlas/.env` set at least: `DATABASE_URL` (Tiger), `SOLANA_RPC_URL` (a devnet provider
-URL), `ADMIN_TOKEN` (same value Zeke uses), `DEMO_WALLETS` (your demo wallets and phone, comma
-separated), `PUBLIC_BASE_URL=https://your-domain.com`, `PURCHASE_FLOW=a`, `DEMO_MODE=true`.
-Only the server needs `issuer`, `treasury` and `bot`; member and holder keys stay on your laptop.
+Ezekiel's FastAPI listens on `127.0.0.1:8000` on the same laptop.
 
-## 5. Deploy (and every update after)
+## 4. Public URL now (no account)
 
 ```bash
-ssh root@IP 'bash /opt/atlas/deploy/deploy.sh'
+cloudflared tunnel --url http://localhost:8080
 ```
 
-It pulls, installs, builds the web app pointed at this host, renders the Caddyfile, and restarts
-`atlas-chain` and `atlas-bot`. It prints the live URL.
+It prints `https://<random>.trycloudflare.com`. That is the hosted URL until the domain is ready.
+It changes each time you restart this command, so leave it running.
 
-## 6. Database tables and policies (once the Tiger schema exists)
+## 5. The GoDaddy Registry domain (keeps the GoDaddy track)
+
+1. Free Cloudflare account -> **Add a site** -> your domain -> Free plan. Cloudflare shows two nameservers.
+2. At the registrar where you bought the domain, replace the nameservers with Cloudflare's. Usually minutes, sometimes up to an hour.
+3. On the laptop, once Cloudflare says the site is active:
 
 ```bash
-ssh root@IP 'cd /opt/atlas/chain && sudo -u atlas npm run migrate'
-ssh root@IP 'cd /opt/atlas/chain && sudo -u atlas npm run precreate -- GAUGE1,GAUGE2,GAUGE3,GAUGE4 10'
+cloudflared tunnel login                       # pick the domain in the browser
+cloudflared tunnel create atlas
+cloudflared tunnel route dns atlas your-domain.com
+cloudflared tunnel run --url http://localhost:8080 atlas
 ```
 
-Use Zeke's four `demo_ready` gauge IDs.
+4. Set `PUBLIC_BASE_URL=https://your-domain.com` in `.env`, restart `npm run stack`.
 
-## 7. Engine
+Fallback if the nameservers are slow: at the registrar, forward the domain to the trycloudflare URL.
 
-Zeke's FastAPI listens on `127.0.0.1:8000`; Caddy serves it at `https://host/engine/...`.
-Template unit: `deploy/systemd/atlas-engine.service`.
+## Before judging
 
-## Checks
-
-```bash
-curl https://your-domain.com/health                 # chain service
-curl https://your-domain.com/chain/balances         # vault, float, bond units
-curl -X POST https://your-domain.com/chain/reset    # must be 403 from outside
-journalctl -u atlas-bot -f                          # payout bot log
-```
+- Laptop plugged in; sleep off (macOS `caffeinate -dims`; Windows: Power settings -> never sleep).
+- `npm run stack` and the tunnel running in two terminals; hotspot ready if the venue Wi-Fi drops.
+- Check: `https://your-domain.com/health`, the phone view, and `curl -X POST https://your-domain.com/chain/reset` returns 403.

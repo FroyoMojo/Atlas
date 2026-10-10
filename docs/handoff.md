@@ -8,9 +8,9 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - **Built and tested on a local validator (Jesse):**
   - [`chain/`](../chain/README.md): chain service (purchase Flow A and B, bond, reset with refill, balances), storm payout bot (interim and true-up, intents, crash recovery), ledger writes.
   - [`web/`](../web/README.md): map, gauge, pool, verify and phone view with the payout banner; Start/Reset behind the admin token; mock engine in v3.1 shapes.
-  - [`deploy/`](../deploy/README.md): Caddy, systemd and deploy scripts; routing tested locally.
+  - [`deploy/`](../deploy/README.md): laptop hosting with a gateway and Cloudflare Tunnel (no Vultr); routing tested locally.
   - [`tools/g2_storm.py`](../tools/g2_storm.py): opens a storm for G2; tested with interim 0.6 and true-up 1.0.
-- **Not done:** devnet setup, Vultr and domain, phone test, and Ezekiel's engine (`data/`, `engine/`).
+- **Not done:** devnet setup, public URL and domain, phone test, and Ezekiel's engine (`data/`, `engine/`).
 - Commits go straight to `main` (no pull requests).
 
 ## Key times
@@ -29,7 +29,7 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 | Person | Owns |
 | --- | --- |
 | Ezekiel (data and risk) | Tiger schema, ingestion and cache, event and storm logic, `f_int` and `f_fin`, replay and run clock, pricing, scenarios, simulated book, ledger reads and reconciliation, FastAPI (read-only), NWS freeze. Every number on stage. |
-| Jesse (chain, product, hosting) | Chain service and all signing, aUSD and policy mints, Squads vault, payout bot, Memo evidence, ledger writes, dashboard and phone view, Vultr, Caddy, domain, deploys. The live demo flow. |
+| Jesse (chain, product, hosting) | Chain service and all signing, aUSD and policy mints, Squads vault, payout bot, Memo evidence, ledger writes, dashboard and phone view, laptop hosting, Cloudflare Tunnel, domain. The live demo flow. |
 | Both | Gates, pitch, Q&A, fallback video, Devpost write-up |
 
 ## Rules we agreed
@@ -43,11 +43,11 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 
 ## Next steps
 
-- [ ] Jesse: devnet SOL via faucet.solana.com, then the devnet setup; commit `chain/state/devnet.json` ([deploy/README.md](../deploy/README.md) step 0).
-- [ ] Jesse: Vultr, domain, `setup-server.sh`, `deploy.sh` ([deploy/README.md](../deploy/README.md) steps 1 to 5).
+- [ ] Jesse: fund the treasury at faucet.solana.com; the devnet setup then runs and `chain/state/devnet.json` is committed.
+- [ ] Jesse: laptop hosting, tunnel URL, then the domain on Cloudflare ([deploy/README.md](../deploy/README.md)).
 - [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)); record #10 and #11 in [decisions.md](decisions.md).
 - [ ] Ezekiel: share the Tiger connection string, the four `demo_ready` gauge IDs and one `ADMIN_TOKEN`.
-- [ ] Jesse: on the server, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
+- [ ] Jesse: on the demo laptop, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
 - [ ] Ezekiel: schema from plan v3.1 section 6.2 (including `runs.opening_vault`, `runs.opening_float`); preimage per [evidence.md](evidence.md), checked against the test vector.
 - [ ] Ezekiel: set `storms.f_int` at storm open and `f_fin` + `closed` at close; the bot pays from those.
 - [ ] Ezekiel: `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
@@ -61,7 +61,7 @@ Fill these in as they are created. Public addresses only; never paste private ke
 | --- | --- |
 | Hosted URL | |
 | Domain | |
-| Vultr instance IP | |
+| Tunnel URL (trycloudflare) | |
 | Tiger Cloud service | (connection string in `.env` only) |
 | `aUSD` mint | |
 | Squads multisig | |

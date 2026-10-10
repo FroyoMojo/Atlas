@@ -22,7 +22,7 @@ const TERM_DAYS = 365; // plan v3 6.5: at least 30 days so the future-dated repl
 const issuer = loadKeypair("issuer");
 
 const app = express();
-app.set("trust proxy", "loopback"); // Caddy on the same box sets X-Forwarded-For
+app.set("trust proxy", "loopback"); // the gateway on the same machine sets X-Forwarded-For
 app.use(express.json({ limit: "64kb" }));
 
 // Actions CORS: every Action route must answer OPTIONS and expose these headers.
@@ -100,7 +100,7 @@ function requireAdmin(req: Request) {
   if (!env.adminToken || req.header("x-admin-token") !== env.adminToken) throw new HttpError(401, "Admin token required");
 }
 
-/** /chain/reset listens on localhost only: direct loopback connection, not via Caddy. */
+/** /chain/reset is localhost only: a direct loopback connection, never via the gateway or tunnel. */
 function requireLocal(req: Request) {
   const addr = req.socket.remoteAddress ?? "";
   const loopback = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(addr);

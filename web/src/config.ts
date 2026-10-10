@@ -2,8 +2,9 @@ const e = import.meta.env;
 
 export const config = {
   useMocks: (e.VITE_USE_MOCKS ?? "true") === "true",
-  engineUrl: e.VITE_ENGINE_URL ?? "http://localhost:8000",
-  chainUrl: e.VITE_CHAIN_URL ?? "http://localhost:8787",
+  // Empty or relative = same origin, so one build works on the tunnel URL and the domain.
+  engineUrl: e.VITE_ENGINE_URL ?? "/engine",
+  chainUrl: e.VITE_CHAIN_URL ?? "",
   rpcUrl: e.VITE_RPC_URL ?? "https://api.devnet.solana.com",
   ausdMint: e.VITE_AUSD_MINT ?? "",
   explorerCluster: e.VITE_EXPLORER_CLUSTER ?? "devnet",

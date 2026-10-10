@@ -213,14 +213,20 @@ async function processStorm(storm: dbq.Storm): Promise<void> {
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
 let running = false;
+let lastError = "";
 async function tick(): Promise<void> {
   if (running) return;
   running = true;
   try {
     await recoverIntents();
     for (const storm of await dbq.stormsToProcess()) await processStorm(storm);
+    if (lastError) console.log("bot recovered");
+    lastError = "";
   } catch (err) {
-    console.error("bot tick failed:", err);
+    // Log each distinct failure once (e.g. database down), not every poll.
+    const msg = String((err as Error).message ?? err);
+    if (msg !== lastError) console.error("bot tick failed (retrying quietly):", err);
+    lastError = msg;
   } finally {
     running = false;
   }

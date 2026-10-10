@@ -39,5 +39,6 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | `GET /replay/status` added to the engine contract | v3 omitted it; every page needs the current run and clock | Jesse |
 | Oct 10 | Plan v3.1: hosting, Caddy, domain and deploys move to Jesse; timeline re-based from Hour 4.5, G2 at Hour 6.5 | Jesse's code was done; Zeke was the bottleneck | Both |
 | Oct 10 | Commits go straight to `main` | Faster than pull requests during the build | Jesse |
-| Oct 10 | Chain service listens on 127.0.0.1 only | Caddy is the only public entry point | Jesse |
+| Oct 10 | Chain service listens on 127.0.0.1 only | The gateway is the only public entry point | Jesse |
+| Oct 10 | No Vultr: host on the demo laptop behind Cloudflare Tunnel; keep the GoDaddy domain via Cloudflare DNS; Vultr track dropped | Team decision; no server to run, one command starts the stack | Jesse |
 | Oct 10 | Old plan versions moved to `docs/plan/archive/` | One current plan at the top level | Jesse |

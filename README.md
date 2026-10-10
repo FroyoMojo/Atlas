@@ -1,6 +1,6 @@
 # Atlas: parametric flood protection for Houston
 
-> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on a local validator, and the deployment kit (`deploy/`) is ready. Next: devnet, hosting, the phone test and the engine (`data/`, `engine/`). The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
+> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on a local validator, and laptop hosting (`deploy/`) is ready. Next: devnet, the public URL, the phone test and the engine (`data/`, `engine/`). The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
 
 Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Ezekiel (data and risk) and Jesse (chain, product and hosting).
 
@@ -29,7 +29,6 @@ Architecture diagram: [build plan v3.1](docs/plan/Atlas_Build_Plan_v3.1.pdf), se
 | Best Environment Hack | Climate adaptation that protects a local community from flooding |
 | Best Use of Solana | Non-transferable Token-2022 policies, atomic purchase, Squads multisig vault, payout bot with intents, Memo evidence, catastrophe bond token |
 | Best Use of Tiger Data | Hypertables, continuous aggregates, columnstore, event and storm state, money ledger, pricing scenarios, replay engine |
-| Best Use of Vultr | Hosts the engine, chain service, payout bot and dashboard |
 | Best Domain Name from GoDaddy Registry | Domain for the hosted site |
 
 ## Repo layout
@@ -37,7 +36,7 @@ Architecture diagram: [build plan v3.1](docs/plan/Atlas_Build_Plan_v3.1.pdf), se
 ```
 chain/    Solana side (TypeScript): setup scripts, chain service, payout bot      [built]
 web/      Dashboard and phone view (Vite + React)                              [built]
-deploy/   Vultr: Caddy config, systemd units, setup and deploy scripts          [built]
+deploy/   Laptop hosting: gateway + Cloudflare Tunnel guide                     [built]
 tools/    g2_storm.py: opens a storm for Gate G2 before the replay exists       [built]
 docs/     Plan, API contract, evidence format, decisions, demo, guides
 data/     Ingestion, cache, replay streamer (Python)                           [Ezekiel, next]
@@ -56,13 +55,13 @@ engine/   FastAPI: read-only API, events and storms, pricing, stress           [
 | [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
 | [docs/phone-test.md](docs/phone-test.md) | Phantom test that picks purchase Flow A or B |
 | [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
-| [deploy/README.md](deploy/README.md) | Devnet SOL, Vultr server, domain, deploy |
+| [deploy/README.md](deploy/README.md) | Hosting on the demo laptop: gateway, Cloudflare Tunnel, domain |
 
 ## Run
 
 - Chain service and payout bot: [chain/README.md](chain/README.md)
 - Dashboard and phone view: [web/README.md](web/README.md)
-- Server: [deploy/README.md](deploy/README.md)
+- Hosting: [deploy/README.md](deploy/README.md)
 - Configuration: [.env.example](.env.example) (server) and [web/.env.example](web/.env.example)
 
 ## Limitations (short version)
