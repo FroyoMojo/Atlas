@@ -17,3 +17,13 @@ def test_a_c_grade_always_says_why():
     grade, reasons = markets.grade_market(18, 8)
     assert grade == "C" and "44%" in reasons[0]
 
+
+
+def test_freeze_blocking_alert():
+    from app.freeze import blocking_alert
+    ev = lambda e: {"properties": {"event": e}}  # noqa: E731
+    assert blocking_alert([ev("Flood Watch")]) == "Flood Watch"
+    assert blocking_alert([ev("Heat Advisory"), ev("Hurricane Warning")]) == "Hurricane Warning"
+    assert blocking_alert([ev("Flash Flood Warning")]) == "Flash Flood Warning"
+    assert blocking_alert([ev("Flood Advisory"), ev("Wind Advisory"), ev("Heat Warning")]) is None
+    assert blocking_alert([]) is None

@@ -126,7 +126,7 @@ export function CoverPage() {
             </div>
             {gauge && quote?.readiness != null && (
               <div className="notice info" style={{ fontSize: 14 }}>
-                The pool is <b>{Math.round(quote.readiness * 100)}% ready</b>: if a flood hit today you'd get{" "}
+                With your policy added, the pool is <b>{Math.round(quote.readiness * 100)}% ready</b>: if a flood hit today you'd get{" "}
                 <b>{price(payout * quote.readiness)}</b> of ${payout}.
                 {quote.premium_if_ready != null && quote.premium_if_ready < quote.premium - 0.005 && (
                   <> The price falls to <b>{price(quote.premium_if_ready)}</b> as the neighborhood gets fully ready.</>
@@ -146,6 +146,7 @@ export function CoverPage() {
             )}
             {buyError && <div className="notice bad">{buyError}</div>}
             <p className="fineprint">
+              {quote && (quote.waiting_days ?? 0) > 0 && <>Protection starts {quote.waiting_days} days after you buy. </>}
               Residents only, one per household. Not property insurance.{" "}
               {gauge && quote && (
                 <button className="why-link" onClick={() => setWhy(!why)} aria-expanded={why}>Why {price(quote.premium)}?</button>

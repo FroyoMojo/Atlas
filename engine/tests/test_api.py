@@ -210,3 +210,58 @@ def test_gauge_rates_used_only_at_current_trigger(client):
     assert fresh["term_days"] == 90
     main.db.execute("DELETE FROM gauge_rates")
     main._cache.clear()
+
+
+# ---------- readiness, funding and the sales freeze (docs/readiness.md, app/freeze.py) ----------
+
+def _pin_sizing(monkeypatch):
+    from app import settings
+    monkeypatch.setattr(settings, "SNAPSHOT_VAULT", 5300.0)
+    monkeypatch.setattr(settings, "SEED_RESERVE", 300.0)
+
+
+def test_readiness_view(client, monkeypatch):
+    _pin_sizing(monkeypatch)
+    r = client.get("/readiness")
+    assert r.status_code == 200
+    d = r.json()
+    assert 0 <= d["pool"]["readiness"] <= 1 and 0 <= d["pool"]["community_readiness"] <= 1
+    live = [m for m in d["markets"] if m["kind"] == "live"]
+    assert [m["market_id"] for m in live] == ["g-brays"]
+    m = live[0]
+    assert m["grade"] in ("A", "B", "C") and m["price_if_ready"] <= m["price_standard"]
+
+
+def test_unledgered_vault_money_earns_no_discount(client, monkeypatch):
+    """Vault money the ledger can't explain still pays out, but is not community money."""
+    from app import main
+    _pin_sizing(monkeypatch)
+    monkeypatch.setattr(main, "chain_balances", lambda fresh=False: {"vault": 9000, "float": 1500})
+    fs = main.funding_state()
+    contributed = 300 + fs["premiums"] + fs["donations"]
+    assert fs["community"] == pytest.approx(contributed)
+    assert fs["unexplained"] == pytest.approx(9000 - 5000 - contributed)
+    assert fs["funds"] == pytest.approx(9000)
+
+
+def test_quote_reports_readiness_and_waiting(client):
+    from app import settings
+    q = client.get("/quote", params={"gauge": "g-brays", "payout": 500}).json()
+    assert {"readiness", "community_readiness", "premium_if_ready", "readiness_pricing"} <= q.keys()
+    assert q["waiting_days"] == settings.WAITING_DAYS
+
+
+def test_live_sales_freeze(client, monkeypatch):
+    from app import freeze, main, settings
+    monkeypatch.setattr(settings, "LIVE_FREEZE", True)
+    g = {"trigger_ft": 40, "lat": 29.70, "lon": -95.40}
+    monkeypatch.setattr(freeze, "nws_alert", lambda lat, lon: None)
+    assert main.sales_status("g-brays", None, g) == (True, None)          # live river ~25 ft, no alert
+    monkeypatch.setattr(freeze, "nws_alert", lambda lat, lon: "Flood Watch")
+    ok, why = main.sales_status("g-brays", None, g)
+    assert not ok and "Flood Watch" in why
+    monkeypatch.setattr(freeze, "nws_alert", lambda lat, lon: None)
+    ok, why = main.sales_status("g-brays", None, {**g, "trigger_ft": 20})  # river above this trigger
+    assert not ok and "flood level" in why
+    monkeypatch.setattr(settings, "LIVE_FREEZE", False)
+    assert main.sales_status("g-brays", None, g) == (True, None)

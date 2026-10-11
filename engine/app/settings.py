@@ -22,6 +22,11 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 CHAIN_URL = os.environ.get("CHAIN_URL") or f"http://127.0.0.1:{os.environ.get('CHAIN_PORT') or 8787}"
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 DEMO_MODE = (os.environ.get("DEMO_MODE") or "true").lower() == "true"
+# Protection starts this many days after purchase, so nobody can buy once a storm is forecast.
+# The chain service reads the same variable. Default: 7, or 0 in demo mode (the replay is minutes long).
+WAITING_DAYS = int(_float("WAITING_DAYS", 0 if DEMO_MODE else 7))
+# Outside a replay, close sales while the NWS has a flood or storm watch/warning at the gauge.
+LIVE_FREEZE = (os.environ.get("LIVE_FREEZE") or "true").lower() == "true"
 # Optional: command that streams the replay into gauge_readings. Started by POST /replay/start
 # with RUN_ID in its environment, stopped by POST /replay/reset. Ezekiel owns the streamer.
 REPLAY_CMD = env_str("REPLAY_CMD")

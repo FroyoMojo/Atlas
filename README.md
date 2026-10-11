@@ -60,6 +60,7 @@ engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms
 | [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
 | [docs/phone-test.md](docs/phone-test.md) | Phantom test that picks purchase Flow A or B |
 | [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
+| [docs/morning.md](docs/morning.md) | **Oct 11 morning runbook:** overnight changes and the steps to submission |
 | [docs/checklist.md](docs/checklist.md) | Submission checklist: what is done, what is left |
 | [docs/readiness.md](docs/readiness.md) | Readiness Markets: spec, demo runbook, what we may claim |
 | [docs/devpost.md](docs/devpost.md) | Devpost text (pitch and "About the project") |

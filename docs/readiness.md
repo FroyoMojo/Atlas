@@ -28,7 +28,7 @@ comparable. Numbers below come from `python data/demo_sizing.py 4 600 300 brays`
 | 1 | Four wallets buy $500 on Brays. Each price counts the pool already stretched by earlier buyers | $16.69, $19.43, $20.33, $20.77 (standard $22.50) |
 | 2 | Readiness drops as cover is sold: $2,000 owed against about $677 of funds | **34% ready** |
 | 3 | **Run 1.** Start the replay: every household is paid what the pool has, pro rata (`f_int`) | about **$169** of $500 each |
-| 4 | Reset, buy again. A judge opens **Fund readiness** and donates about **$1,320** from their phone. Donate **before** Start: the run records its opening balance at Start | readiness **100%**; a new Brays quote falls to **$15.91** |
+| 4 | Reset (the four policies come back active, so nobody buys again: one policy per wallet). A judge opens **Fund readiness** and donates about **$1,320** from their phone. Donate **before** Start: the run records its opening balance at Start | readiness **100%**; a new Brays quote falls to **$15.91** |
 | 5 | **Run 2.** Start again | the full **$500** each |
 | 6 | Payouts consume the donation, so the next Reset refills to the snapshot and the sequence repeats | |
 
@@ -79,7 +79,7 @@ money out, so shrinking the live vault needs its own step (the vault holds about
 5. **Check the pool:** `npm run status` shows the vault at 600; `GET /engine/readiness` shows `pool.funds_usd` 600 and `fully_funded_cover_usd` 600 with nothing sold.
 6. **Buy four policies on Brays** from the four demo wallets. Quotes should read about $16.69, $19.43, $20.33, $20.77 and readiness about 34%.
 7. **Run 1:** Start. Each household is paid about $169. The reconciliation badge must be green.
-8. **Reset, buy again, donate** about $1,320 from a phone (**donate before Start**), check readiness 100% and that a new Brays quote is about $15.91, then **Run 2:** Start. Each household is paid $500. Green again.
+8. **Reset** (the four policies come back active; don't buy again, one policy per wallet), **donate** about $1,320 from a phone (**donate before Start**), check readiness 100% and that a new Brays quote is about $15.91, then **Run 2:** Start. Each household is paid $500. Green again.
 9. Repeat 6 to 8 once more with no code changes. That is the freeze gate.
 
 A donation that is not consumed by a run stays in the vault (Reset never removes money), so the
