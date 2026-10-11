@@ -5,6 +5,9 @@ export const config = {
   // Empty or relative = same origin, so one build works on the tunnel URL and the domain.
   engineUrl: e.VITE_ENGINE_URL || "/engine", // an empty value means the default, not the site root
   chainUrl: e.VITE_CHAIN_URL ?? "",
+  // Harvey footage on the landing page: a YouTube video id, and the second to start at.
+  footageId: e.VITE_FOOTAGE_ID ?? "",
+  footageStart: Number(e.VITE_FOOTAGE_START ?? 0) || 0,
   rpcUrl: e.VITE_RPC_URL ?? "https://api.devnet.solana.com",
   ausdMint: e.VITE_AUSD_MINT ?? "",
   explorerCluster: e.VITE_EXPLORER_CLUSTER ?? "devnet",

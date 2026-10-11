@@ -202,7 +202,6 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
               </div>
             )}
             <div className="list">
-              <Link to="/how#if-it-floods">What to do if it floods <span>→</span></Link>
               <a href={explorer(active.policy_mint, "address")} target="_blank" rel="noreferrer">Your policy on Solana <span>→</span></a>
             </div>
             <Others list={others} />

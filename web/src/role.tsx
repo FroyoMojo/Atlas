@@ -7,10 +7,11 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 
 export type Role = "household" | "sponsor" | "investor";
 
-export const ROLES: Record<Role, { label: string; blurb: string; cta: { to: string; text: string } }> = {
-  household: { label: "Household", blurb: "I live in a covered area and want a payment if my river floods.", cta: { to: "/protect", text: "Get protected" } },
-  sponsor: { label: "Sponsor", blurb: "I want to fund a community's readiness. A gift: no return.", cta: { to: "/readiness", text: "Fund readiness" } },
-  investor: { label: "Investor", blurb: "I want a return for carrying the remote flood risk.", cta: { to: "/invest", text: "Invest" } },
+// `home` is where logging in as that person lands.
+export const ROLES: Record<Role, { label: string; blurb: string; home: string; cta: { to: string; text: string } }> = {
+  household: { label: "Household", blurb: "I live in a covered area and want a payment if my river floods.", home: "/protect", cta: { to: "/protect", text: "Get protected" } },
+  sponsor: { label: "Sponsor", blurb: "I want to fund a community's readiness. A gift: no return.", home: "/readiness", cta: { to: "/readiness", text: "Fund readiness" } },
+  investor: { label: "Investor", blurb: "I want a return for carrying the remote flood risk.", home: "/invest", cta: { to: "/invest", text: "Invest" } },
 };
 
 const isRole = (v: unknown): v is Role => v === "household" || v === "sponsor" || v === "investor";

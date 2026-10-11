@@ -16,7 +16,6 @@ import { RoleProvider } from "./role";
 import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CoverPage } from "./pages/CoverPage";
-import { HowPage } from "./pages/HowPage";
 import { InvestPage } from "./pages/InvestPage";
 import { MapPage } from "./pages/MapPage";
 import { MyPage } from "./pages/MyPage";
@@ -49,13 +48,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/protect/:id" element={<CoverPage />} />
                 <Route path="/gauge/:id" element={<GaugeRedirect />} />
                 <Route path="/me" element={<MyPage />} />
+                <Route path="/how" element={<Navigate to="/" replace />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/proof" element={<ProofPage />} />
                 <Route path="/readiness" element={<ReadinessPage />} />
                 <Route path="/pool" element={<Navigate to="/proof" replace />} />
                 <Route path="/verify" element={<ProofPage />} />
                 <Route path="/invest" element={<InvestPage />} />
-                <Route path="/how" element={<HowPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>

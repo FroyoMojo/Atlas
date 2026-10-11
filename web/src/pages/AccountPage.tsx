@@ -29,8 +29,8 @@ export function AccountPage() {
   if (!owner) {
     return (
       <>
-        {head("Your account", "Sign in to see what you hold.")}
-        <div className="page"><button className="btn btn-primary" onClick={() => openPanel("signin")}>Sign in</button></div>
+        {head("Your account", "Log in to see what you hold.")}
+        <div className="page"><button className="btn btn-primary" onClick={() => openPanel("signin")}>Log in</button></div>
       </>
     );
   }

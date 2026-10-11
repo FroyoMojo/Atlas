@@ -287,3 +287,33 @@ input { font: inherit; }
   .steps3 { grid-template-columns: 1fr; }
   .contours { width: 100%; opacity: 0.35; }
 }
+
+/* Landing page: footage and map side by side under the premise */
+.hero-cta { align-self: flex-start; margin-top: 8px; }
+.stage { margin: -48px 40px 24px; padding: 18px 22px 22px; display: flex; flex-direction: column; gap: 14px; }
+.stage-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 28px; flex-wrap: wrap; }
+.stage-kicker { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--navy); }
+.stage-stats { display: flex; gap: 28px; }
+.stage-stats > div { display: flex; flex-direction: column; }
+.stage-stats b { font-family: var(--display); font-size: 28px; font-weight: 800; line-height: 1; color: var(--navy); }
+.stage-stats span { font-size: 13px; color: var(--muted); }
+.stage-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.stage-grid .map-box { flex: none; min-height: 0; height: 100%; aspect-ratio: 16 / 10; }
+.footage { position: relative; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; background: #0b1f30; }
+.footage-frame, .footage-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+.footage-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--sky-text); font-size: 14px; }
+.footage-tag { position: absolute; left: 12px; top: 12px; display: flex; align-items: center; gap: 6px; background: rgba(16, 24, 40, 0.78); color: #fff; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 5px 11px; }
+.footage-tag.hot { background: var(--red); }
+.link-btn { background: none; border: 0; padding: 4px 0; color: #0b4a7a; font-weight: 600; font-size: 14px; text-decoration: underline; align-self: center; }
+.footer-links { display: flex; gap: 16px; justify-content: center; margin-top: 6px; }
+@media (max-width: 760px) {
+  .stage { margin: -48px 16px 20px; padding: 16px; }
+  .stage-grid { grid-template-columns: 1fr; }
+}
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 8px 40px 8px; max-width: 1200px; margin: 0 auto; }
+.how > div { display: flex; flex-direction: column; gap: 6px; }
+.how h3 { margin: 0; font-size: 18px; }
+.how p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.how .num { width: 28px; height: 28px; border-radius: 14px; background: var(--tint); color: var(--navy); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.how .how-note { grid-column: 1 / -1; font-size: 13px; color: var(--muted-2); }
+@media (max-width: 760px) { .how { grid-template-columns: 1fr; padding: 8px 16px; } }
