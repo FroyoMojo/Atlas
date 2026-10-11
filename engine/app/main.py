@@ -369,6 +369,7 @@ def readiness_view():
     fs = funding_state()
     r = pricing.readiness(fs["funds"], owed_total)
     r_c = pricing.readiness(fs["community"], owed_total)
+    parts = pricing.attribute_community(fs["community"], fs["seed"], fs["premiums"], fs["donations"])
     k500 = pricing.k_share(h["capital"], 500.0, h["total_b"])
     args = (settings.TERM_YEARS, settings.THETA, settings.COST_OF_CAPITAL, k500)
 
@@ -415,7 +416,11 @@ def readiness_view():
                  # What the pool could pay in full today: with nothing sold, readiness reads 100%, so
                  # the page should say "can fully fund $X of cover" and how much is sold already.
                  "fully_funded_cover_usd": round(fs["funds"], 2), "cover_sold_usd": round(owed_total, 2),
-                 "funding": {"community_money": round(fs["community"], 2), "outside_capital": round(fs["outside"], 2),
+                 # The four parts add up to funds_usd. Community money is attributed to its sources in
+                 # proportion to what was contributed; `contributed` is the raw ledger total.
+                 "funding": {"seed_reserve": round(parts[0], 2), "household_premiums": round(parts[1], 2),
+                             "sponsor_donations": round(parts[2], 2), "outside_capital": round(fs["outside"], 2),
+                             "community_money": round(fs["community"], 2),
                              "contributed": {"seed_reserve": round(fs["seed"], 2),
                                              "household_premiums": round(fs["premiums"], 2),
                                              "sponsor_donations": round(fs["donations"], 2)}},

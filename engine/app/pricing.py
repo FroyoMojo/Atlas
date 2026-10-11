@@ -42,6 +42,19 @@ def funding_split(vault: float, bond_nominal: float) -> tuple[float, float]:
     return vault - outside, outside
 
 
+def attribute_community(community: float, seed: float, premiums: float, donations: float
+                        ) -> tuple[float, float, float]:
+    """Split community money back into (seed reserve, household premiums, sponsor donations) in
+    proportion to what was contributed, so the parts add up to what is really in the vault (the
+    ledger's contributions add up over several runs and drift from the balance after payouts)."""
+    seed, premiums, donations = max(0.0, seed), max(0.0, premiums), max(0.0, donations)
+    total = seed + premiums + donations
+    if community <= 0 or total <= 0:
+        return 0.0, 0.0, 0.0
+    f = community / total
+    return seed * f, premiums * f, donations * f
+
+
 def premium(payout: float, lam: float, t_years: float, theta: float, c: float, k: float,
             minimum: float = 0.0, *, readiness_c: float = 0.0, expense: float = 0.0) -> float:
     """pi = E[L](1 + theta) + c k t, with E[L] = B (1 - e^{-lambda t}) (7.2).

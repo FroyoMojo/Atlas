@@ -137,3 +137,13 @@ def test_demo_sequence_readiness_and_payouts():
     c1, _ = pricing.funding_split(1000, 700)
     c2, _ = pricing.funding_split(2000, 700)
     assert pricing.readiness(c1, owed) == 0.15 and pricing.readiness(c2, owed) == 0.65   # price drivers
+
+
+def test_community_money_is_attributed_to_its_sources_and_adds_up():
+    seed, prem, don = pricing.attribute_community(1300, 300, 0, 1000)    # demo after a 1000 donation
+    assert math.isclose(seed + prem + don, 1300)
+    assert math.isclose(don / seed, 1000 / 300)
+    assert pricing.attribute_community(0, 300, 90, 1000) == (0.0, 0.0, 0.0)   # reserve spent
+    assert pricing.attribute_community(500, 0, 0, 0) == (0.0, 0.0, 0.0)        # nothing contributed
+    s2, p2, d2 = pricing.attribute_community(432.66, 300, 132.66, 0)
+    assert math.isclose(s2 + p2 + d2, 432.66)
