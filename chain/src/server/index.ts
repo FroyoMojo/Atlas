@@ -470,13 +470,31 @@ app.get(
 
 // ---------- balances and reset (plan v3 6.6, 8.9) ----------
 
+// The RPC provider load-balances across nodes that can be minutes apart, so the same balance read can
+// flip between the old and new value. Every read reports the slot it was served at; an answer from a
+// slot older than one already seen is from a lagging node, so ask again.
+let highestSlotSeen = 0;
+async function freshRead<T>(read: () => Promise<{ context: { slot: number }; value: T }>): Promise<T> {
+  let last: { context: { slot: number }; value: T } | undefined;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    last = await read();
+    if (last.context.slot >= highestSlotSeen) {
+      highestSlotSeen = last.context.slot;
+      return last.value;
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return last!.value; // every node answered behind: better a slightly old balance than none
+}
+
 async function balances() {
   const ausdMint = requireState("ausdMint");
   const vault = requireState("vault");
   const bot = loadKeypair("bot").publicKey;
   const bal = async (owner: PublicKey, offCurve = false) => {
     try {
-      return fromUnits((await getAccount(connection, ausdAta(ausdMint, owner, offCurve), "confirmed", AUSD_PROGRAM_ID)).amount);
+      const v = await freshRead(() => connection.getTokenAccountBalance(ausdAta(ausdMint, owner, offCurve), "confirmed"));
+      return fromUnits(v.amount);
     } catch {
       return 0;
     }
@@ -485,8 +503,8 @@ async function balances() {
   return {
     vault: await bal(vault, true),
     float: await bal(bot),
-    bond_units: fromUnits((await getMint(connection, bondMint, "confirmed")).supply),
-    ausd_supply: fromUnits((await getMint(connection, ausdMint, "confirmed")).supply),
+    bond_units: fromUnits((await freshRead(() => connection.getTokenSupply(bondMint, "confirmed"))).amount),
+    ausd_supply: fromUnits((await freshRead(() => connection.getTokenSupply(ausdMint, "confirmed"))).amount),
     at: new Date().toISOString(),
   };
 }
