@@ -60,7 +60,12 @@ async function finalize(i: dbq.Intent): Promise<void> {
 async function recoverIntents(): Promise<void> {
   const open = await dbq.unsettledIntents();
   if (!open.length) return;
-  const statuses = await connection.getSignatureStatuses(open.map((i) => i.tx_sig), { searchTransactionHistory: true });
+  // getSignatureStatuses takes at most 256 signatures per call.
+  const statuses = { value: [] as Awaited<ReturnType<typeof connection.getSignatureStatuses>>["value"] };
+  for (let k = 0; k < open.length; k += 256) {
+    const part = await connection.getSignatureStatuses(open.slice(k, k + 256).map((i) => i.tx_sig), { searchTransactionHistory: true });
+    statuses.value.push(...part.value);
+  }
   const height = await connection.getBlockHeight("confirmed");
   for (const [n, i] of open.entries()) {
     const st = statuses.value[n];
@@ -76,6 +81,9 @@ async function recoverIntents(): Promise<void> {
   }
 }
 
+const MAX_ATTEMPTS = 5;
+const gaveUp = new Set<string>();
+
 async function pay(p: {
   kind: PayoutKind;
   storm: dbq.Storm;
@@ -87,6 +95,13 @@ async function pay(p: {
   const intentId = intentIdFor(p.policyMint, p.storm.storm_id, p.kind);
   const existing = await dbq.getIntent(intentId);
   if (existing && existing.status !== "expired") return;
+  // A payout that keeps failing on-chain is not rebuilt forever (each try costs fees): after
+  // MAX_ATTEMPTS it stays expired and needs a look (journalctl shows the error).
+  if (existing && existing.attempts >= MAX_ATTEMPTS) {
+    if (!gaveUp.has(intentId)) console.warn(`  intent ${intentId.slice(0, 8)} failed ${existing.attempts} times; not retrying`);
+    gaveUp.add(intentId);
+    return;
+  }
 
   const params = {
     kind: p.kind,

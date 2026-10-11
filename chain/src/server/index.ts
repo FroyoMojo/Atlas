@@ -685,7 +685,8 @@ async function confirmPurchases(): Promise<void> {
         continue;
       }
       // Oldest first: [precreate, purchase, later status updates...]. The purchase is the second.
-      const sigs = (await connection.getSignaturesForAddress(mint, { limit: 50 }, "confirmed")).reverse();
+      // Failed attempts (a buyer's rejected try) are skipped, so the recorded signature is the real purchase.
+      const sigs = (await connection.getSignaturesForAddress(mint, { limit: 50 }, "confirmed")).filter((s) => !s.err).reverse();
       const purchase = sigs[1] ?? sigs[0];
       const txSig = purchase?.signature ?? null;
       const landedAt = purchase?.blockTime ? new Date(purchase.blockTime * 1000) : new Date();
@@ -724,11 +725,52 @@ async function confirmPurchases(): Promise<void> {
   }
 }
 
+// ---------- vault scan: book deposits and donations the submit path missed ----------
+// The pending/unbooked maps above live in memory: a restart between send and confirm, or a wallet
+// that broadcasts a signed donation itself (no server signature is needed), would leave money in
+// the vault with no ledger entry and turn reconciliation red. Every minute this reads the vault's
+// recent transactions, picks the ones whose Memo marks a bond deposit or donation, and books any
+// that are missing. Booking is idempotent per signature, so a double booking writes nothing.
+
+const scanned = new Set<string>();
+let lastVaultScan = 0;
+
+async function scanVault(): Promise<void> {
+  if (Date.now() - lastVaultScan < 60_000) return;
+  lastVaultScan = Date.now();
+  const ausdMint = requireState("ausdMint");
+  const vault = requireState("vault");
+  const vaultAta = ausdAta(ausdMint, vault, true);
+  const sigs = await connection.getSignaturesForAddress(vaultAta, { limit: 25 }, "confirmed");
+  for (const s of sigs) {
+    if (s.err || scanned.has(s.signature)) continue;
+    const kind = s.memo?.includes("atlas:donation") ? "donation" : s.memo?.includes("atlas:bond:deposit") ? "bond" : null;
+    if (!kind) {
+      scanned.add(s.signature);
+      continue;
+    }
+    if (unbookedBonds.has(s.signature) || unbookedDonations.has(s.signature)) continue; // the settle loops have it
+    const tx = await connection.getTransaction(s.signature, { maxSupportedTransactionVersion: 0, commitment: "confirmed" });
+    if (!tx?.meta) continue; // try again next scan
+    const owner = vault.toBase58();
+    const mint = ausdMint.toBase58();
+    const bal = (list: typeof tx.meta.preTokenBalances) =>
+      Number(list?.find((b) => b.owner === owner && b.mint === mint)?.uiTokenAmount.amount ?? 0);
+    const amount = fromUnits(BigInt(bal(tx.meta.postTokenBalances) - bal(tx.meta.preTokenBalances)));
+    const payer = tx.transaction.message.getAccountKeys().get(0)?.toBase58();
+    scanned.add(s.signature);
+    if (!(amount > 0) || !payer) continue;
+    const landedAt = s.blockTime ? new Date(s.blockTime * 1000) : new Date();
+    if (kind === "donation") await bookDonation(s.signature, { donor: payer, amount }, landedAt);
+    else await bookBond(s.signature, { investor: payer, amount }, landedAt);
+  }
+}
+
 let confirming = false;
 setInterval(() => {
   if (confirming) return; // never overlap: RPC calls are serial and can be slow
   confirming = true;
-  void Promise.all([confirmPurchases(), settleBonds(), settleDonations()])
+  void Promise.all([confirmPurchases(), settleBonds(), settleDonations(), scanVault()])
     .catch((e) => console.warn("confirmer", e))
     .finally(() => (confirming = false));
 }, 4_000);
