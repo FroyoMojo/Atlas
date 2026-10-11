@@ -14,7 +14,7 @@ a second demo wallet. Name the bayou only after the data confirms it triggers (B
 | 0:00 to 0:15 | "Maria rents in Meyerland. Federal flood claims take weeks. She needs money in the first 72 hours." |
 | 0:15 to 0:35 | Tap a demo gauge. Quote: probability, premium, band. Buy on the phone. If it hasn't confirmed in 10 seconds: "here's one we bought earlier", switch to the backup wallet. |
 | 0:35 to 1:10 | Start the replay. The map turns red; the phone view shows "+$500 • PAID • Brays Bayou". |
-| 1:10 to 1:30 | Pool page: reserve used, bond absorbs the rest, reconciliation green. "Priced from decades of gauge data in Tiger Data, settled on Solana in seconds." |
+| 1:10 to 1:30 | Proof page: reserve used, bond absorbs the rest, reconciliation green. "Priced from decades of gauge data in Tiger Data, settled on Solana in seconds." |
 
 ## 4-minute version
 
@@ -22,8 +22,8 @@ a second demo wallet. Name the bayou only after the data confirms it triggers (B
 | --- | --- |
 | 0:00 to 0:30 | The gap, told through Maria. One sentence on Atlas. |
 | 0:30 to 1:15 | A demo gauge. Quote with band and the history behind it. Buy on the phone (backup ready). "Waiting period is off in demo mode." |
-| 1:15 to 2:30 | Replay. Map turns red; payouts land; phone shows PAID. Storm closes: "everyone in the storm gets the same share." Pool: reserve used, NAV drops. |
-| 2:30 to 3:00 | Verify one payout: preimage, hash, Memo match. |
+| 1:15 to 2:30 | Replay. Map turns red; payouts land; phone shows "We've sent you $500". Storm closes: "everyone in the storm gets the same share." Proof: money set aside drops, books still match. |
+| 2:30 to 3:00 | Proof page: press Verify on one payout; it recomputes the reading's fingerprint and matches the Memo. |
 | 3:00 to 3:30 | Numbers: worst-year capital need, simulated interim and true-up shares, Tiger compression ratio. |
 | 3:30 to 4:00 | Limitations in one breath (basis risk, licensing, cash-out), then the close. |
 

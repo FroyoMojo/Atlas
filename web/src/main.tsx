@@ -7,15 +7,21 @@ import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { config } from "./config";
 import { AdminPage } from "./pages/AdminPage";
-import { GaugePage } from "./pages/GaugePage";
+import { CoverPage } from "./pages/CoverPage";
+import { HowPage } from "./pages/HowPage";
+import { InvestPage } from "./pages/InvestPage";
 import { MapPage } from "./pages/MapPage";
-import { PhonePage } from "./pages/PhonePage";
-import { PoolPage } from "./pages/PoolPage";
-import { VerifyPage } from "./pages/VerifyPage";
+import { MyPage } from "./pages/MyPage";
+import { ProofPage } from "./pages/ProofPage";
+
+// Old links (#/gauge/:id from Blinks and policy metadata) land on the new pages.
+function GaugeRedirect() {
+  return <Navigate to={`/protect/${encodeURIComponent(useParams().id ?? "")}`} replace />;
+}
 
 // Phantom and Solflare register themselves through the Wallet Standard, so no adapters are listed.
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -25,13 +31,20 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <WalletModalProvider>
           <HashRouter>
             <Routes>
-              <Route path="/phone" element={<PhonePage />} />
+              <Route path="/phone" element={<MyPage standalone />} />
               <Route element={<Layout />}>
                 <Route path="/" element={<MapPage />} />
-                <Route path="/gauge/:id" element={<GaugePage />} />
-                <Route path="/pool" element={<PoolPage />} />
-                <Route path="/verify" element={<VerifyPage />} />
+                <Route path="/protect" element={<CoverPage />} />
+                <Route path="/protect/:id" element={<CoverPage />} />
+                <Route path="/gauge/:id" element={<GaugeRedirect />} />
+                <Route path="/me" element={<MyPage />} />
+                <Route path="/proof" element={<ProofPage />} />
+                <Route path="/pool" element={<Navigate to="/proof" replace />} />
+                <Route path="/verify" element={<ProofPage />} />
+                <Route path="/invest" element={<InvestPage />} />
+                <Route path="/how" element={<HowPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
           </HashRouter>

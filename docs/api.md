@@ -19,7 +19,7 @@ as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 | `GET /storms?run_id=` | `[{storm_id, status, f_int, f_fin, events: [{event_id, gauge_id, opened_at, closed_at, value, evidence_hash, preimage}], payouts: [{policy, kind, amount, tx_sig}]}]`. `payouts` = confirmed rows of `payout_intents`. |
 | `GET /stress?scenario=harvey\|worst_year` | `{aggregate_loss, reserve_used, bond_used, f_fin, investor_loss_pct}` |
 | `GET /ledger?run_id=` | Ledger rows and totals by account |
-| `GET /replay/status` | `{run_id, status, clock, streaming}` for the latest run (status `running`, `done` or `reset`). Added to v3: every page needs the current run and its clock. |
+| `GET /replay/status` | `{run_id, status, clock, streaming, started_wall, shift_seconds, replay_seconds}` for the latest run (status `running`, `done` or `reset`). Added to v3: every page needs the current run and its clock. |
 | `POST /replay/start` | `{run_id, opening: {vault, float}, streamer}`. Header `X-Admin-Token`. Records opening balances from `GET /chain/balances` and starts the replay. A run still running is abandoned (marked `reset`). 409 while another Start/Reset is in progress. |
 | `POST /replay/reset` | `{run_id, chain, chain_error, reconciled, reconcile_detail}`. Header `X-Admin-Token`. Stops the run, marks it `reset`, calls `POST /chain/reset`, then reconciles. |
 

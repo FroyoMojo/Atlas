@@ -91,7 +91,10 @@ def client():
 
 
 def test_replay_status(client):
-    assert client.get("/replay/status").json() == {"run_id": "run-t", "status": "running", "clock": "2026-10-11T06:00:00Z", "streaming": False}
+    s = client.get("/replay/status").json()
+    assert {k: s[k] for k in ("run_id", "status", "clock", "streaming")} == {
+        "run_id": "run-t", "status": "running", "clock": "2026-10-11T06:00:00Z", "streaming": False}
+    assert s["started_wall"] and s["replay_seconds"] > 0 and "shift_seconds" in s
 
 
 def test_gauges(client):
@@ -163,8 +166,8 @@ def test_admin(client, monkeypatch):
         if not replay.running():
             break
         time.sleep(0.1)
-    assert client.get("/replay/status").json() | {"clock": None} == {
-        "run_id": r["run_id"], "status": "done", "clock": None, "streaming": False}
+    s = client.get("/replay/status").json()
+    assert {k: s[k] for k in ("run_id", "status", "streaming")} == {"run_id": r["run_id"], "status": "done", "streaming": False}
 
     # A second Start in the same second gets its own id instead of a 500.
     r2 = client.post("/replay/start", headers=H).json()

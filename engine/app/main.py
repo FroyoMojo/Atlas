@@ -166,7 +166,12 @@ def replay_status():
         return {"run_id": None, "status": None, "clock": None}
     clock = run["clock"] or (db.one(
         "SELECT max(event_time) AS t FROM gauge_readings WHERE run_id = %s", (run["run_id"],)) or {}).get("t")
-    return {"run_id": run["run_id"], "status": run["status"], "clock": iso(clock), "streaming": streaming()}
+    shift = run.get("shift")
+    return {"run_id": run["run_id"], "status": run["status"], "clock": iso(clock), "streaming": streaming(),
+            # For the dashboard: historic time = clock - shift; progress = (now - started_wall) / replay_seconds.
+            "started_wall": iso(run["started_wall"]),
+            "shift_seconds": shift.total_seconds() if shift is not None else None,
+            "replay_seconds": float(settings.env_str("REPLAY_SECONDS") or 90)}
 
 
 @app.get("/gauges")
