@@ -110,11 +110,22 @@ def year_losses(book: list[BookPolicy], peaks: dict[str, dict[int, float]],
     return out
 
 
-def required_capital(losses: dict[int, float], harvey_year: int) -> float:
-    """K = max(max_y S_y, S_Harvey) - mean(S): worst observed year above the mean (7.3)."""
+def model_mean_loss(book: list["BookPolicy"], rates: dict[str, float], t_years: float = 1.0) -> float:
+    """Expected annual loss implied by the priced rates: sum_i B_i (1 - e^{-lambda_g t}).
+    This is the mean the premiums are loaded on, so it is the mean K is measured against."""
+    return sum(p.payout * p_payout(rates.get(p.gauge_id, 0.0), t_years) for p in book)
+
+
+def required_capital(losses: dict[int, float], harvey_year: int, mean_loss: float | None = None) -> float:
+    """K = max(max_y S_y, S_Harvey) - mean: worst observed year above the mean (7.3).
+
+    `mean_loss` is the model mean (`model_mean_loss`, the loss the premiums fund). Without it the
+    mean of the scenario years is used, which is wrong when those few years are flood-heavy or
+    flood-light relative to the longer record the rates come from: the reserve then does not
+    cover the mean that K assumes it does."""
     if not losses:
         return 0.0
-    mean = sum(losses.values()) / len(losses)
+    mean = mean_loss if mean_loss is not None else sum(losses.values()) / len(losses)
     worst = max(max(losses.values()), losses.get(harvey_year, 0.0))
     return max(0.0, worst - mean)
 

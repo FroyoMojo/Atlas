@@ -74,3 +74,12 @@ def test_capital_charge_scales_with_the_term():
     assert math.isclose(with_k - base, 0.06 * 312.38 * 90 / 365)      # a quarter of the annual charge
     annual = pricing.premium(500, 0.3, 1.0, 0.35, 0.06, 312.38) - pricing.premium(500, 0.3, 1.0, 0.35, 0.06, 0.0)
     assert math.isclose(annual, 0.06 * 312.38)                         # the plan's c k at t = 1
+
+
+def test_capital_uses_the_model_mean_when_given():
+    losses = {2015: 0, 2016: 1000, 2017: 2000}               # scenario mean 1000
+    assert pricing.required_capital(losses, 2017) == 1000
+    assert pricing.required_capital(losses, 2017, mean_loss=400) == 1600   # 2000 - 400
+    book = [pricing.BookPolicy("a", 500, 0), pricing.BookPolicy("b", 1000, 0)]
+    m = pricing.model_mean_loss(book, {"a": 0.2, "b": 0.1})
+    assert math.isclose(m, 500 * (1 - math.exp(-0.2)) + 1000 * (1 - math.exp(-0.1)))

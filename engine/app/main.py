@@ -123,11 +123,15 @@ def history(fresh: bool = False) -> dict:
             pass
         triggers = {g: v["trigger_ft"] for g, v in gauges.items()}
         losses = pricing.year_losses(book, peaks, triggers)
-        capital = pricing.required_capital(losses, settings.HARVEY_WATER_YEAR)
+        rates = {g: pricing.rate_higher_of(pricing.exceedances(list(peaks.get(g, {}).values()), triggers[g]),
+                                           event_counts.get(g))
+                 for g in {p.gauge_id for p in book} if g in triggers}
+        mean_model = pricing.model_mean_loss(book, rates)
+        capital = pricing.required_capital(losses, settings.HARVEY_WATER_YEAR, mean_model)
         total_b = sum(p.payout for p in book)
         reserve = pricing.reserve_from_book(book, capital, settings.COST_OF_CAPITAL, settings.EXPENSE_RATIO)
         return {"gauges": gauges, "peaks": peaks, "events": event_counts, "book": book, "losses": losses,
-                "capital": capital, "total_b": total_b, "reserve": reserve}
+                "capital": capital, "total_b": total_b, "reserve": reserve, "mean_model": mean_model}
     if fresh:
         _cache.pop("history", None)
     return cached("history", 60, load)
