@@ -53,13 +53,17 @@ engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms
 | File | What it is |
 | --- | --- |
 | [docs/handoff.md](docs/handoff.md) | **Start here.** Status, owners, next steps |
-| [docs/plan/Atlas_Build_Plan_v3.1.pdf](docs/plan/Atlas_Build_Plan_v3.1.pdf) | The current build plan (LaTeX source alongside; older versions in `docs/plan/archive/`) |
+| [docs/plan/Atlas_Build_Plan_v3.1.pdf](docs/plan/Atlas_Build_Plan_v3.1.pdf) | The original build plan (LaTeX source alongside; older versions in `docs/plan/archive/`). Product changes since: [decisions.md](docs/decisions.md), [readiness.md](docs/readiness.md) |
 | [docs/api.md](docs/api.md) | API contract, who writes which table, ledger entries, reconciliation |
 | [docs/evidence.md](docs/evidence.md) | Canonical evidence preimage, code in both languages, test vector |
 | [docs/decisions.md](docs/decisions.md) | Gate G1 checks and every decision with its reason |
 | [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
 | [docs/phone-test.md](docs/phone-test.md) | Phantom test that picks purchase Flow A or B |
 | [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
+| [docs/checklist.md](docs/checklist.md) | Submission checklist: what is done, what is left |
+| [docs/readiness.md](docs/readiness.md) | Readiness Markets: spec, demo runbook, what we may claim |
+| [docs/devpost.md](docs/devpost.md) | Devpost text (pitch and "About the project") |
+| [docs/talking-points.md](docs/talking-points.md) | Live judging walkthrough, Q&A, video script |
 | [deploy/vultr/README.md](deploy/vultr/README.md) | **Hosting (current): the Vultr server at atlasflood.us** |
 | [deploy/WINDOWS.md](deploy/WINDOWS.md) | Fallback: the demo laptop (Windows), step by step |
 | [deploy/README.md](deploy/README.md) | Fallback: laptop + Cloudflare Tunnel (macOS/Linux) |
@@ -70,7 +74,7 @@ engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms
 - USGS loader (gauges, peaks, Harvey window): [data/README.md](data/README.md)
 - Chain service and payout bot: [chain/README.md](chain/README.md)
 - Dashboard and phone view: [web/README.md](web/README.md)
-- Hosting: [deploy/README.md](deploy/README.md)
+- Hosting: [deploy/vultr/README.md](deploy/vultr/README.md) (fallback: [deploy/README.md](deploy/README.md))
 - Configuration: [.env.example](.env.example) (server) and [web/.env.example](web/.env.example)
 
 ## Limitations (short version)

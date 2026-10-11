@@ -30,7 +30,7 @@ dist/
 web/.env.local
 web/dist/
 web/.env.production.local
-deploy/.hosts
+deploy/vultr/.hosts
 
 # Backfill stderr captures
 data/reports/*.err

@@ -40,5 +40,9 @@ CREATE TABLE IF NOT EXISTS payout_intents (
   created_wall            TIMESTAMPTZ NOT NULL DEFAULT now(),
   confirmed_wall          TIMESTAMPTZ
 );
+-- A payout_intents table first created by data/schema.sql lacks these; the bot and /storms use them.
+ALTER TABLE payout_intents ADD COLUMN IF NOT EXISTS owner TEXT;
+ALTER TABLE payout_intents ADD COLUMN IF NOT EXISTS gauge_id TEXT;
+ALTER TABLE payout_intents ADD COLUMN IF NOT EXISTS confirmed_wall TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS payout_intents_status ON payout_intents (status);
 CREATE INDEX IF NOT EXISTS payout_intents_storm ON payout_intents (storm_id, kind);

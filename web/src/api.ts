@@ -4,15 +4,23 @@
 import { getAdminToken } from "./admin";
 import { config } from "./config";
 import { mockEngine } from "./mockEngine";
-import type { Gauge, Policy, Pool, Quote, Readiness, ReplayStatus, Series, Storm, Stress } from "./types";
+import type { Gauge, Policy, Pool, Quote, Readiness, ReplayStatus, Storm, Stress } from "./types";
 
 async function http<T>(base: string, path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((body as { message?: string; detail?: string }).message ?? (body as { detail?: string }).detail ?? `${path}: HTTP ${res.status}`);
+  const text = await res.text();
+  let body: unknown;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    // An HTML error page from a proxy is not data: fail loudly instead of rendering it.
+    throw new Error(res.ok ? `${path}: unexpected response` : `${path}: HTTP ${res.status}`);
+  }
+  const b = body as { message?: string; detail?: string };
+  if (!res.ok) throw new Error(b.message ?? (typeof b.detail === "string" ? b.detail : null) ?? `${path}: HTTP ${res.status}`);
   return body as T;
 }
 
@@ -33,8 +41,6 @@ export const activeRunId = (replay: ReplayStatus | null | undefined): string | n
 export const api = {
   replayStatus: (): Promise<ReplayStatus> => (config.useMocks ? mockEngine.replayStatus() : eng("/replay/status")),
   gauges: (runId: string | null): Promise<Gauge[]> => (config.useMocks ? mockEngine.gauges() : eng(`/gauges${run(runId)}`)),
-  series: (id: string, runId: string | null): Promise<Series> =>
-    config.useMocks ? mockEngine.series(id) : eng(`/gauges/${q(id)}/series${run(runId)}`),
   quote: (id: string, payout: number, runId: string | null): Promise<Quote> =>
     config.useMocks ? mockEngine.quote(id, payout) : eng(`/quote?gauge=${q(id)}&payout=${payout}${run(runId, "&")}`),
   pool: (runId: string | null): Promise<Pool> => (config.useMocks ? mockEngine.pool() : eng(`/pool${run(runId)}`)),

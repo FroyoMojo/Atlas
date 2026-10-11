@@ -7,6 +7,6 @@ export function friendlyError(e: unknown): string {
   if (/insufficient|no record of a prior credit|could not find account|0x1\b/i.test(raw)) {
     return "This wallet has no test dollars (aUSD) yet. Ask the team to send some, then try again.";
   }
-  if (/rejected|declined|denied/i.test(raw)) return "You cancelled the request in your wallet. Nothing was sent.";
+  if (/user rejected|rejected the request|declined|denied by the user|user denied/i.test(raw)) return "You cancelled the request in your wallet. Nothing was sent.";
   return raw;
 }

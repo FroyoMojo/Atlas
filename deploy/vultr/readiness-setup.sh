@@ -21,7 +21,7 @@ GATEWAY=http://127.0.0.1:8080
 SPONSOR="$1"; shift
 JUDGES=("$@")
 
-get_env() { grep -E "^$1=" "$ENVFILE" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true; }
+get_env() { grep -E "^$1=" "$ENVFILE" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'" | tr -d '\r' || true; }
 set_env() { # set_env KEY VALUE: replace the line if present, else append
   if grep -qE "^$1=" "$ENVFILE"; then sed -i "s|^$1=.*|$1=$2|" "$ENVFILE"; else echo "$1=$2" >> "$ENVFILE"; fi
 }

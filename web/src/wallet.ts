@@ -28,8 +28,16 @@ export function useServerTx() {
     async (b64: string): Promise<string> => {
       const signed = await sign(b64);
       const sig = await connection.sendRawTransaction(signed.serialize());
-      await connection.confirmTransaction(sig, "confirmed");
-      return sig;
+      // Poll the status (like the server does) rather than waiting on a websocket, which times out
+      // on busy devnet even when the purchase lands. Still unknown after 60 s: report it as pending,
+      // never as failed, so nobody pays twice.
+      for (let i = 0; i < 40; i++) {
+        const st = await connection.getSignatureStatuses([sig]).then((r) => r.value[0]).catch(() => null);
+        if (st?.err) throw new Error(`Transaction failed on-chain: ${JSON.stringify(st.err)}`);
+        if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) return sig;
+        await new Promise((r) => setTimeout(r, 1_500));
+      }
+      throw new Error(`Still confirming. It may land in a minute: check My protection before trying again. (${sig.slice(0, 8)}…)`);
     },
     [connection, sign],
   );

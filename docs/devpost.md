@@ -1,7 +1,7 @@
 # Devpost submission text
 
 Draft for the Devpost page. Edit here so both of us work from one copy. Check every claim
-against what is live at submission (marked TODO where it depends on the final setup).
+against what is live at submission.
 
 ## Elevator pitch (Devpost limit: 200 characters)
 
@@ -33,7 +33,7 @@ We are a finance major and a quant. We wanted to build the product an insurer, a
 - **Trigger:** when a gauge records two consecutive accepted readings at or above its flood level, Atlas opens an event and records a hash of the exact reading.
 - **Pay:** the payout bot sends the money with a Memo carrying that hash, and the policy turns **PAID** in the same transaction. The phone switches to "Flood detected · Meyerland. We've sent you $500 for immediate costs", with what to do right now: call 911 if in danger, find a shelter, use the money for a room or food.
 - **Proof:** one page shows the money set aside and a "matches the blockchain" check, lists every payout with a **Verify** button that recomputes the reading's fingerprint in your browser, and stress-tests the pool against another Harvey.
-- **Readiness:** every market shows, live, how much of its promised payout is funded right now: "if the river crossed the line this minute you would get $169 of $500". The gap to fully funded is shown per household, and the price falls as the community's own money (premiums and donated sponsor funds) covers more of the risk. Anyone can fund readiness from a wallet, and a market that is only partly ready pays everyone the same share until it is topped up. TODO(live): confirm the $169 and the prices after the first production run.
+- **Readiness:** every market shows, live, how much of its promised payout is funded right now: "if the river crossed the line this minute you would get $169 of $500". The gap to fully funded is shown per household, and the price falls as the community's own money (premiums and donated sponsor funds) covers more of the risk. Anyone can fund readiness from a wallet, and a market that is only partly ready pays everyone the same share until it is topped up.
 - **Markets:** the four live Houston gauges, plus eleven simulated candidates in other regions that Atlas grades A, B or C from the same data (how often the trigger was reached, how many comparable years, how many events). Simulated markets are priced and shown with their gap to launch; nothing is sold there.
 
 For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record: about five days of 15-minute readings at our four covered gauges (Brays Bayou, Buffalo Bayou at Piney Point, Cypress Creek and Spring Creek), squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, the live feed reports each flood in plain words, and payouts land on a real phone.
@@ -116,13 +116,13 @@ $$ \text{opening balance} + \sum \text{this run's ledger rows for that account} 
 
 ## Accomplishments that we're proud of
 
-- A real devnet payout triggered by a replay of the real Harvey record, with the evidence hash on-chain and the books reconciled. Then a reset and a second run, paid and reconciled again.
+- A real devnet payout triggered by a replay of the real Harvey record, with the evidence hash on-chain and the books reconciled; then a reset and a second run, paid and reconciled again (our G2 test, with a local TimescaleDB standing in for Tiger).
 - One atomic purchase, storm-level fair shares with a true-up, and a payout path that can't double-pay.
 - Two full audits of our own code before submission, with every fix re-tested end to end through the dashboard on devnet.
 
 ## What we learned
 
-We tested ideas against our own data and dropped the ones that failed: a retail catastrophe bond (the bond would have lost money in 5 of 10 years), a self-funded community chest (paid 25 to 80% in the 2015 to 2017 cluster) and early-warning payouts (about eight in ten action-stage alerts were false alarms). What survived is smaller and more honest: show how funded a market is, and let the price follow. Parametric insurance is mostly a data problem and a trust problem. The data problem is choosing triggers from records that change under you. The trust problem is proving the payout followed the rule, which is what the hash, the public ledger and the reconciliation are for. And time-series databases make the actuarial work (annual peaks, scenario years, rolling aggregates) much simpler than we expected.
+We tested ideas against our own data and dropped the ones that failed: a single-city bond sitting right behind a thin reserve (it would have lost money in 5 of 10 years, so we moved investors up to a pooled layer that only pays in Harvey-size storms), a self-funded community chest (paid 25 to 80% in the 2015 to 2017 cluster) and early-warning payouts (about eight in ten action-stage alerts were false alarms). What survived is smaller and more honest: show how funded a market is, and let the price follow. Parametric insurance is mostly a data problem and a trust problem. The data problem is choosing triggers from records that change under you. The trust problem is proving the payout followed the rule, which is what the hash, the public ledger and the reconciliation are for. And time-series databases make the actuarial work (annual peaks, scenario years, rolling aggregates) much simpler than we expected.
 
 ## What's next for Atlas
 

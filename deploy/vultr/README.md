@@ -3,7 +3,7 @@
 **This is the current hosting setup** (Best Use of Vultr track). The laptop + Cloudflare Tunnel
 setup in [`../README.md`](../README.md) is the fallback only.
 
-**Status:** DNS done: `atlasflood.us` and `www` resolve to the server, `45.32.196.119`. The same stack runs: Caddy (HTTPS) -> gateway :8080 -> engine :8000
+**Status:** DNS done: `atlasflood.us` and `www` resolve to the server, `45.76.239.177`. The same stack runs: Caddy (HTTPS) -> gateway :8080 -> engine :8000
 and chain service :8787, plus the payout bot. Only Caddy listens on the internet.
 
 ```

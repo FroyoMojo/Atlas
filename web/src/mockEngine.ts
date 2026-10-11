@@ -4,7 +4,7 @@ import gaugesRaw from "../mocks/gauges.json";
 import poolRaw from "../mocks/pool.json";
 import stressRaw from "../mocks/stress.json";
 import { sha256Hex } from "./evidence";
-import type { Gauge, Pool, Quote, Readiness, ReplayStatus, Series, Storm, StormEvent, Stress } from "./types";
+import type { Gauge, Pool, Quote, Readiness, ReplayStatus, Storm, StormEvent, Stress } from "./types";
 
 interface MockGauge {
   gauge_id: string;
@@ -71,18 +71,6 @@ export const mockEngine = {
         };
       }),
     );
-  },
-
-  async series(gaugeId: string): Promise<Series> {
-    const g = gauges.find((x) => x.gauge_id === gaugeId) ?? gauges[0];
-    const t = progress();
-    const points = runId
-      ? steps(t).map((s) => ({ event_time: replayTime(s).toISOString(), stage_ft: stageAt(g, s) }))
-      : Array.from({ length: 48 }, (_, i) => ({
-          event_time: new Date(Date.now() - (47 - i) * 3600_000).toISOString(),
-          stage_ft: g.base_ft + Math.sin(i / 5) * 0.6,
-        }));
-    return delay({ trigger_ft: g.trigger_ft, points, rejected_count: runId ? 2 : 0 });
   },
 
   async quote(gaugeId: string, payout: number): Promise<Quote> {

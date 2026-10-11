@@ -33,10 +33,15 @@ export function usePoll<T>(fn: () => Promise<T>, ms: number, deps: unknown[] = [
         });
     };
     run();
-    const id = setInterval(run, ms);
+    // Hidden tabs don't poll (a room full of phones would otherwise keep hammering the server);
+    // coming back refreshes at once.
+    const id = setInterval(() => document.hidden || run(), ms);
+    const onVisible = () => document.hidden || run();
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       alive = false;
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ms, ...deps]);

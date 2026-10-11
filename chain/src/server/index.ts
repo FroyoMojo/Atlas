@@ -4,6 +4,7 @@
 import { createMintToInstruction, getAccount, getMint } from "@solana/spl-token";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import cors from "cors";
+import { timingSafeEqual } from "node:crypto";
 import express, { NextFunction, Request, Response } from "express";
 import * as dbq from "../db.js";
 import { EngineError, getNavPerUnit, getQuote } from "../engine.js";
@@ -76,7 +77,12 @@ function parsePayout(value: unknown): number {
 async function waitConfirmed(signature: string, timeoutMs = 45_000): Promise<Date | null> {
   const until = Date.now() + timeoutMs;
   while (Date.now() < until) {
-    const st = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
+    // An RPC hiccup (e.g. a 429) after the send must not turn into a failure reply: the
+    // transaction may still land, and a user who sees "failed" would pay again. Keep polling.
+    const st = await connection
+      .getSignatureStatuses([signature], { searchTransactionHistory: true })
+      .then((r) => r.value[0])
+      .catch(() => undefined);
     if (st?.err) throw new HttpError(400, `Transaction failed on-chain: ${JSON.stringify(st.err)}`);
     if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) {
       const t = await connection.getBlockTime(st.slot).catch(() => null);
@@ -105,7 +111,9 @@ setInterval(() => {
 
 function rateLimit(perMinute: number) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = `${req.path}:${req.ip}`;
+    // The route pattern, not the raw path: Express matches /api/Actions/buy/ too, which
+    // would otherwise get its own bucket.
+    const key = `${req.route?.path ?? req.path.toLowerCase()}:${req.ip}`;
     const now = Date.now();
     const recent = (hits.get(key) ?? []).filter((t) => now - t < 60_000);
     if (recent.length >= perMinute) {
@@ -119,14 +127,17 @@ function rateLimit(perMinute: number) {
 }
 
 function requireAllowlisted(account: PublicKey) {
-  if (!env.demoMode || env.demoWallets.length === 0) return;
+  if (!env.demoMode) return;
+  // Demo mode with an empty allowlist refuses everyone rather than accepting everyone.
   if (!env.demoWallets.includes(account.toBase58())) {
     throw new HttpError(403, "Demo mode: this wallet is not on the demo allowlist.");
   }
 }
 
 function requireAdmin(req: Request) {
-  if (!env.adminToken || req.header("x-admin-token") !== env.adminToken) throw new HttpError(401, "Admin token required");
+  const given = Buffer.from(req.header("x-admin-token") ?? "");
+  const want = Buffer.from(env.adminToken ?? "");
+  if (!want.length || given.length !== want.length || !timingSafeEqual(given, want)) throw new HttpError(401, "Admin token required");
 }
 
 /** /chain/reset is localhost only: a direct loopback connection, never via the gateway or tunnel. */
@@ -188,24 +199,35 @@ app.get(
 
 app.post(
   "/api/actions/buy",
-  rateLimit(5),
+  rateLimit(30), // per route per IP: judges on venue Wi-Fi share one IP
   wrap(async (req, res) => {
     const gauge = String(req.query.gauge ?? "");
     const payout = parsePayout(req.query.payout);
     const flow = flowOf(req);
     const buyer = parseAccount(req.body?.account);
     requireAllowlisted(buyer);
-    if (await dbq.activeReservationFor(buyer.toBase58())) {
+    // A reservation needs no signature, so anyone could reserve on a demo wallet's behalf and
+    // lock it out with 409s. An open reservation for the same gauge and payout is therefore
+    // handed back (same mint, same premium) instead of refused.
+    const existing = await dbq.activeReservationDetail(buyer.toBase58());
+    if (existing && (existing.gaugeId !== gauge || existing.payoutUsd !== payout)) {
       throw new HttpError(409, "This wallet already has a purchase in progress; finish it or wait 2 minutes.");
     }
-    const quote = await getQuote(gauge, payout);
-    if (!quote.sales_open) throw new HttpError(403, quote.reason ?? "Sales are closed for this gauge");
-    if (!(Number.isFinite(quote.premium) && quote.premium > 0)) throw new HttpError(503, "No valid premium from the engine");
-    const reservation = await dbq.reservePolicyMint(gauge, buyer.toBase58(), quote.premium, payout);
-    if (reservation === "busy") {
-      throw new HttpError(409, "This wallet already has a purchase in progress; finish it or wait 2 minutes.");
+    let reservation: { policyMint: string; policyId: string };
+    let premium: number;
+    if (existing) {
+      reservation = existing;
+      premium = existing.premiumUsd;
+    } else {
+      const quote = await getQuote(gauge, payout);
+      if (!quote.sales_open) throw new HttpError(403, quote.reason ?? "Sales are closed for this gauge");
+      if (!(Number.isFinite(quote.premium) && quote.premium > 0)) throw new HttpError(503, "No valid premium from the engine");
+      const r = await dbq.reservePolicyMint(gauge, buyer.toBase58(), quote.premium, payout);
+      if (r === "busy") throw new HttpError(409, "This wallet already has a purchase in progress; finish it or wait 2 minutes.");
+      if (!r) throw new HttpError(409, `No policies left for gauge ${gauge}. Run npm run precreate.`);
+      reservation = r;
+      premium = quote.premium;
     }
-    if (!reservation) throw new HttpError(409, `No policies left for gauge ${gauge}. Run npm run precreate.`);
 
     const tx = await buildPurchaseTx({
       connection,
@@ -215,7 +237,7 @@ app.post(
       issuer: issuer.publicKey,
       ausdMint: requireState("ausdMint"),
       vault: requireState("vault"),
-      premiumUnits: toUnits(quote.premium),
+      premiumUnits: toUnits(premium),
     });
     if (flow === "a") {
       tx.partialSign(issuer);
@@ -227,7 +249,7 @@ app.post(
       type: "transaction",
       flow,
       transaction: serializeForWallet(tx),
-      message: `Atlas policy on gauge ${gauge}: ${quote.premium.toFixed(2)} aUSD premium, ${payout} aUSD payout.`,
+      message: `Atlas policy on gauge ${gauge}: ${premium.toFixed(2)} aUSD premium, ${payout} aUSD payout.`,
       policy_mint: reservation.policyMint,
       ...(flow === "b" ? { submit: "/api/purchase/submit" } : {}),
     });
@@ -237,7 +259,7 @@ app.post(
 /** Flow B: the wallet has signed; check it is byte-for-byte the message we built, co-sign, send. */
 app.post(
   "/api/purchase/submit",
-  rateLimit(5),
+  rateLimit(30), // per route per IP: judges on venue Wi-Fi share one IP
   wrap(async (req, res) => {
     const tx = Transaction.from(Buffer.from(String(req.body?.transaction ?? ""), "base64"));
     const reservation = await dbq.reservationByMessageHash(sha256Hex(tx.serializeMessage().toString("base64")));
@@ -295,11 +317,13 @@ async function settleBonds(): Promise<void> {
 
 app.post(
   "/api/bond/deposit",
-  rateLimit(5),
+  rateLimit(30), // per route per IP: judges on venue Wi-Fi share one IP
   wrap(async (req, res) => {
     const investor = parseAccount(req.body?.account);
     requireAllowlisted(investor);
-    const amount = Number(req.body?.amount);
+    const raw = Number(req.body?.amount);
+    // Round to whole aUSD units so the ledger books exactly what moves on-chain.
+    const amount = Number.isFinite(raw) && Math.abs(raw) < 1e12 ? fromUnits(toUnits(raw)) : NaN;
     if (!(Number.isFinite(amount) && amount > 0 && amount <= env.maxBondDeposit)) {
       throw new HttpError(400, `amount must be a number of aUSD between 0 and ${env.maxBondDeposit}`);
     }
@@ -327,7 +351,7 @@ app.post(
 
 app.post(
   "/api/bond/submit",
-  rateLimit(5),
+  rateLimit(30), // per route per IP: judges on venue Wi-Fi share one IP
   wrap(async (req, res) => {
     const tx = Transaction.from(Buffer.from(String(req.body?.transaction ?? ""), "base64"));
     const key = sha256Hex(tx.serializeMessage().toString("base64"));
@@ -387,11 +411,13 @@ async function settleDonations(): Promise<void> {
 
 app.post(
   "/api/readiness/fund",
-  rateLimit(5),
+  rateLimit(30), // per route per IP: judges on venue Wi-Fi share one IP
   wrap(async (req, res) => {
     const donor = parseAccount(req.body?.account);
     requireAllowlisted(donor);
-    const amount = Number(req.body?.amount);
+    const raw = Number(req.body?.amount);
+    // Round to whole aUSD units so the ledger books exactly what moves on-chain.
+    const amount = Number.isFinite(raw) && Math.abs(raw) < 1e12 ? fromUnits(toUnits(raw)) : NaN;
     if (!(Number.isFinite(amount) && amount > 0 && amount <= env.maxDonation)) {
       throw new HttpError(400, `amount must be a number of aUSD between 0 and ${env.maxDonation}`);
     }
@@ -414,7 +440,7 @@ app.post(
 
 app.post(
   "/api/readiness/submit",
-  rateLimit(5),
+  rateLimit(30), // per route per IP: judges on venue Wi-Fi share one IP
   wrap(async (req, res) => {
     const tx = Transaction.from(Buffer.from(String(req.body?.transaction ?? ""), "base64"));
     const key = sha256Hex(tx.serializeMessage().toString("base64"));
@@ -510,13 +536,40 @@ async function balances() {
 }
 
 // Read-only; the engine records these as a run's opening balances and reconciles against them.
-app.get("/chain/balances", wrap(async (_req, res) => res.json(await balances())));
+// Public callers (through the gateway) are rate-limited and served a 3 s cache, so a loop can't
+// burn the RPC quota; the engine on localhost always gets a fresh read.
+let balancesCache: { at: number; value: Awaited<ReturnType<typeof balances>> } | null = null;
+const publicLimit = rateLimit(60);
+app.get(
+  "/chain/balances",
+  (req, res, next) => (req.header("x-forwarded-for") ? publicLimit(req, res, next) : next()),
+  wrap(async (req, res) => {
+    if (req.header("x-forwarded-for") && balancesCache && Date.now() - balancesCache.at < 3_000) return void res.json(balancesCache.value);
+    const value = await balances();
+    balancesCache = { at: Date.now(), value };
+    res.json(value);
+  }),
+);
 
 app.post(
   "/chain/reset",
   wrap(async (req, res) => {
     requireLocal(req);
     requireAdmin(req);
+    // One reset at a time: two overlapping resets would both read the same balances and both mint the shortfall.
+    if (resetting) throw new HttpError(409, "A reset is already in progress.");
+    resetting = true;
+    try {
+      await doReset(req, res);
+    } finally {
+      resetting = false;
+    }
+  }),
+);
+
+let resetting = false;
+
+async function doReset(req: Request, res: Response): Promise<void> {
     const runId = String(req.body?.run_id ?? "session");
     const treasury = loadKeypair("treasury"); // aUSD mint authority
     const ausdMint = requireState("ausdMint");
@@ -528,10 +581,13 @@ app.post(
       { account: "float", owner: loadKeypair("bot").publicKey, offCurve: false, amount: env.snapshotFloat - before.float },
     ];
     for (const r of refills.filter((x) => x.amount > 0)) {
+      // No automatic retry: a retry after a send that actually landed would mint twice while the
+      // ledger records once. If it fails, Reset again: the shortfall is recomputed from balances.
       const sig = await sendIxs(
         connection,
         [createMintToInstruction(ausdMint, ausdAta(ausdMint, r.owner, r.offCurve), treasury.publicKey, toUnits(r.amount), [], AUSD_PROGRAM_ID)],
         [treasury],
+        1,
       );
       await writeLedgerEntry({
         runId,
@@ -565,8 +621,8 @@ app.post(
     }
 
     res.json({ ok: true, run_id: runId, before, after: await balances(), policies_reset: mints.length, reservations_released: released });
-  }),
-);
+}
+
 
 app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
   // An engine 4xx (unknown gauge, bad input) is the caller's error; pass its status through.
@@ -652,7 +708,7 @@ app.listen(env.port, env.host, () => {
   console.log(
     `atlas chain service on ${env.host}:${env.port} (demo mode ${env.demoMode ? "on" : "off"}, purchase flow ${env.purchaseFlow.toUpperCase()})`,
   );
-  if (env.demoMode && env.demoWallets.length === 0) console.warn("DEMO_WALLETS is empty: buy and bond accept any wallet.");
+  if (env.demoMode && env.demoWallets.length === 0) console.warn("DEMO_WALLETS is empty: demo mode refuses every buy, bond and donation.");
   if (!env.adminToken) console.warn("ADMIN_TOKEN is empty: /chain/reset is disabled.");
 });
 

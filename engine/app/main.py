@@ -101,6 +101,20 @@ def chain_balances(fresh: bool = False) -> dict | None:
     return cached("balances", 5, fetch)
 
 
+_last_refresh = 0.0
+
+
+def may_refresh(every_s: float = 30.0) -> bool:
+    """A forced history reload at most every 30 s: an unknown gauge in /quote must not let anyone
+    make the engine reload the whole history on every request."""
+    global _last_refresh
+    now = time.monotonic()
+    if now - _last_refresh < every_s:
+        return False
+    _last_refresh = now
+    return True
+
+
 def history(fresh: bool = False) -> dict:
     """Gauges, annual peaks (comparable record only) and the simulated book; cached 60 s.
     fresh=True reloads, so data loaded a moment ago shows up without waiting out the cache."""
@@ -252,7 +266,7 @@ def sales_status(gauge_id: str, run: dict | None) -> tuple[bool, str | None]:
 @app.get("/quote")
 def quote(gauge: str, payout: float = Query(gt=0, le=100_000), run_id: str | None = None):
     h = history()
-    if gauge not in h["gauges"] or gauge not in h["peaks"]:
+    if (gauge not in h["gauges"] or gauge not in h["peaks"]) and may_refresh():
         h = history(fresh=True)
     g = h["gauges"].get(gauge)
     if g is None:
@@ -340,7 +354,14 @@ def funding_state() -> dict:
         w = pricing.waterfall(paid, reserve_in, bond_nominal)
         vault, source = (reserve_in - w.reserve_used) + (bond_nominal - w.bond_used), "ledger estimate"
     community, outside = pricing.funding_split(vault, bond_nominal)
+    # Only money the ledger can explain counts as community money (and cuts the price). Anything
+    # else in the vault (an unledgered mint, a refill after an env change) still pays out, so it
+    # stays in funds, but it is counted with outside capital and earns no discount.
+    contributed = settings.SEED_RESERVE + every.get("premiums", 0) + every.get("donations", 0)
+    unexplained = max(0.0, community - contributed)
+    community, outside = community - unexplained, outside + unexplained
     return {"community": community, "outside": outside, "funds": community + outside, "source": source,
+            "unexplained": unexplained,
             "seed": settings.SEED_RESERVE, "premiums": every.get("premiums", 0),
             "donations": every.get("donations", 0)}
 
@@ -365,10 +386,16 @@ def readiness_view():
     trigger fired now. Live markets (the demo gauges) share one pool, so they show the same share;
     simulated candidates are not launched, so they show the gap to launch."""
     h = history()
-    owed_total, owed_g, n_g = owed_now()
-    fs = funding_state()
+    try:
+        owed_total, owed_g, n_g = owed_now()
+        fs = funding_state()
+    except Exception:  # noqa: BLE001
+        log.exception("readiness unavailable")
+        raise HTTPException(503, "Readiness is unavailable right now; try again shortly.")
     r = pricing.readiness(fs["funds"], owed_total)
     r_c = pricing.readiness(fs["community"], owed_total)
+    # The price shown must match what /quote charges, and /quote counts the policy being bought.
+    r_c_next = pricing.readiness(fs["community"], owed_total + 500.0)
     parts = pricing.attribute_community(fs["community"], fs["seed"], fs["premiums"], fs["donations"])
     k500 = pricing.k_share(h["capital"], 500.0, h["total_b"])
     args = (settings.TERM_YEARS, settings.THETA, settings.COST_OF_CAPITAL, k500)
@@ -397,7 +424,7 @@ def readiness_view():
             "policies": n, "owed_usd": round(owed, 2), "readiness": round(r, 4),
             "expected_payout_per_500": round(500 * r, 2), "shortfall_per_500": round(500 * (1 - r), 2),
             "gap_usd": round(gap, 2), "gap_per_household": round(gap / n, 2) if n else None,
-            **prices(lam, r_c)})
+            **prices(lam, r_c_next)})
     if db.table_exists("candidate_markets"):
         for c in db.rows("SELECT * FROM candidate_markets ORDER BY grade, site"):
             lam = c["exceedances"] / c["years"] if c["years"] else 0.0
@@ -487,7 +514,7 @@ def pool(run_id: str | None = None):
 @app.get("/stress")
 def stress(scenario: str = Query(pattern="^(harvey|worst_year)$")):
     h = history()
-    if not h["book"] or not h["losses"]:
+    if (not h["book"] or not h["losses"]) and may_refresh():
         h = history(fresh=True)
     if not h["book"] or not h["losses"]:
         raise HTTPException(503, "Simulated book or annual peaks not loaded yet")
@@ -598,11 +625,17 @@ def _replay_start():
         """INSERT INTO runs (run_id, source, started_wall, status, opening_vault, opening_float)
            VALUES (%s, 'replay', %s, 'running', %s, %s)""",
         (run_id, now, bal["vault"] if bal else None, bal["float"] if bal else None))
-    if settings.REPLAY_CMD:   # an external streamer instead of the built-in one
-        _streamer = subprocess.Popen(shlex.split(settings.REPLAY_CMD), env={**os.environ, "RUN_ID": run_id},
-                                     cwd=settings.ROOT)
-    else:
-        replay.start_thread(run_id)
+    try:
+        if settings.REPLAY_CMD:   # an external streamer instead of the built-in one
+            _streamer = subprocess.Popen(shlex.split(settings.REPLAY_CMD), env={**os.environ, "RUN_ID": run_id},
+                                         cwd=settings.ROOT)
+        else:
+            replay.start_thread(run_id)
+    except Exception as e:  # noqa: BLE001
+        # Never leave a run marked running with nothing streaming it.
+        db.execute("UPDATE runs SET status = 'done' WHERE run_id = %s", (run_id,))
+        log.exception("replay streamer failed to start")
+        raise HTTPException(500, f"Replay streamer failed to start: {e}")
     return {"run_id": run_id, "opening": {"vault": bal["vault"], "float": bal["float"]} if bal else None,
             "streamer": settings.REPLAY_CMD or "built-in"}
 

@@ -19,7 +19,7 @@ export const env = {
   engineUrl: process.env.ENGINE_URL ?? "http://127.0.0.1:8000",
   publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://127.0.0.1:8787",
   port: Number(process.env.CHAIN_PORT ?? 8787),
-  // Localhost by default: the gateway (behind Cloudflare Tunnel) is the only public entry point.
+  // Localhost by default: the gateway (behind Caddy on Vultr, or Cloudflare Tunnel on the fallback laptop) is the only public entry point.
   host: process.env.CHAIN_HOST ?? "127.0.0.1",
   demoMode: (process.env.DEMO_MODE ?? "true") === "true",
   // Plan v3 9.3: required on /chain/reset (and on the engine's /replay/* routes).

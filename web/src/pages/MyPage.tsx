@@ -24,7 +24,7 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
   const connectWallet = useConnectWallet();
   const { connection } = useConnection();
   const owner = params.get("owner") ?? publicKey?.toBase58() ?? null;
-  const { runId } = useReplay();
+  const { runId, historic } = useReplay();
 
   const { data: policies, error } = usePoll(() => (owner ? api.policies(owner) : Promise.resolve([] as Policy[])), 1500, [owner]);
   const { data: gauges } = usePoll(() => api.gauges(runId), 2000, [runId]);
@@ -60,7 +60,8 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
 
   const byNewest = [...(policies ?? [])].sort((a, b) => Date.parse(b.starts_at) - Date.parse(a.starts_at));
   const paid = byNewest
-    .filter((p) => p.last_payout)
+    // A demo policy reset to ACTV can still carry an old payout record: only count real payments.
+    .filter((p) => p.last_payout && (p.status === "PAID" || p.paid_amount > 0))
     .sort((a, b) => Date.parse(b.last_payout!.at) - Date.parse(a.last_payout!.at))[0];
   const active = byNewest.find((p) => p.status === "ACTV");
   const main = paid ?? active ?? null;
@@ -107,7 +108,7 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
             <section className="lead" aria-live="polite">
               <span className="pill pill-triggered" style={{ alignSelf: "flex-start", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 <i className="dot" style={{ width: 6, height: 6, background: "#fff" }} />
-                Flood detected · {area} · {fmtTime(new Date(lp.at))}
+                Flood detected · {area} · {fmtTime(historic(lp.at))}
               </span>
               <p className="headline">
                 {partial ? `We've sent you ${usd(paid.paid_amount)} now.` : `We've sent you ${usd(paid.paid_amount)} for immediate costs.`}

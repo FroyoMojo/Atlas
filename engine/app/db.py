@@ -17,6 +17,9 @@ def pool() -> ConnectionPool:
         _pool = ConnectionPool(
             settings.DATABASE_URL, min_size=1, max_size=8, open=True,
             kwargs={"row_factory": dict_row, "autocommit": True},
+            # Tiger or a NAT can drop an idle connection; check it before handing it out, so the
+            # first request after a quiet spell doesn't 500.
+            check=ConnectionPool.check_connection,
         )
     return _pool
 

@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 -- Added after the first schema; for databases created before it.
 ALTER TABLE runs ADD COLUMN IF NOT EXISTS reset_wall TIMESTAMPTZ;
+-- A runs table first created by data/schema.sql lacks these; Start writes them.
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_vault NUMERIC;
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_float NUMERIC;
 
 CREATE TABLE IF NOT EXISTS storms (
   storm_id      TEXT PRIMARY KEY,

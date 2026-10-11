@@ -101,8 +101,14 @@ await check("engine and chain tables", async () => {
   const { rows } = await db().query(`SELECT t, to_regclass(t) IS NOT NULL AS ok FROM unnest($1::text[]) AS t`, [need]);
   const missing = rows.filter((r) => !r.ok).map((r) => r.t);
   if (missing.length) return ["FAIL", `missing ${missing.join(", ")}: run engine/sql/schema.sql and npm run migrate`];
-  const col = await db().query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'runs' AND column_name = 'reset_wall'`);
-  return col.rowCount ? "PASS" : ["FAIL", "runs.reset_wall missing: re-run engine/sql/schema.sql"];
+  const cols = ["reset_wall", "opening_vault", "opening_float"];
+  const col = await db().query(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = 'runs' AND column_name = ANY($1)`,
+    [cols],
+  );
+  const have = new Set(col.rows.map((r: { column_name: string }) => r.column_name));
+  const gone = cols.filter((c) => !have.has(c));
+  return gone.length ? ["FAIL", `runs is missing ${gone.join(", ")}: run npm run migrate`] : "PASS";
 });
 const demo = await db()
   .query(`SELECT gauge_id, name, trigger_ft FROM gauges WHERE demo_ready ORDER BY gauge_id`)

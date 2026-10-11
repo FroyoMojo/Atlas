@@ -66,6 +66,20 @@ export async function insertPoolMint(row: { policyMint: string; policyId: string
   );
 }
 
+export async function activeReservationDetail(
+  buyer: string,
+): Promise<{ policyMint: string; policyId: string; gaugeId: string; premiumUsd: number; payoutUsd: number } | null> {
+  const { rows } = await db().query(
+    `SELECT policy_mint, policy_id, gauge_id, premium_usd, payout_usd FROM policy_pool
+     WHERE reserved_by = $1 AND status = 'reserved' AND reserved_until > now() LIMIT 1`,
+    [buyer],
+  );
+  const r = rows[0];
+  return r
+    ? { policyMint: r.policy_mint, policyId: r.policy_id, gaugeId: r.gauge_id, premiumUsd: Number(r.premium_usd), payoutUsd: Number(r.payout_usd) }
+    : null;
+}
+
 export async function activeReservationFor(buyer: string): Promise<string | null> {
   const { rows } = await db().query(
     `SELECT policy_mint FROM policy_pool WHERE reserved_by = $1 AND status = 'reserved' AND reserved_until > now()`,
@@ -193,7 +207,8 @@ export async function policiesByOwner(owner: string) {
             (SELECT json_build_object('amount', i.amount, 'kind', i.kind, 'tx_sig', i.tx_sig, 'at', i.confirmed_wall)
                FROM payout_intents i
               WHERE i.policy_mint = p.policy_mint AND i.status = 'confirmed'
-                AND p.paid_amount > 0 -- Reset zeroes paid_amount: a payout from an earlier run is not this policy's payout now
+                -- a demo policy reset to ACTV must not keep showing a payout from a reset run
+                AND (NOT p.demo OR NOT EXISTS (SELECT 1 FROM runs r WHERE r.run_id = i.run_id AND r.status = 'reset'))
               ORDER BY i.confirmed_wall DESC LIMIT 1) AS last_payout
      FROM policies p LEFT JOIN gauges g ON g.gauge_id = p.gauge_id
      WHERE p.owner = $1 ORDER BY p.starts_at DESC`,
@@ -202,8 +217,9 @@ export async function policiesByOwner(owner: string) {
   return rows;
 }
 
+/** Demo policies a reset must turn back to ACTV (those already ACTV need no transaction). */
 export async function demoPolicyMints(): Promise<string[]> {
-  const { rows } = await db().query(`SELECT policy_mint FROM policies WHERE demo`);
+  const { rows } = await db().query(`SELECT policy_mint FROM policies WHERE demo AND status <> 'ACTV'`);
   return rows.map((r) => r.policy_mint);
 }
 

@@ -114,8 +114,8 @@ export function MapPage() {
         </Link>
         <Link to="/readiness" className="lift role">
           <span className="role-tag">Sponsors</span>
-          <b>Fund a neighborhood's readiness</b>
-          <span>Donate to a market so its payouts are fully funded before the storm. No return, and prices fall for everyone there.</span>
+          <b>Fund Houston's community fund</b>
+          <span>Donate so every payout is fully funded before the storm. No return, and prices fall for every household.</span>
           <span className="link-row">See the markets →</span>
         </Link>
         <Link to="/invest" className="lift role">
