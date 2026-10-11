@@ -34,12 +34,15 @@ We are a finance major and a quant. We wanted to build the product an insurer, a
 - **Verify:** anyone can recompute the hash from the recorded reading and match it to the on-chain Memo.
 - **Solvency:** a pool page shows reserve, bond capital, the payout float and a reconciliation badge proving the books match the chain.
 
-For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record, squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, and payouts land on a real phone.
+For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record: five days of 15-minute readings at our four covered gauges (Brays Bayou, Buffalo Bayou at Piney Point, Cypress Creek and Spring Creek), squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, and payouts land on a real phone.
+
+Cover runs for 90 days for one premium. Triggers sit at each gauge's National Weather Service **moderate** flood stage, which prices \\( 500 \\) aUSD of cover at about 22 to 58 aUSD per 90 days on the demo gauges.
 
 ## How we built it
 
 **Tiger Data (TimescaleDB): the risk engine and the books**
-- Gauge readings and the money ledger are **hypertables**. Decades of history sit in **columnstore** (compressed), and the live charts read a **continuous aggregate** of hourly maxima.
+- Gauge readings and the money ledger are **hypertables**. The full 2007 to 2026 instantaneous history (**5.8 million readings**) sits in **columnstore**, compressed from 1.05 GB to 162 MB (6.5x), and the charts read a **continuous aggregate** of hourly maxima, verified against the raw data.
+- Annual peaks go back 62 to 92 years per gauge, and USGS datum-change flags decide where each gauge's comparable record starts.
 - Every money movement is a **double-entry ledger** row; every entry sums to zero.
 - Events, storms, policies and payout intents live alongside, so one database answers "who gets paid, how much, and why".
 - A FastAPI engine reads Tiger to price policies, stream the replay, open and close events, and reconcile.
@@ -57,17 +60,17 @@ For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record, squ
 
 ### The math
 
-**Pricing.** For gauge \\( g \\), the annual exceedance rate comes from its comparable record of annual peaks, \\( \hat\lambda_g = N_g / T_g \\) (years at or above trigger over years observed). For a term \\( t \\):
+**Pricing.** For gauge \\( g \\) we estimate the yearly event rate two ways, from annual peaks (\\( \hat\lambda^{\text{peak}}_g = N_g / T_g \\)) and from instantaneous readings with the contract's own open and close rule (\\( \hat\lambda^{\text{iv}}_g \\), since one year can hold several floods), and price with the higher. For a term \\( t \\) (90 days):
 
-$$ P(\text{payout}) = 1 - e^{-\hat\lambda_g t}, \qquad \pi = B\left(1 - e^{-\hat\lambda_g t}\right)(1+\theta) + c\,k_i $$
+$$ \hat\lambda_g = \max\big(\hat\lambda^{\text{peak}}_g,\ \hat\lambda^{\text{iv}}_g\big), \qquad P(\text{payout}) = 1 - e^{-\hat\lambda_g t}, \qquad \pi = B\left(1 - e^{-\hat\lambda_g t}\right)(1+\theta) + c\,k_i\,t $$
 
-where \\( \theta \\) is the risk load and \\( c\,k_i \\) the cost of the capital the policy ties up. We bootstrap the years 2,000 times to show a 5th to 95th percentile band next to every quote.
+where \\( \theta \\) is the risk load and \\( c\,k_i\,t \\) the cost of the capital the policy ties up for its term. We bootstrap the years 2,000 times to show a 5th to 95th percentile band next to every quote.
 
 **Correlated capital.** Floods hit every bayou at once, so each historical year is one scenario across all gauges:
 
-$$ S_y = \sum_i B_i \,\mathbf{1}\{\text{peak}_{g(i),y} \ge \text{trigger}_{g(i)}\}, \qquad K = \max\Big(\max_y S_y,\; S_{\text{Harvey}}\Big) - \bar S, \qquad k_i = K\,\frac{B_i}{\sum_j B_j} $$
+$$ S_y = \sum_i B_i \,\mathbf{1}\{\text{peak}_{g(i),y} \ge \text{trigger}_{g(i)}\}, \qquad K = \max\Big(\max_y S_y,\; S_{\text{Harvey}}\Big) - \mathbb{E}[L], \qquad k_i = K\,\frac{B_i}{\sum_j B_j} $$
 
-That is a worst-observed-year standard, not a modelled 1-in-200, and we say so.
+where \\( \mathbb{E}[L] \\) is the expected annual loss implied by the priced rates. That is a worst-observed-year standard, not a modelled 1-in-200, and we say so. On our simulated 2,000-policy book over seven gauges, \\( \mathbb{E}[L] \approx \$232\text{k} \\) and \\( K \approx \$718\text{k} \\): a Harvey-sized year is paid in full (\\( f_{\text{fin}} = 1 \\)), with the catastrophe bond absorbing most of the loss beyond the premium reserve.
 
 **Paying fairly in a big storm.** If the pool can't cover everyone at once, everyone in the storm gets the same share, whatever order their gauges cross in. With available funds \\( A \\) (reserve plus bond capital):
 
@@ -81,8 +84,9 @@ $$ \text{opening balance} + \sum \text{ledger rows in the run} = \text{on-chain 
 
 ## Challenges we ran into
 
-- **Gauges fail in the floods that matter.** In the real Harvey record, Whiteoak Bayou's gauge went dark mid-flood and came back with a single value, and both Buffalo Bayou gauges had gaps of 13 to 16 hours. Our data-quality guard had to tell a sensor glitch from a real rise of several feet after an outage, so the allowed jump grows with the length of the gap.
-- **History isn't always comparable.** Brays Bayou's older annual peaks sit above its Harvey peak, a sign of a datum or channel change, so we price only from the comparable record.
+- **Gauges fail in the floods that matter.** In the real Harvey record, several gauges went dark for 13 to 99 hours mid-flood (Whiteoak Bayou came back with a single value). A crossing seen across a gap is an artifact, so those gauges are not covered. A naive spike filter also deleted real Harvey rises (Brays went from 27.0 to 30.4 to 34.9 ft in two readings), so our guard rejects only spikes that jump away and straight back.
+- **History isn't always comparable.** Gauge datums and channels change over decades. We start each gauge's priced record the year after USGS flags a datum change, so an old peak measured on a different zero can't distort today's price.
+- **Some places are too risky to insure cheaply.** Greens Bayou crosses its minor flood stage about once a year, which would have meant a 105 aUSD premium for 500 aUSD of cover. We dropped it rather than hide that, and moved triggers to the moderate flood stage.
 - **Never paying twice.** Crash recovery, expired blockhashes and retried submits all had to resolve to exactly one payout and exactly one ledger entry.
 - **Books that survive a demo reset.** Reset tops balances back up for the next judge, so absolute totals drift. We reconcile per run against opening balances instead, and book each transaction to the run open at its block time.
 - **Devnet reality:** public RPC rate limits, and wallets that differ in how they accept a server-signed transaction.
@@ -108,6 +112,7 @@ Parametric insurance is mostly a data problem and a trust problem. The data prob
 - **Basis risk:** payouts follow a gauge, not your street.
 - **Devnet and test money only;** not a licensed insurance product, and the bond token would likely be a security.
 - **The bot decides to pay;** the Memo makes that auditable, not enforced.
-- **The catastrophe numbers** come from a simulated 2,000-policy book; on-chain capital is seeded test money.
+- **The catastrophe numbers** come from a simulated 2,000-policy book (the spread over gauges is an assumption); on-chain capital is seeded test money.
+- **No seasonality yet:** the price uses a yearly rate for a 90-day term, so cover bought in the quiet season is overpriced and cover bought before hurricane season is underpriced.
 
 ---
