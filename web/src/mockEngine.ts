@@ -4,7 +4,7 @@ import gaugesRaw from "../mocks/gauges.json";
 import poolRaw from "../mocks/pool.json";
 import stressRaw from "../mocks/stress.json";
 import { sha256Hex } from "./evidence";
-import type { Gauge, Pool, Quote, ReplayStatus, Series, Storm, StormEvent, Stress } from "./types";
+import type { Gauge, Pool, Quote, Readiness, ReplayStatus, Series, Storm, StormEvent, Stress } from "./types";
 
 interface MockGauge {
   gauge_id: string;
@@ -157,6 +157,40 @@ export const mockEngine = {
 
   async stress(): Promise<Stress> {
     return delay(stressRaw as Stress);
+  },
+
+  async readiness(): Promise<Readiness> {
+    const r = 0.62;
+    const live = gauges.filter((g) => g.peak_ft >= g.trigger_ft).slice(0, 4);
+    const sim = [
+      { id: "sim-austin", name: "Shoal Creek at Austin (mock)", region: "Austin, TX", grade: "B" as const },
+      { id: "sim-nola", name: "Bayou St. John (mock)", region: "New Orleans, LA", grade: "C" as const },
+    ];
+    return delay({
+      pricing_mode: "readiness",
+      pool: {
+        readiness: r, community_readiness: 0.4, owed_usd: 2000, funds_usd: 1240,
+        funding: { seed_reserve: 300, household_premiums: 90, sponsor_donations: 150, outside_capital: 700 },
+        payout_if_fired_per_500: 500 * r,
+      },
+      markets: [
+        ...live.map((g, i) => ({
+          market_id: g.gauge_id, name: g.name, kind: "live" as const, simulated: false, grade: (i % 2 ? "B" : "A") as "A" | "B",
+          grade_reasons: [i % 2 ? "12 years is short: wide premium band" : "19 years, trigger reached in 11% of them"],
+          years: 19 - i * 3, exceedances: 2 + (i % 2), trigger_ft: g.trigger_ft, policies: 1, owed_usd: 500, readiness: r,
+          expected_payout_per_500: 500 * r, shortfall_per_500: 500 * (1 - r), gap_usd: 500 * (1 - r), gap_per_household: 500 * (1 - r),
+          price_standard: 22.5 + i * 9, price_now: 19.1 + i * 8, price_if_ready: 14.2 + i * 6,
+        })),
+        ...sim.map((m) => ({
+          market_id: m.id, name: m.name, region: m.region, kind: "simulated" as const, simulated: true, grade: m.grade,
+          grade_reasons: [m.grade === "C" ? "trigger reached in 45% of years: the premium would approach the payout" : "11 years is short: wide premium band"],
+          years: 11, exceedances: m.grade === "C" ? 5 : 2, trigger_ft: 20, stage_label: "moderate", policies: 0, households_assumed: 500,
+          owed_usd: 250000, readiness: 0, expected_payout_per_500: 0, shortfall_per_500: 500, gap_usd: 250000, gap_per_household: 500,
+          price_standard: m.grade === "C" ? 180 : 41, price_now: m.grade === "C" ? 180 : 41, price_if_ready: m.grade === "C" ? 150 : 29,
+        })),
+      ],
+      assumptions: ["Mock data."],
+    });
   },
 
   async replayStatus(): Promise<ReplayStatus> {

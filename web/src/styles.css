@@ -224,6 +224,9 @@ input { font: inherit; }
 .harvey-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .harvey-legend span { display: flex; align-items: center; gap: 6px; }
 
+/* Readiness */
+.market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
 /* How it works / admin */
 .steps3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: -56px; position: relative; }
 .steps3 .lift { padding: 22px; display: flex; flex-direction: column; gap: 8px; }

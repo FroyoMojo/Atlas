@@ -42,5 +42,7 @@ export function useServerTx() {
 
   const bond = useCallback(async (b64: string) => (await api.bondSubmit(toB64(await sign(b64)))).signature, [sign]);
 
-  return { purchase, bond };
+  const donate = useCallback(async (b64: string) => (await api.donateSubmit(toB64(await sign(b64)))).signature, [sign]);
+
+  return { purchase, bond, donate };
 }

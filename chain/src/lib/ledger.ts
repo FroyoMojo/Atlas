@@ -7,13 +7,15 @@
 //   float      the bot's payout float
 //   holders    policyholders (external)
 //   investors  bond investors (external; added to the v3 account list)
+//   donations  donated sponsor funds in the vault (docs/readiness.md)
+//   donors     sponsors (external)
 // The engine owns the economic split (expenses, coupon, which layer absorbs a loss) and
 // reconciliation; it reads these rows.
 import type { PoolClient } from "pg";
 import { inTx } from "../db.js";
 
 export interface LedgerRow {
-  account: "seeded" | "premiums" | "reserve" | "bond" | "float" | "holders" | "investors";
+  account: "seeded" | "premiums" | "reserve" | "bond" | "float" | "holders" | "investors" | "donations" | "donors";
   amount: number;
 }
 

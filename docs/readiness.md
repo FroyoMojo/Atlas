@@ -55,11 +55,11 @@ pool even after the donation, and return-seeking capital does not lower the pric
 
 ### Jesse (chain and web)
 
-1. **Donation flow, chain side** (about 1.5 h). `POST /api/readiness/fund {account, amount}` and `/api/readiness/submit`: copy the bond deposit flow (`chain/src/lib/bond.ts`, server routes) but **do not mint bond units**. Cap with `MAX_DONATION` (default 2000), same allowlist and rate limit. Ledger: `donors -D`, `donations +D`, idempotent per `entry_id`, booked to the same run rule as other money. The engine already adds `donations` to the vault it expects and to the reserve.
-2. **Readiness page, web** (about 2 h). Fetch `/engine/readiness`. Per market: grade badge (A/B/C with the reason on hover), a bar for readiness with the sentence "$X of $500 would be paid today", the gap, and `price_now` against `price_if_ready`. Simulated markets carry a visible "Simulated" badge and show the gap to launch. A pool strip showing the four funding sources (`pool.funding`). A **Fund readiness** button.
-3. **Gauge page** (about 30 min): next to the quote show `readiness` and "falls to $price_if_ready when fully ready".
-4. **Env on the server** (`/opt/atlas/.env`): `SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`, `MAX_DONATION=2000`. Reset after changing.
-5. **Rehearse** the demo above twice on `https://atlasflood.us`. The reconciliation badge must be green after every run.
+1. [x] **Donation flow, chain side** (built; typechecked, not yet run on devnet). `POST /api/readiness/fund {account, amount}` and `/api/readiness/submit`: copy the bond deposit flow (`chain/src/lib/bond.ts`, server routes) but **do not mint bond units**. Cap with `MAX_DONATION` (default 2000), same allowlist and rate limit. Ledger: `donors -D`, `donations +D`, idempotent per `entry_id`, booked to the same run rule as other money. The engine already adds `donations` to the vault it expects and to the reserve.
+2. [x] **Readiness page, web** (`#/readiness`; checked against a local engine). Fetch `/engine/readiness`. Per market: grade badge (A/B/C with the reason on hover), a bar for readiness with the sentence "$X of $500 would be paid today", the gap, and `price_now` against `price_if_ready`. Simulated markets carry a visible "Simulated" badge and show the gap to launch. A pool strip showing the four funding sources (`pool.funding`). A **Fund readiness** button.
+3. [x] **Get protected page and My protection**: next to the quote show `readiness` and "falls to $price_if_ready when fully ready".
+4. [ ] **Env on the server** (`/opt/atlas/.env`): `SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`, `MAX_DONATION=2000`. Reset after changing.
+5. [ ] **Rehearse** the demo above twice on `https://atlasflood.us`. The reconciliation badge must be green after every run.
 
 Stretch, only if everything above is done: sponsored purchase (payer different from owner).
 

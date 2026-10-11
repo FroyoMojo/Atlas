@@ -1,5 +1,5 @@
 // Chain service (plan v3 4.1, 8, 9): the only process besides the bot that holds signing keys.
-// Purchase (Flow A or B), bond deposit, Solana Actions, policies, the chain side of reset, and
+// Purchase (Flow A or B), bond deposit, sponsor donation, Solana Actions, policies, the chain side of reset, and
 // balances for the engine's reconciliation. Python never builds or signs a transaction.
 import { createMintToInstruction, getAccount, getMint } from "@solana/spl-token";
 import { PublicKey, Transaction } from "@solana/web3.js";
@@ -10,6 +10,7 @@ import { EngineError, getNavPerUnit, getQuote } from "../engine.js";
 import { connection, env, explorer, loadKeypair, requireState } from "../env.js";
 import { AUSD_PROGRAM_ID, ausdAta, fromUnits, toUnits } from "../lib/ausd.js";
 import { buildBondDepositTx } from "../lib/bond.js";
+import { buildDonationTx } from "../lib/donation.js";
 import { writeLedgerEntry } from "../lib/ledger.js";
 import { sha256Hex } from "../lib/memo.js";
 import { buildPurchaseTx, readPolicy, setPolicyStatusIxs } from "../lib/policy.js";
@@ -343,6 +344,92 @@ app.post(
   }),
 );
 
+// ---------- sponsor donation (docs/readiness.md): wallet signs, server checks and submits ----------
+
+const pendingDonations = new Map<string, { donor: string; amount: number; expires: number }>();
+// Sent donations waiting for their ledger entry (same recovery as bond deposits).
+const unbookedDonations = new Map<string, { donor: string; amount: number; sentAt: number }>();
+
+async function bookDonation(signature: string, d: { donor: string; amount: number }, landedAt: Date): Promise<void> {
+  await writeLedgerEntry({
+    runId: await dbq.currentRunId(landedAt),
+    entryId: `donation:${signature}`, // idempotent per signature
+    memo: `donation by ${d.donor}`,
+    txSig: signature,
+    rows: [
+      { account: "donors", amount: -d.amount },
+      { account: "donations", amount: d.amount },
+    ],
+  });
+  unbookedDonations.delete(signature);
+}
+
+async function settleDonations(): Promise<void> {
+  if (!unbookedDonations.size) return;
+  const sigs = [...unbookedDonations.keys()];
+  const statuses = (await connection.getSignatureStatuses(sigs, { searchTransactionHistory: true })).value;
+  for (const [n, sig] of sigs.entries()) {
+    const d = unbookedDonations.get(sig)!;
+    const st = statuses[n];
+    if (st?.err) {
+      unbookedDonations.delete(sig);
+      console.warn(`donation ${sig} failed on-chain; nothing booked`);
+    } else if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) {
+      const t = await connection.getBlockTime(st.slot).catch(() => null);
+      await bookDonation(sig, d, t ? new Date(t * 1000) : new Date());
+      console.log(`donation ${sig} booked after confirmation`);
+    } else if (!st && Date.now() - d.sentAt > 5 * 60_000) {
+      unbookedDonations.delete(sig);
+      console.warn(`donation ${sig} never landed; nothing booked`);
+    }
+  }
+}
+
+app.post(
+  "/api/readiness/fund",
+  rateLimit(5),
+  wrap(async (req, res) => {
+    const donor = parseAccount(req.body?.account);
+    requireAllowlisted(donor);
+    const amount = Number(req.body?.amount);
+    if (!(Number.isFinite(amount) && amount > 0 && amount <= env.maxDonation)) {
+      throw new HttpError(400, `amount must be a number of aUSD between 0 and ${env.maxDonation}`);
+    }
+    const tx = await buildDonationTx({
+      connection,
+      donor,
+      ausdMint: requireState("ausdMint"),
+      vault: requireState("vault"),
+      amountUnits: toUnits(amount),
+    });
+    for (const [k, v] of pendingDonations) if (v.expires < Date.now()) pendingDonations.delete(k);
+    pendingDonations.set(sha256Hex(tx.serializeMessage().toString("base64")), {
+      donor: donor.toBase58(),
+      amount,
+      expires: Date.now() + 120_000,
+    });
+    res.json({ type: "transaction", transaction: serializeForWallet(tx), submit: "/api/readiness/submit" });
+  }),
+);
+
+app.post(
+  "/api/readiness/submit",
+  rateLimit(5),
+  wrap(async (req, res) => {
+    const tx = Transaction.from(Buffer.from(String(req.body?.transaction ?? ""), "base64"));
+    const key = sha256Hex(tx.serializeMessage().toString("base64"));
+    const pending = pendingDonations.get(key);
+    if (!pending || pending.expires < Date.now()) throw new HttpError(409, "Unknown, changed or expired donation; request a new one.");
+    if (!tx.verifySignatures()) throw new HttpError(400, "Missing or invalid wallet signature.");
+    pendingDonations.delete(key); // before sending: a double submit of the same donation gets 409
+    const signature = await connection.sendRawTransaction(tx.serialize());
+    unbookedDonations.set(signature, { donor: pending.donor, amount: pending.amount, sentAt: Date.now() });
+    const landed = await waitConfirmed(signature);
+    if (landed) await bookDonation(signature, pending, landed);
+    res.status(landed ? 200 : 202).json({ signature, explorer: explorer(signature), confirmed: !!landed });
+  }),
+);
+
 // ---------- policies ----------
 
 app.get(
@@ -538,7 +625,7 @@ let confirming = false;
 setInterval(() => {
   if (confirming) return; // never overlap: RPC calls are serial and can be slow
   confirming = true;
-  void Promise.all([confirmPurchases(), settleBonds()])
+  void Promise.all([confirmPurchases(), settleBonds(), settleDonations()])
     .catch((e) => console.warn("confirmer", e))
     .finally(() => (confirming = false));
 }, 4_000);

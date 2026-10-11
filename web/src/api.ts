@@ -4,7 +4,7 @@
 import { getAdminToken } from "./admin";
 import { config } from "./config";
 import { mockEngine } from "./mockEngine";
-import type { Gauge, Policy, Pool, Quote, ReplayStatus, Series, Storm, Stress } from "./types";
+import type { Gauge, Policy, Pool, Quote, Readiness, ReplayStatus, Series, Storm, Stress } from "./types";
 
 async function http<T>(base: string, path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {
@@ -41,6 +41,7 @@ export const api = {
   storms: (runId: string | null): Promise<Storm[]> => (config.useMocks ? mockEngine.storms() : eng(`/storms${run(runId)}`)),
   stress: (scenario: "harvey" | "worst_year"): Promise<Stress> =>
     config.useMocks ? mockEngine.stress() : eng(`/stress?scenario=${scenario}`),
+  readiness: (): Promise<Readiness> => (config.useMocks ? mockEngine.readiness() : eng("/readiness")),
   replayStart: (): Promise<{ run_id: string }> => (config.useMocks ? mockEngine.replayStart() : eng("/replay/start", admin())),
   replayReset: (): Promise<{ run_id: string }> => (config.useMocks ? mockEngine.replayReset() : eng("/replay/reset", admin())),
 
@@ -58,6 +59,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ account, amount }),
     }),
+  donateTx: (account: string, amount: number) =>
+    chain<{ transaction: string }>("/api/readiness/fund", { method: "POST", body: JSON.stringify({ account, amount }) }),
+  donateSubmit: (transaction: string) =>
+    chain<{ signature: string; confirmed: boolean }>("/api/readiness/submit", { method: "POST", body: JSON.stringify({ transaction }) }),
   bondSubmit: (transaction: string) =>
     chain<{ signature: string }>("/api/bond/submit", { method: "POST", body: JSON.stringify({ transaction }) }),
 };
