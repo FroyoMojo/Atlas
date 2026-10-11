@@ -1,5 +1,9 @@
 # Demo laptop setup on Windows, step by step
 
+> **Fallback only.** The live site runs on the Vultr server ([vultr/README.md](vultr/README.md)).
+> Use this page to run the demo from Zeke's laptop if the server fails, with the trycloudflare URL
+> from step 8. Don't change the domain's DNS.
+
 For Zeke's Windows laptop. Every command is for **PowerShell** (Start menu -> type
 "PowerShell" -> open it; not "Command Prompt"). Copy one block at a time. About 30 minutes,
 most of it installs. You need: the laptop kit zip (`atlas-laptop-kit.zip`) and the Tiger
@@ -80,26 +84,21 @@ npm run migrate
 
 Expect `applied engine/sql/schema.sql` and `applied chain/sql/001_chain_tables.sql`.
 
-## 6. Load the gauges and their history (once)
+## 6. Gauges and history
 
-From the repo folder (`cd ..` if you are still in `chain`). Zeke supplies the final gauge
-numbers and trigger levels; these are the ones tested so far (triggers are placeholders):
-
-```powershell
-cd ~\Atlas
-py data\usgs.py gauges 08075000:42 08073600:66 08076000:60 08075500:24 --demo 08075000,08073600,08076000,08075500
-py data\usgs.py peaks
-py data\usgs.py iv --start 2017-08-23 --end 2017-09-04
-```
+Nothing to do: Tiger already holds the gauges, triggers, history and simulated book
+([data/README.md](../data/README.md)). Don't re-run the loaders on the demo laptop.
 
 ## 7. Pre-create the policies (once)
 
 ```powershell
 cd ~\Atlas\chain
-npm run precreate -- 08075000,08073600,08076000,08075500 8
+npm run precreate -- 08075000,08073700,08069000,08068500 8
 ```
 
-(Use the same gauge numbers as step 6. Each policy costs the issuer about 0.005 devnet SOL.)
+(The four demo gauges: Brays, Buffalo at Piney Point, Cypress Creek, Spring Creek. Each policy
+costs the issuer about 0.005 devnet SOL. Skip this if the server already pre-created policies
+and `npm run preflight` shows free mints.)
 
 ## 8. Public URL (keep this window open)
 

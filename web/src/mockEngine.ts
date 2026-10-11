@@ -96,6 +96,7 @@ export const mockEngine = {
       band: [premium * 0.7, premium * 1.45] as [number, number],
       k: payout * 0.55, // k_i = K B_i / sum B (plan 7.3), in aUSD
       waiting_days: 0,
+      term_days: 90,
       sales_open: !anyTriggered,
       reason: anyTriggered ? "Flood warning active at this gauge (mock)" : null,
     });

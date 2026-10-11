@@ -31,5 +31,6 @@ Copied from the [Devpost page](https://codered-orion-ccs.devpost.com/) and its [
 | [MLH] Best Use of Solana | Ledger wallets | Fast, cheap, high-frequency transactions; trading, payments, identity or supply-chain prototypes |
 | [MLH] Best Use of Tiger Data | Stream Deck Mini | Real-time data, time series, analytics; continuous aggregates, compression; financial prediction engines welcome |
 | [MLH] Best Domain Name from GoDaddy Registry | Gift card | Register a domain through GoDaddy Registry |
+| [MLH] Best Use of Vultr | (see Devpost) | Deploy on Vultr: we host the whole stack on one Vultr instance |
 
-Other tracks we are not targeting: Vultr (hosting is the laptop + Cloudflare Tunnel), ElevenLabs, Gemini API, Backboard, Best Hardware, Most Immersive, DEV Writing Challenge.
+Other tracks we are not targeting: ElevenLabs, Gemini API, Backboard, Best Hardware, Most Immersive, DEV Writing Challenge.

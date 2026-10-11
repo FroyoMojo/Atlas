@@ -9,7 +9,9 @@ Replays stored USGS readings (source 'usgs', run 'live') from the Harvey window 
   the last reading written.
 - Guard: a reading that moved more than REPLAY_MAX_JUMP_FT per 15 minutes since the gauge's last
   accepted reading is written with rejected = true and ignored by the event logic. The allowance
-  grows with the gap, because gauges drop out mid-flood (Whiteoak was dark 8 h in Harvey).
+  grows with the gap, because gauges drop out mid-flood (gaps of 13 to 99 h in Harvey). The
+  loader (data/usgs.py) also flags spikes that jump away and straight back; those arrive here
+  with rejected = true.
 - Events: open after two consecutive accepted readings at or above trigger_ft (one open event
   per gauge per run); close after 72 h of event time below trigger. Preimage per docs/evidence.md.
 - Storms: the first event opens a storm and sets f_int = min(1, A / exposure of the at-risk set);
@@ -184,7 +186,7 @@ class Replay:
             gauges = {r["gauge_id"]: r for r in conn.execute("SELECT * FROM gauges")}
             # Replay only the gauges we cover: a non-demo gauge going red on stage, or opening
             # an event in the storm, is confusing and adds nothing. REPLAY_DEMO_ONLY=false to stream all.
-            if (os.environ.get("REPLAY_DEMO_ONLY") or "true").lower() == "true":
+            if settings.env_str("REPLAY_DEMO_ONLY", "true").lower() in ("true", "1", "yes"):
                 demo = {k: v for k, v in gauges.items() if v["demo_ready"]}
                 gauges = demo or gauges
             run = conn.execute("SELECT * FROM runs WHERE run_id = %s", (self.run_id,)).fetchone()

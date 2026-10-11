@@ -6,7 +6,7 @@ transaction; reset goes through the chain service's `POST /chain/reset`.
 
 **Status:** schema, every endpoint and the replay streamer (events, storms, `f_int`/`f_fin`,
 sales freeze) are built and tested, including a full replay of real Harvey data loaded with
-[`data/usgs.py`](../data/README.md). Still Ezekiel's: final gauge list and trigger levels (NWS
+Zeke's pipeline ([data/README.md](../data/README.md)). Ezekiel owns the gauge list and trigger levels (NWS
 flood stage), the datum check (`record_start`), the live poller, the instantaneous-data rate and
 the real simulated book.
 
@@ -80,22 +80,20 @@ the run as `source 'replay'`, in `REPLAY_SECONDS` (default 90) of wall time.
 
 Test without the API: `python -m app.replay --run RUN_ID --seconds 10` (the `runs` row must exist).
 
-**Found in the Harvey data** (placeholder triggers, for Ezekiel to confirm):
-- Brays (08075000), Buffalo at W Belt (08073600), Greens (08076000) and Sims (08075500)
-  trigger cleanly; Buffalo at Houston (08074000) triggers late, on Aug 28.
-- Whiteoak (08074500) went dark mid-flood and reported a single peak value, so it never gets
-  two consecutive readings. Don't make it a demo gauge.
-- Brays's older annual peaks are higher than its Harvey peak, a sign of a datum or channel change: set
-  `record_start` before pricing (F11).
+**Demo gauges and triggers** (Ezekiel, Oct 10; details in [docs/decisions.md](../docs/decisions.md)):
+Brays 08075000, Buffalo Bayou at Piney Point 08073700, Cypress Creek 08069000 and Spring Creek
+08068500, triggers at the NWS moderate flood stage. Gauges with long gaps in Harvey (Whiteoak,
+Buffalo at Houston, W Belt, Gessner) or marginal crossings are not covered; Greens is too
+expensive to cover. The replay streams only `demo_ready` gauges (`REPLAY_DEMO_ONLY=true`).
 
 **History charts** read the `gauge_hourly` continuous aggregate. Its policy only refreshes the
-last 3 days, so `data/usgs.py iv` refreshes it once for the window it loads; anything backfilled
+last 3 days, so `data/db.py finalize` (or `data/policies.sql`) refreshes it fully after a backfill; anything backfilled
 another way needs `CALL refresh_continuous_aggregate('gauge_hourly', '<start>', '<end>')`.
 
 ## Reference economics: Ezekiel to own
 
 The pricing constants are env settings with defaults: `PRICING_THETA=0.35`, `PRICING_C=0.06`,
-`PRICING_E=0.10`, `TERM_YEARS=1`, `MIN_PREMIUM=1`, `BOOTSTRAP_N=2000`, `HARVEY_WATER_YEAR=2017`,
+`PRICING_E=0.10`, `TERM_DAYS=90` (one setting for chain and engine), `MIN_PREMIUM=1`, `BOOTSTRAP_N=2000`, `HARVEY_WATER_YEAR=2017`,
 `SEED_RESERVE=300`. They are a working baseline written from the plan's formulas, so swap any
 of them, or any function in `pricing.py`, without touching the endpoints.
 

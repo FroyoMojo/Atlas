@@ -1,7 +1,7 @@
 """Run the engine's replay streamer once against Tiger with a throwaway run, print what it did, and
 delete the run's rows. No chain service involved: opening balances are set directly.
 
-  python data/replay_test.py [seconds]
+  python data/replay_check.py [seconds]
 
 Checks: which gauges open events, in what order, the storm's f_int and f_fin, the reading count,
 and that the sales-freeze alerts are written. Safe to re-run; it removes its own rows.

@@ -21,9 +21,20 @@ systemctl reload caddy || systemctl restart caddy
 
 systemctl enable atlas-stack
 systemctl restart atlas-stack
-sleep 8
+echo "--- waiting for the stack (up to 90 s)"
+ok=""
+for _ in $(seq 45); do
+  if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1 && curl -fsS http://127.0.0.1:8080/engine/health >/dev/null 2>&1; then
+    ok=1; break
+  fi
+  sleep 2
+done
 systemctl --no-pager --lines=8 status atlas-stack || true
 echo "--- local health"
+if [ -z "$ok" ]; then
+  echo "stack not healthy after 90 s: journalctl -u atlas-stack -n 80" >&2
+  exit 1
+fi
 curl -fsS http://127.0.0.1:8080/health && echo
 curl -fsS http://127.0.0.1:8080/engine/health && echo
 echo "Live at: https://$PRIMARY   (check: curl https://$PRIMARY/health ; the reset must return 403:"

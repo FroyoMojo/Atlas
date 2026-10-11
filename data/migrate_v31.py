@@ -22,6 +22,13 @@ STEPS = [
     ("runs.opening_vault / opening_float",
      "ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_vault NUMERIC, "
      "ADD COLUMN IF NOT EXISTS opening_float NUMERIC"),
+    ("runs.reset_wall",
+     "ALTER TABLE runs ADD COLUMN IF NOT EXISTS reset_wall TIMESTAMPTZ"),
+    ("gauge_rates.trigger_ft",
+     "CREATE TABLE IF NOT EXISTS gauge_rates (gauge_id TEXT PRIMARY KEY, iv_years INT[] NOT NULL, "
+     "iv_counts INT[] NOT NULL, trigger_ft DOUBLE PRECISION, computed_at TIMESTAMPTZ NOT NULL DEFAULT now())"),
+    ("gauge_rates.trigger_ft column",
+     "ALTER TABLE gauge_rates ADD COLUMN IF NOT EXISTS trigger_ft DOUBLE PRECISION"),
     ("index gauge_readings_run",
      "CREATE INDEX IF NOT EXISTS gauge_readings_run ON gauge_readings (run_id, gauge_id, event_time DESC)"),
     ("index storms_run", "CREATE INDEX IF NOT EXISTS storms_run ON storms (run_id)"),

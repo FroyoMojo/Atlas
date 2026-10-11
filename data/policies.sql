@@ -24,6 +24,6 @@ SELECT add_continuous_aggregate_policy('gauge_hourly',
 -- Current API (TimescaleDB 2.18+). db.py falls back to the old compression API if this fails.
 ALTER TABLE gauge_readings SET (
   timescaledb.enable_columnstore = true,
-  timescaledb.segmentby = 'gauge_id, source',
+  timescaledb.segmentby = 'gauge_id, source, run_id',
   timescaledb.orderby = 'event_time DESC');
 CALL add_columnstore_policy('gauge_readings', after => INTERVAL '7 days', if_not_exists => TRUE);

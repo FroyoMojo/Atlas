@@ -1,7 +1,9 @@
 # Hosting on the Vultr server (Zeke's server, Jesse's domain)
 
-Reinstates the Vultr option (the Best Use of Vultr track) next to the laptop-and-tunnel setup in
-[`../README.md`](../README.md). The same stack runs: Caddy (HTTPS) -> gateway :8080 -> engine :8000
+**This is the current hosting setup** (Best Use of Vultr track). The laptop + Cloudflare Tunnel
+setup in [`../README.md`](../README.md) is the fallback only.
+
+**Status:** DNS done: `atlasflood.us` and `www` resolve to the server, `45.32.196.119`. The same stack runs: Caddy (HTTPS) -> gateway :8080 -> engine :8000
 and chain service :8787, plus the payout bot. Only Caddy listens on the internet.
 
 ```
@@ -17,7 +19,8 @@ phone / judges --HTTPS--> Caddy :443 (Vultr) --> gateway 127.0.0.1:8080
 
 In the Porkbun dashboard, **DNS records** for `atlasflood.us`:
 
-1. Delete the existing `A` records for `atlasflood.us` and `www` (they point at Porkbun's parking page).
+1. Delete Porkbun's parking records for the root, `www` and `*` (usually an `ALIAS` and a `CNAME`
+   to `pixie.porkbun.com`; sometimes `A` records). A leftover `ALIAS` blocks the root `A` record.
 2. Add `A`, host empty (the root), answer = the Vultr server's IPv4, TTL 300.
 3. Add `A`, host `www`, same IP (or a `CNAME` `www` -> `atlasflood.us`).
 
@@ -81,7 +84,17 @@ curl https://atlasflood.us/engine/health                              # engine o
 curl -X POST https://atlasflood.us/chain/reset -o /dev/null -w '%{http_code}\n'   # must print 403
 ```
 
-Then on the server `cd /opt/atlas/chain && sudo -u atlas npm run preflight` (every FAIL must clear),
+Then, on the server, once (both are safe to re-run):
+
+```bash
+cd /opt/atlas/chain
+sudo -u atlas npm run migrate        # adds anything Tiger is missing (e.g. runs.reset_wall); no data changes
+sudo -u atlas npm run precreate -- 08075000,08073700,08069000,08068500 8   # policies for the 4 demo gauges
+sudo -u atlas npm run preflight      # every FAIL must clear
+```
+
+Run precreate only after `PUBLIC_BASE_URL=https://atlasflood.us` is in `.env`: each policy's
+metadata link is fixed when it is created. Then
 open `https://atlasflood.us` on a phone on mobile data, press **Reset** on the admin page (the
 token is stored in the browser), and run one full replay.
 

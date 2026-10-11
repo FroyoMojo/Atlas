@@ -23,8 +23,9 @@ as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 | `POST /replay/reset` | `{run_id, chain, chain_error, reconciled, reconcile_detail}`. Header `X-Admin-Token`. Stops the run, marks it `reset`, calls `POST /chain/reset`, then reconciles. |
 
 Implemented in [`engine/`](../engine/README.md). Additions to the shapes above (extra fields only):
-`latest_ft` is `null` before a gauge's first reading; `/quote` also returns `years` and
-`exceedances`, and `k` is `k_i` in aUSD; `/pool` `onchain` also returns `reconcile_detail`, `vault`
+`latest_ft` is `null` before a gauge's first reading; `/quote` also returns `years`,
+`exceedances`, `lambda` (the rate used: the higher of `lambda_peak` and `lambda_iv`) and `term_days`;
+`p_payout` is the chance of a payout within the term (90 days), and `k` is `k_i` in aUSD (annual); `/pool` `onchain` also returns `reconcile_detail`, `vault`
 and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payout `owner` and
 `gauge_id`; `/stress` also returns `water_year`, `capital` and `reserve`; `GET /health`.
 

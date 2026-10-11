@@ -45,6 +45,8 @@ await check("PUBLIC_BASE_URL is public", async () =>
   isLocal(env.publicBaseUrl) ? ["WARN", `${env.publicBaseUrl}: set the tunnel URL or domain (used in policy metadata)`] : ["PASS", env.publicBaseUrl]);
 await check("DEMO_WALLETS allowlist", async () =>
   env.demoWallets.length ? ["PASS", `${env.demoWallets.length} wallets`] : ["WARN", "empty: anyone can buy on the public URL"]);
+await check("policy term", async () =>
+  env.termDays >= 30 ? ["PASS", `${env.termDays} days`] : ["FAIL", `TERM_DAYS=${env.termDays}: must be at least 30 so the replay stays inside the term`]);
 await check("FORCE_F_INT not set", async () =>
   process.env.FORCE_F_INT ? ["WARN", `FORCE_F_INT=${process.env.FORCE_F_INT}: true-up rehearsal only`] : "PASS");
 
@@ -95,7 +97,7 @@ await check("vault and float aUSD", async () => {
 console.log("== database");
 await check("engine and chain tables", async () => {
   const need = ["gauges", "gauge_readings", "annual_peaks", "runs", "storms", "gauge_events", "replay_alerts",
-    "policies", "sim_policies", "ledger", "gauge_hourly", "policy_pool", "payout_intents"];
+    "policies", "sim_policies", "ledger", "gauge_hourly", "gauge_rates", "policy_pool", "payout_intents"];
   const { rows } = await db().query(`SELECT t, to_regclass(t) IS NOT NULL AS ok FROM unnest($1::text[]) AS t`, [need]);
   const missing = rows.filter((r) => !r.ok).map((r) => r.t);
   if (missing.length) return ["FAIL", `missing ${missing.join(", ")}: run engine/sql/schema.sql and npm run migrate`];
@@ -112,7 +114,11 @@ for (const g of demo) {
   await check(`gauge ${g.gauge_id} (${g.name})`, async () => {
     const { rows } = await db().query(
       `SELECT (SELECT count(*)::int FROM policy_pool WHERE gauge_id = $1 AND status = 'free') AS free,
-              (SELECT count(*)::int FROM annual_peaks WHERE gauge_id = $1) AS peaks,
+              (SELECT count(*)::int FROM annual_peaks p JOIN gauges g USING (gauge_id)
+                 WHERE p.gauge_id = $1 AND p.peak_stage_ft IS NOT NULL
+                   AND (g.record_start IS NULL OR p.water_year >= g.record_start)) AS peaks,
+              (SELECT count(*)::int FROM gauge_rates r WHERE r.gauge_id = $1
+                 AND (r.trigger_ft IS NULL OR r.trigger_ft = $2)) AS rates,
               (SELECT count(*)::int FROM gauge_readings WHERE gauge_id = $1 AND run_id = 'live'
                  AND event_time BETWEEN '2017-08-23' AND '2017-09-05' AND stage_ft >= $2) AS above`,
       [g.gauge_id, g.trigger_ft],
@@ -120,10 +126,11 @@ for (const g of demo) {
     const r = rows[0];
     const problems = [
       r.free < 3 && `${r.free} free policy mints (npm run precreate)`,
-      r.peaks < 20 && `${r.peaks} annual peaks`,
+      r.peaks < 10 && `${r.peaks} comparable annual peaks`,
+      r.rates === 0 && "no gauge_rates counts at this trigger (python data/event_rate.py --store): priced on peaks only",
       r.above < 2 && "no Harvey readings above trigger",
     ].filter(Boolean);
-    const detail = `${r.free} free mints, ${r.peaks} peak years, ${r.above} Harvey readings above trigger`;
+    const detail = `${r.free} free mints, ${r.peaks} comparable peak years, ${r.above} Harvey readings above trigger`;
     return problems.length ? [r.free === 0 || r.above < 2 ? "FAIL" : "WARN", problems.join("; ")] : ["PASS", detail];
   });
 }
@@ -166,6 +173,9 @@ for (const g of demo) {
     const r = await get(`${env.engineUrl}/quote?gauge=${encodeURIComponent(g.gauge_id)}&payout=${env.defaultPayout}`);
     if (r.status !== 200) return ["FAIL", r.body?.detail ?? `HTTP ${r.status}`];
     const q = r.body;
+    if (q.term_days != null && Math.abs(q.term_days - env.termDays) > 0.5) {
+      return ["FAIL", `engine prices a ${q.term_days}-day term, chain sells ${env.termDays} days: set one TERM_DAYS (and drop TERM_YEARS)`];
+    }
     return q.sales_open ? ["PASS", `premium ${q.premium} aUSD, P ${(q.p_payout * 100).toFixed(1)}%`] : ["WARN", `sales closed: ${q.reason}`];
   });
 }

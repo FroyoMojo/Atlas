@@ -190,3 +190,20 @@ def test_admin_lock(client):
         assert client.post("/replay/reset", headers={"X-Admin-Token": "test-token"}).status_code == 409
     finally:
         main._admin_lock.release()
+
+
+def test_gauge_rates_used_only_at_current_trigger(client):
+    """Event counts made at an old trigger (before set_triggers.py) must not price the quote."""
+    from app import main
+    main.db.execute("INSERT INTO gauge_rates (gauge_id, iv_years, iv_counts, trigger_ft) VALUES "
+                    "('g-brays', '{2020,2021}', '{2,2}', 99)")
+    main._cache.clear()
+    stale = client.get("/quote?gauge=g-brays&payout=500").json()
+    assert stale["lambda_iv"] is None and stale["lambda"] == stale["lambda_peak"]
+    main.db.execute("UPDATE gauge_rates SET trigger_ft = 40 WHERE gauge_id = 'g-brays'")
+    main._cache.clear()
+    fresh = client.get("/quote?gauge=g-brays&payout=500").json()
+    assert fresh["lambda_iv"] == 2.0 and fresh["lambda"] == 2.0 and fresh["premium"] > stale["premium"]
+    assert fresh["term_days"] == 90
+    main.db.execute("DELETE FROM gauge_rates")
+    main._cache.clear()

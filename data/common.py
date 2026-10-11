@@ -108,7 +108,7 @@ def get(url: str, params: dict | None = None, *, ext: str = "json", offline: boo
     global _last_call
     path = _cache_path(url, params, ext)
     if path.exists() and not force:
-        return Result(True, 200, path.read_text(), url, path, from_cache=True)
+        return Result(True, 200, path.read_text(encoding="utf-8"), url, path, from_cache=True)
     if offline:
         return Result(False, None, "", url, error="offline mode and not in cache")
 
@@ -126,7 +126,7 @@ def get(url: str, params: dict | None = None, *, ext: str = "json", offline: boo
             continue
         if r.status_code == 200:
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            path.write_text(r.text)
+            path.write_text(r.text, encoding="utf-8")
             path.with_suffix(path.suffix + ".meta").write_text(json.dumps(
                 {"url": r.url, "fetched_at": datetime.now(timezone.utc).isoformat(),
                  "bytes": len(r.content)}))
@@ -141,5 +141,5 @@ def get(url: str, params: dict | None = None, *, ext: str = "json", offline: boo
 def write_report(name: str, payload: dict) -> Path:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     path = REPORT_DIR / name
-    path.write_text(json.dumps(payload, indent=2, default=str) + "\n")
+    path.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
     return path

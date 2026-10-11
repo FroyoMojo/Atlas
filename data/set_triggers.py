@@ -20,7 +20,8 @@ for g, st in stages.items():
     if not st or st.get(scheme) is None:
         continue
     cur = conn.execute(
-        "UPDATE gauges SET trigger_ft = %s, record_note = COALESCE(record_note, '') || %s WHERE gauge_id = %s",
+        "UPDATE gauges SET trigger_ft = %s, "
+        "record_note = regexp_replace(COALESCE(record_note, ''), ' [|] TRIGGER = .*$', '') || %s WHERE gauge_id = %s",
         (st[scheme], f" | TRIGGER = NWS {scheme} flood stage ({st[scheme]} ft), set Oct 10 (premium scan).", g))
     if cur.rowcount:
         print(f"{g}: trigger_ft {st[scheme]} (NWS {scheme})")

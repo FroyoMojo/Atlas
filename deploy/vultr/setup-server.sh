@@ -50,6 +50,13 @@ sudo -u atlas "$ROOT/.venv/bin/pip" install --quiet -r "$ROOT/engine/requirement
 # Firewall: SSH and web only
 ufw allow OpenSSH && ufw allow 80/tcp && ufw allow 443/tcp && ufw --force enable
 
+# Small plans: building the dashboard next to the running stack can run out of memory. Add 2 GB
+# of swap when the machine has under 3 GB of RAM (once).
+if [ "$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)" -lt 3000 ] && [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 # Hostnames: the domain (and www) if given, plus the sslip.io fallback for this IP
 IP=$(curl -fsS https://api.ipify.org || hostname -I | awk '{print $1}')
 SSLIP="$(echo "$IP" | tr . -).sslip.io"

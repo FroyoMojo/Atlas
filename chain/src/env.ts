@@ -37,7 +37,7 @@ export const env = {
   fallbackPremium: Number(process.env.FALLBACK_PREMIUM ?? 48),
   defaultPayout: Number(process.env.DEFAULT_PAYOUT ?? 500),
   // Policy term in days. Must match the engine (TERM_YEARS = TERM_DAYS / 365): the premium is one payment for this term.
-  termDays: Number(process.env.TERM_DAYS ?? 90),
+  termDays: Number(process.env.TERM_DAYS || 90), // `||`: an empty TERM_DAYS= must not mean 0 days
   // The only payout amounts the buy endpoints accept (the dashboard offers these).
   payoutOptions: (process.env.PAYOUT_OPTIONS ?? "250,500").split(",").map(Number).filter((n) => Number.isFinite(n) && n > 0),
   maxBondDeposit: Number(process.env.MAX_BOND_DEPOSIT ?? 100_000),

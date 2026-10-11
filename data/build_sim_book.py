@@ -62,7 +62,7 @@ def event_counts_at(conn, gauges: dict, triggers: dict[str, float]) -> dict[str,
     for g, trig in triggers.items():
         first = max(gauges[g]["record_start"] or 2008, 2008)
         t0 = dt.datetime(first - 1, 10, 1, tzinfo=dt.timezone.utc)
-        starts = [r[0] for r in conn.execute(event_rate.EVENTS, {"g": g, "t0": t0, "trig": trig})]
+        starts = [r[0] for r in conn.execute(event_rate.EVENTS, (g, t0, trig, trig))]   # positional: pg8000
         out[g] = [sum(1 for s in starts if event_rate.water_year(s) == y) for y in range(first, last + 1)]
     return out
 
