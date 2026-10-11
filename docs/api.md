@@ -1,4 +1,4 @@
-﻿# API contract (plan v3 section 4.2)
+# API contract (plan v3 section 4.2)
 
 Agreed shapes between the engine (Ezekiel, read-only FastAPI) and the chain service and web app
 (Jesse). The web app builds against mocks with these exact shapes until the engine is live.

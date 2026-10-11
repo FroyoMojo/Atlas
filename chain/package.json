@@ -20,6 +20,7 @@
     "demo:buy": "tsx src/scripts/demo-buy.ts",
     "demo:bond": "tsx src/scripts/demo-bond.ts",
     "status": "tsx src/scripts/status.ts",
+    "wallets": "tsx src/scripts/wallets.ts",
     "server": "tsx src/server/index.ts",
     "bot": "tsx src/bot/payout-bot.ts",
     "gateway": "tsx src/gateway/index.ts",
