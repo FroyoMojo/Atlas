@@ -2,7 +2,7 @@ import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction } from "@solana/web3.js";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { api } from "./api";
 
 const fromB64 = (b64: string) => Transaction.from(Buffer.from(b64, "base64"));
@@ -65,13 +65,28 @@ export const phantomBrowseUrl = () =>
 
 export const NO_WALLET_EVENT = "atlas:no-wallet";
 
+// The stock wallet list only *selects* a wallet; autoConnect then connects it only if the site is
+// already trusted, so a first-time tap did nothing. Remember that the user asked to connect and
+// call connect() as soon as the chosen wallet is set.
+let wantConnect = false;
+
+export function ConnectOnSelect() {
+  const { wallet, connected, connecting, connect } = useWallet();
+  useEffect(() => {
+    if (!wantConnect || !wallet || connected || connecting) return;
+    wantConnect = false;
+    connect().catch(() => {}); // a refusal in the wallet is not an app error
+  }, [wallet, connected, connecting, connect]);
+  return null;
+}
+
 /**
  * "Connect wallet": the wallet list when the browser has a Solana wallet. Without one the list
  * would be empty, so on a phone it reopens the page inside Phantom, and on a computer it shows
  * how to install one (WalletHelp listens for NO_WALLET_EVENT).
  */
 export function useConnectWallet() {
-  const { wallets } = useWallet();
+  const { wallets, wallet, connect } = useWallet();
   const { setVisible } = useWalletModal();
   return useCallback(() => {
     const injected = typeof window !== "undefined" && !!((window as any).phantom?.solana || (window as any).solana); // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -83,7 +98,11 @@ export function useConnectWallet() {
       return;
     }
     const found = injected || wallets.some((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
-    if (found) setVisible(true);
-    else window.dispatchEvent(new Event(NO_WALLET_EVENT));
-  }, [wallets, setVisible]);
+    if (found && wallet) {
+      connect().catch(() => {}); // already chosen earlier: just connect, no list
+    } else if (found) {
+      wantConnect = true;
+      setVisible(true);
+    } else window.dispatchEvent(new Event(NO_WALLET_EVENT));
+  }, [wallets, wallet, connect, setVisible]);
 }

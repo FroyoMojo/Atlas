@@ -13,6 +13,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
 import { config } from "./config";
 import { RoleProvider } from "./role";
+import { ConnectOnSelect } from "./wallet";
 import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CoverPage } from "./pages/CoverPage";
@@ -37,6 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ConnectionProvider endpoint={config.rpcUrl}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
+          <ConnectOnSelect />
           <HashRouter>
             <ErrorBoundary>
             <RoleProvider>
