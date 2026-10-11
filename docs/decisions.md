@@ -1,4 +1,4 @@
-# Decisions log
+﻿# Decisions log
 
 Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour 1.5)**. Later decisions go in the log at the bottom.
 
@@ -7,8 +7,8 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | # | Check | Owner | Result | Fallback if no |
 | --- | --- | --- | --- | --- |
 | 1 | USGS legacy instantaneous and peak endpoints answer for our gauges; which `api.waterdata.usgs.gov` endpoints cover them; rate limits; history depth | Ezekiel | PARTIAL (Oct 10). Legacy iv (live and Harvey window) and the peak file answer for all 9 shortlisted gauges; 62 to 92 peak years each, all include 2017. NOT yet checked: new api.waterdata.usgs.gov coverage and rate limits. | New USGS API; otherwise disk cache only and no live poller |
-| 2 | NWS flood-stage access path for our forecast points | Ezekiel | | Set `trigger_ft` from USGS annual-peak percentiles |
-| 3 | `api.weather.gov/alerts` returns flood watches and warnings by point | Ezekiel | | Manual sales-freeze toggle in demo mode |
+| 2 | NWS flood-stage access path for our forecast points | Ezekiel | DONE (Oct 10). NWPS API (api.water.noaa.gov/nwps/v1) gives flood categories; matched to USGS by location, NWS records carry the same USGS ids. Official minor flood stage used for 7 of 9 gauges; Hunting and Halls have none (p70 fallback, not priced). | Set `trigger_ft` from USGS annual-peak percentiles |
+| 3 | `api.weather.gov/alerts` returns flood watches and warnings by point | Ezekiel | DONE (Oct 10). api.weather.gov/alerts/active?point= answered for all 9 gauge points (0 active flood alerts at test time, so alert contents are untested). Demo mode uses replay_alerts anyway (F5). | Manual sales-freeze toggle in demo mode |
 | 4 | Exact Harvey replay window, and which 4 gauges cross `trigger_ft` in it, read from stored data | Ezekiel | DONE (Oct 10). Demo gauges: Brays 08075000, Greens 08076000, Cypress 08069000, Spring Ck 08068500 (full data, margins 4.7 to 20 ft). Replay window 2017-08-24 15:45Z to 2017-08-30 04:00Z (5.5 days), 525 to 530 readings per gauge. Buffalo, Whiteoak, Hunting, Halls rejected for reading gaps of 13 to 99 h; Sims and Hunting cross by under 0.4 ft. | Pick different gauges |
 | 5 | Token-2022 NonTransferable + MetadataPointer + TokenMetadata (+ PermanentDelegate) on one mint via JS | Jesse | | Drop PermanentDelegate |
 | 6 | Purchase transaction fits under 1,232 bytes with our metadata | Jesse | | Fewer metadata fields; terms in the `uri` JSON |
@@ -25,3 +25,4 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | Own test stablecoin `aUSD` instead of devnet USDC | Circle's faucet gives about 10 USDC a day | Both |
 | Oct 10 | Payout marks policy `paid` instead of burning it | Visible proof in the wallet; burn at expiry | Both |
 | Oct 10 | Switchboard, spending limits and Blinks are post-G2 upgrades | Highest-risk pieces must not block the core demo | Both |
+
