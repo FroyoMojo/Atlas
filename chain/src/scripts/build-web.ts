@@ -19,6 +19,8 @@ const vars = {
   VITE_AUSD_MINT: loadState().ausdMint ?? "",
   VITE_EXPLORER_CLUSTER: /devnet/.test(webRpc) ? "devnet" : "custom",
   VITE_PURCHASE_FLOW: env.purchaseFlow,
+  VITE_FOOTAGE_ID: process.env.VITE_FOOTAGE_ID ?? "", // Harvey footage on the landing page (a YouTube video id)
+  VITE_FOOTAGE_START: process.env.VITE_FOOTAGE_START ?? "0",
 };
 if (!vars.VITE_AUSD_MINT) console.warn("No aUSD mint in chain/state yet; the phone view will show no balance.");
 const web = resolve(REPO_DIR, "web");
