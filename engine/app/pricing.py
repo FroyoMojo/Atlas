@@ -25,8 +25,11 @@ def p_payout(lam: float, t_years: float) -> float:
 
 def premium(payout: float, lam: float, t_years: float, theta: float, c: float, k: float,
             minimum: float = 0.0) -> float:
-    """pi = E[L](1 + theta) + c k, with E[L] = B (1 - e^{-lambda t}) (7.2)."""
-    return max(minimum, payout * p_payout(lam, t_years) * (1 + theta) + c * k)
+    """pi = E[L](1 + theta) + c k t, with E[L] = B (1 - e^{-lambda t}) (7.2).
+
+    The bond coupon rate c is per year, so the capital charge scales with the term: for the
+    plan's one-year term this is the plan's c k; for a 90-day policy it is a quarter of it."""
+    return max(minimum, payout * p_payout(lam, t_years) * (1 + theta) + c * k * t_years)
 
 
 def bootstrap_band(flags: list[bool], payout: float, t_years: float, theta: float, c: float, k: float,
@@ -83,13 +86,21 @@ class BookPolicy:
 
 
 def year_losses(book: list[BookPolicy], peaks: dict[str, dict[int, float]],
-                triggers: dict[str, float]) -> dict[int, float]:
+                triggers: dict[str, float], complete_years_only: bool = True) -> dict[int, float]:
     """S_y = sum_i B_i 1{peak_{g(i),y} >= trigger_{g(i)}}: every year is one scenario across all
-    gauges, so correlation is built in (7.3). Only years with at least one recorded peak count."""
-    years = sorted({y for by_year in peaks.values() for y in by_year})
+    gauges, so correlation is built in (7.3).
+
+    Gauges have different comparable records (datum changes, F11). With complete_years_only a year
+    counts only if every gauge that holds exposure has a comparable peak that year; otherwise early
+    years would drop gauges, shrink S_y and bias the mean that K is measured against."""
     exposure: dict[str, float] = {}
     for p in book:
         exposure[p.gauge_id] = exposure.get(p.gauge_id, 0.0) + p.payout
+    covered = [g for g in exposure if g in triggers]
+    if complete_years_only and covered:
+        years = sorted(set.intersection(*(set(peaks.get(g, {})) for g in covered)))
+    else:
+        years = sorted({y for by_year in peaks.values() for y in by_year})
     out: dict[int, float] = {}
     for y in years:
         out[y] = sum(

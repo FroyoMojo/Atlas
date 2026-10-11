@@ -58,3 +58,19 @@ def test_bootstrap_band_higher_of_brackets_the_point_premium_and_is_seeded():
     # without event counts it reduces to the peak-only band
     assert pricing.bootstrap_band_higher_of(flags, None, 500, t, theta, c, k) == \
         pricing.bootstrap_band(flags, 500, t, theta, c, k)
+
+
+def test_year_losses_uses_only_years_every_gauge_has_a_peak():
+    book = [pricing.BookPolicy("a", 500, 40), pricing.BookPolicy("b", 500, 40)]
+    peaks = {"a": {2014: 40, 2015: 10, 2016: 40}, "b": {2015: 30, 2016: 30}}   # b starts 2015
+    trig = {"a": 30, "b": 20}
+    assert pricing.year_losses(book, peaks, trig) == {2015: 500, 2016: 1000}   # 2014 dropped
+    assert pricing.year_losses(book, peaks, trig, complete_years_only=False) == {2014: 500, 2015: 500, 2016: 1000}
+
+
+def test_capital_charge_scales_with_the_term():
+    base = pricing.premium(500, 0.3, 90 / 365, 0.35, 0.06, 0.0)
+    with_k = pricing.premium(500, 0.3, 90 / 365, 0.35, 0.06, 312.38)
+    assert math.isclose(with_k - base, 0.06 * 312.38 * 90 / 365)      # a quarter of the annual charge
+    annual = pricing.premium(500, 0.3, 1.0, 0.35, 0.06, 312.38) - pricing.premium(500, 0.3, 1.0, 0.35, 0.06, 0.0)
+    assert math.isclose(annual, 0.06 * 312.38)                         # the plan's c k at t = 1
