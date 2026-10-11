@@ -1,0 +1,9 @@
+# Atlas on one Vultr box. Rendered by deploy.sh: __HOSTS__ becomes
+# "atlasflood.us, www.atlasflood.us, 203-0-113-5.sslip.io" (domain plus the sslip.io fallback).
+# Caddy gets and renews the HTTPS certificates by itself once the hostnames resolve to this server.
+# Routing (engine, chain, dashboard, the /chain/reset 403) is done by the gateway on :8080,
+# the same one the laptop setup uses, so the two hosting options behave identically.
+__HOSTS__ {
+	encode gzip
+	reverse_proxy 127.0.0.1:8080
+}

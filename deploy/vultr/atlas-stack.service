@@ -1,0 +1,17 @@
+[Unit]
+Description=Atlas stack (engine, chain service, payout bot, gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=atlas
+WorkingDirectory=/opt/atlas/chain
+# `npm run stack` runs all four with auto-restart; the engine uses the venv's Python.
+Environment=NODE_ENV=production
+Environment=PYTHON=/opt/atlas/.venv/bin/python
+ExecStart=/usr/bin/npm run stack
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
