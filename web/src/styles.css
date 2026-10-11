@@ -125,6 +125,18 @@ input { font: inherit; }
 .replay-stats span { font-size: 13px; color: var(--muted); }
 .replay-admin { display: flex; gap: 8px; }
 
+.role-chip { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 10px; padding: 4px 12px; line-height: 1.25; cursor: pointer; font-family: inherit; }
+.role-chip-role { font-size: 13px; font-weight: 700; }
+.role-chip-wallet { font-size: 11px; opacity: .8; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(16,24,40,.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.modal { background: #fff; border-radius: 16px; padding: 24px; max-width: 460px; width: 100%; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.modal h2 { margin: 0; font-size: 22px; }
+.modal p { margin: 0; }
+.role-choices { display: flex; flex-direction: column; gap: 10px; }
+.role-choice { text-align: left; display: flex; flex-direction: column; gap: 2px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; cursor: pointer; font-family: inherit; }
+.role-choice b { font-size: 16px; color: var(--navy); }
+.role-choice span { font-size: 14px; color: var(--muted); line-height: 1.4; }
+.role-choice:hover, .role-choice.on { border-color: var(--navy); background: var(--tint); }
 .terms { width: 100%; border-collapse: collapse; font-size: 15px; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .terms th, .terms td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
 .terms th { font-size: 13px; color: var(--muted); font-weight: 700; background: var(--bg); }

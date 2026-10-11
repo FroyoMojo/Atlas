@@ -7,6 +7,7 @@ import { api } from "../api";
 import { areaOf } from "../areas";
 import { explorer } from "../config";
 import { friendlyError } from "../errors";
+import { useRole } from "../role";
 import { Contours, price, usd } from "../components/ui";
 import type { ReadinessMarket } from "../types";
 import { usePoll } from "../usePoll";
@@ -157,6 +158,7 @@ function MarketCard({ m }: { m: ReadinessMarket }) {
 }
 
 function FundButton() {
+  const { role, setRole } = useRole();
   const { publicKey } = useWallet();
   const connectWallet = useConnectWallet();
   const { donate } = useServerTx();
@@ -172,6 +174,7 @@ function FundButton() {
     try {
       const { transaction } = await api.donateTx(publicKey.toBase58(), amount);
       const sig = await donate(transaction);
+      if (!role) setRole("sponsor");
       setMsg({ ok: true, text: `Thank you: ${usd(amount)} added to the pool. Readiness updates within a few seconds.`, sig });
       setOpen(false);
     } catch (e) {

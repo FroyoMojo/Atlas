@@ -5,12 +5,14 @@ import { api } from "../api";
 import { areaOf, AREAS, lookup } from "../areas";
 import { CheckIcon, Contours, price } from "../components/ui";
 import { friendlyError } from "../errors";
+import { useRole } from "../role";
 import { usePoll } from "../usePoll";
 import { useReplay } from "../useReplay";
 import { useConnectWallet, useServerTx } from "../wallet";
 
 export function CoverPage() {
   const navigate = useNavigate();
+  const { role, setRole } = useRole();
   const preset = decodeURIComponent(useParams().id ?? "");
   const { runId } = useReplay();
   const { data: gauges } = usePoll(() => api.gauges(runId), 3000, [runId]);
@@ -47,6 +49,7 @@ export function CoverPage() {
     try {
       const { transaction, flow } = await api.buyTx(gauge.gauge_id, payout, publicKey.toBase58());
       await purchase(transaction, flow);
+      if (!role) setRole("household");
       navigate("/me");
     } catch (e) {
       setBuyError(friendlyError(e));

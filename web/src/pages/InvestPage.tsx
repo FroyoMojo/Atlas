@@ -5,12 +5,14 @@ import { api } from "../api";
 import { explorer } from "../config";
 import { Contours, usd } from "../components/ui";
 import { friendlyError } from "../errors";
+import { useRole } from "../role";
 import { usePoll } from "../usePoll";
 import { useReplay } from "../useReplay";
 import { useConnectWallet, useServerTx } from "../wallet";
 
 export function InvestPage() {
   const { runId } = useReplay();
+  const { role, setRole } = useRole();
   const { data: pool } = usePoll(() => api.pool(runId), 3000, [runId]);
   const { data: harvey } = usePoll(() => api.stress("harvey"), 60_000, []);
   const { publicKey } = useWallet();
@@ -27,6 +29,7 @@ export function InvestPage() {
     try {
       const { transaction, nav_per_unit } = await api.bondDepositTx(publicKey.toBase58(), amount);
       const sig = await bond(transaction);
+      if (!role) setRole("investor");
       const units = nav_per_unit > 0 ? amount / nav_per_unit : amount;
       setMsg({ ok: true, text: `Deposited ${usd(amount)}: you now hold about ${units.toLocaleString("en-US", { maximumFractionDigits: 2 })} bond units at ${nav_per_unit.toFixed(4)} each.`, sig });
     } catch (e) {

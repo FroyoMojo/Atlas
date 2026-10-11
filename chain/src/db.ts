@@ -217,6 +217,18 @@ export async function policiesByOwner(owner: string) {
   return rows;
 }
 
+/** A sponsor's donations, newest first, from the ledger rows bookDonation writes. */
+export async function donationsByDonor(donor: string) {
+  const { rows } = await db().query(
+    `SELECT amount::float8 AS amount, tx_sig, wall_time AS at
+       FROM ledger
+      WHERE account = 'donations' AND amount > 0 AND memo = $1
+      ORDER BY wall_time DESC LIMIT 50`,
+    [`donation by ${donor}`],
+  );
+  return rows;
+}
+
 /** Demo policies a reset must turn back to ACTV (those already ACTV need no transaction). */
 export async function demoPolicyMints(): Promise<string[]> {
   const { rows } = await db().query(`SELECT policy_mint FROM policies WHERE demo AND status <> 'ACTV'`);

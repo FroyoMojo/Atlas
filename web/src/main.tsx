@@ -12,6 +12,8 @@ import { HashRouter, Navigate, Route, Routes, useParams } from "react-router-dom
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
 import { config } from "./config";
+import { RoleProvider } from "./role";
+import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CoverPage } from "./pages/CoverPage";
 import { HowPage } from "./pages/HowPage";
@@ -38,6 +40,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <WalletModalProvider>
           <HashRouter>
             <ErrorBoundary>
+            <RoleProvider>
             <Routes>
               <Route path="/phone" element={<MyPage standalone />} />
               <Route element={<Layout />}>
@@ -46,6 +49,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/protect/:id" element={<CoverPage />} />
                 <Route path="/gauge/:id" element={<GaugeRedirect />} />
                 <Route path="/me" element={<MyPage />} />
+                <Route path="/account" element={<AccountPage />} />
                 <Route path="/proof" element={<ProofPage />} />
                 <Route path="/readiness" element={<ReadinessPage />} />
                 <Route path="/pool" element={<Navigate to="/proof" replace />} />
@@ -56,6 +60,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
+            </RoleProvider>
             </ErrorBoundary>
           </HashRouter>
         </WalletModalProvider>

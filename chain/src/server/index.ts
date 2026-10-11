@@ -465,6 +465,29 @@ app.get(
   }),
 );
 
+// ---------- account views by role (docs/readiness.md): what a wallet holds ----------
+
+app.get(
+  "/api/account/sponsor",
+  rateLimit(30),
+  wrap(async (req, res) => {
+    const donations = await dbq.donationsByDonor(parseAccount(req.query.owner).toBase58());
+    res.json({ donated_total: donations.reduce((s, d) => s + d.amount, 0), donations });
+  }),
+);
+
+app.get(
+  "/api/account/investor",
+  rateLimit(30),
+  wrap(async (req, res) => {
+    const owner = parseAccount(req.query.owner);
+    const held = await freshRead(() => connection.getParsedTokenAccountsByOwner(owner, { mint: requireState("bondMint") }, "confirmed"));
+    const units = held.reduce((s, a) => s + (a.account.data.parsed.info.tokenAmount.uiAmount ?? 0), 0);
+    const nav = await getNavPerUnit();
+    res.json({ units, nav_per_unit: nav, value_usd: nav === null ? null : units * nav });
+  }),
+);
+
 app.get(
   "/policies/:mint/onchain",
   wrap(async (req, res) => {

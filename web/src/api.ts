@@ -51,6 +51,12 @@ export const api = {
   replayStart: (): Promise<{ run_id: string }> => (config.useMocks ? mockEngine.replayStart() : eng("/replay/start", admin())),
   replayReset: (): Promise<{ run_id: string }> => (config.useMocks ? mockEngine.replayReset() : eng("/replay/reset", admin())),
 
+  // Account views by role (chain service)
+  sponsorAccount: (owner: string) =>
+    chain<{ donated_total: number; donations: { amount: number; tx_sig: string | null; at: string }[] }>(`/api/account/sponsor?owner=${q(owner)}`),
+  investorAccount: (owner: string) =>
+    chain<{ units: number; nav_per_unit: number | null; value_usd: number | null }>(`/api/account/investor?owner=${q(owner)}`),
+
   // Chain service
   policies: (owner: string): Promise<Policy[]> => chain(`/policies?owner=${q(owner)}`),
   buyTx: (gaugeId: string, payout: number, account: string) =>

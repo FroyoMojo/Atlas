@@ -5,11 +5,13 @@ import { getAdminToken } from "../admin";
 import { api } from "../api";
 import { areaOf, STATUS_COLOR } from "../areas";
 import { Contours, Level, Pill, WaveIcon } from "../components/ui";
+import { useRole } from "../role";
 import { usePoll } from "../usePoll";
 import { fmtDateTime, fmtDay, fmtTime, fmtWeekday, useReplay } from "../useReplay";
 
 export function MapPage() {
   const navigate = useNavigate();
+  const { setRole } = useRole();
   const { replay, runId, isReplay, historic, progress } = useReplay();
   const { data: gauges, error } = usePoll(() => api.gauges(runId), 1000, [runId]);
   const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
@@ -106,19 +108,19 @@ export function MapPage() {
       </section>
 
       <section className="roles" aria-label="Ways to take part">
-        <Link to="/protect" className="lift role">
+        <Link to="/protect" className="lift role" onClick={() => setRole("household")}>
           <span className="role-tag">Households</span>
           <b>Get $500 if your river floods</b>
           <span>Pick your neighborhood, pay once for 90 days, and the payment comes to your wallet. No claim.</span>
           <span className="link-row">Get protected →</span>
         </Link>
-        <Link to="/readiness" className="lift role">
+        <Link to="/readiness" className="lift role" onClick={() => setRole("sponsor")}>
           <span className="role-tag">Sponsors</span>
           <b>Fund Houston's community fund</b>
           <span>Donate so every payout is fully funded before the storm. No return, and prices fall for every household.</span>
           <span className="link-row">See the markets →</span>
         </Link>
-        <Link to="/invest" className="lift role">
+        <Link to="/invest" className="lift role" onClick={() => setRole("investor")}>
           <span className="role-tag">Investors</span>
           <b>A catastrophe bond for floods</b>
           <span>Take only the remote tail of flood losses and earn T-bill interest plus a spread sized to that risk.</span>
