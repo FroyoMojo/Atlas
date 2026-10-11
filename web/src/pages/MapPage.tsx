@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { getAdminToken } from "../admin";
-import { api } from "../api";
+import { activeRunId, api } from "../api";
 import type { GaugeStatus } from "../types";
 import { usePoll } from "../usePoll";
 
@@ -11,7 +11,7 @@ const COLORS: Record<GaugeStatus, string> = { normal: "#2e9e5b", near: "#d99a0b"
 export function MapPage() {
   const navigate = useNavigate();
   const { data: replay } = usePoll(api.replayStatus, 1000);
-  const runId = replay?.run_id ?? null;
+  const runId = activeRunId(replay);
   const { data: gauges, error } = usePoll(() => api.gauges(runId), 1000, [runId]);
   const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
   const [adminError, setAdminError] = useState<string | null>(null);

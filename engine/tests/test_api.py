@@ -142,14 +142,46 @@ def test_stress(client):
 
 
 def test_admin(client, monkeypatch):
+    import time
+    from app import main, replay
+    H = {"X-Admin-Token": "test-token"}
     assert client.post("/replay/start").status_code == 401
-    r = client.post("/replay/start", headers={"X-Admin-Token": "test-token"}).json()
+    assert client.post("/replay/start", headers={"X-Admin-Token": "wrong"}).status_code == 401
+    assert client.post("/replay/start", headers={"X-Admin-Token": "tést".encode("latin-1")}).status_code == 401   # non-ASCII: 401, not 500
+
+    r = client.post("/replay/start", headers=H).json()
     assert r["opening"] == {"vault": 5352, "float": 1500}
     assert client.get("/replay/status").json()["run_id"] == r["run_id"]
-    assert client.get("/storms").json() == []    # the new run has no storms yet
-    from app import main
+    # The superseded fixture run is marked reset, so the bot stops paying its open storm.
+    assert client.get("/replay/status").json()["run_id"] != "run-t"
+    assert client.get("/storms?run_id=run-t").json()[0]["status"] == "open"
+    old = main.db.one("SELECT status, reset_wall FROM runs WHERE run_id = 'run-t'")
+    assert old["status"] == "reset" and old["reset_wall"] is not None   # the chain books by this time
+
+    # The fixture has no Harvey data, so this replay fails: the run must not stay "running".
+    for _ in range(50):
+        if not replay.running():
+            break
+        time.sleep(0.1)
+    assert client.get("/replay/status").json() | {"clock": None} == {
+        "run_id": r["run_id"], "status": "done", "clock": None, "streaming": False}
+
+    # A second Start in the same second gets its own id instead of a 500.
+    r2 = client.post("/replay/start", headers=H).json()
+    r3 = client.post("/replay/start", headers=H).json()
+    assert len({r["run_id"], r2["run_id"], r3["run_id"]}) == 3
+
     monkeypatch.setattr(main.httpx, "post", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("chain down")))
-    reset = client.post("/replay/reset", headers={"X-Admin-Token": "test-token"}).json()
-    assert reset["run_id"] == r["run_id"] and "chain down" in reset["chain_error"]
+    reset = client.post("/replay/reset", headers=H).json()
+    assert reset["run_id"] == r3["run_id"] and "chain down" in reset["chain_error"]
     assert client.get("/replay/status").json()["status"] == "reset"
     assert client.get("/gauges").json()[0]["status"] != "triggered"   # back to live after reset
+
+
+def test_admin_lock(client):
+    from app import main
+    assert main._admin_lock.acquire(blocking=False)
+    try:
+        assert client.post("/replay/reset", headers={"X-Admin-Token": "test-token"}).status_code == 409
+    finally:
+        main._admin_lock.release()

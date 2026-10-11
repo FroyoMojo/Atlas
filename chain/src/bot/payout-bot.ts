@@ -141,8 +141,14 @@ function warnOnce(key: string, msg: string) {
   console.warn(msg);
 }
 
+const validShare = (f: number | null): f is number => f != null && Number.isFinite(f) && f > 0 && f <= 1;
+
 async function processStorm(storm: dbq.Storm): Promise<void> {
   if (storm.f_int == null) return warnOnce(`fint:${storm.storm_id}`, `storm ${storm.storm_id}: waiting for f_int from the engine`);
+  // Engine values outside (0, 1], or f_fin < f_int, are refused rather than paid (or divided by).
+  if (!validShare(storm.f_int) || (storm.f_fin != null && (!validShare(storm.f_fin) || storm.f_fin < storm.f_int))) {
+    return warnOnce(`shares:${storm.storm_id}`, `storm ${storm.storm_id}: invalid f_int ${storm.f_int} / f_fin ${storm.f_fin}; not paying`);
+  }
   const fInt = storm.f_int;
   const events = await dbq.stormEvents(storm.storm_id);
   const byEvent = new Map(events.map((e) => [e.event_id, e]));
@@ -168,7 +174,7 @@ async function processStorm(storm: dbq.Storm): Promise<void> {
   if (closed && delta > 0) {
     for (const i of interims.filter((x) => x.status === "confirmed")) {
       if (trueups.some((t) => t.policy_mint === i.policy_mint && t.status !== "expired")) continue;
-      const benefit = i.amount / fInt;
+      const benefit = i.payout_usd != null && i.payout_usd > 0 ? i.payout_usd : i.amount / fInt; // B
       todo.push({ kind: "trueup", event: byEvent.get(i.event_id)!, mint: i.policy_mint, owner: i.owner, gaugeId: i.gauge_id, amount: round6(delta * benefit) });
     }
   }
@@ -219,7 +225,14 @@ async function tick(): Promise<void> {
   running = true;
   try {
     await recoverIntents();
-    for (const storm of await dbq.stormsToProcess()) await processStorm(storm);
+    // One storm's failure must not stop the others: errors are caught and logged per storm.
+    for (const storm of await dbq.stormsToProcess()) {
+      try {
+        await processStorm(storm);
+      } catch (err) {
+        warnOnce(`err:${storm.storm_id}:${String(err)}`, `storm ${storm.storm_id} failed (retrying quietly): ${String(err)}`);
+      }
+    }
     if (lastError) console.log("bot recovered");
     lastError = "";
   } catch (err) {

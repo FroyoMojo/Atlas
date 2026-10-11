@@ -36,14 +36,25 @@ export async function inTx<T>(fn: (c: pg.PoolClient) => Promise<T>): Promise<T> 
 }
 
 /**
- * Run that money movements belong to. A purchase or deposit made while no replay is running
- * (e.g. bought on stage before Start) is booked to "session" (audit fix: v3 left this undefined).
+ * Run a money movement made at `at` belongs to: the latest run started at or before then, if it
+ * has not been reset (running, or done after its replay ended). Otherwise "session", e.g. a
+ * purchase after Reset and before the next Start, which the next run's opening balance includes.
+ * Pass the transaction's block time, not the time it was noticed, so a purchase that landed
+ * before Start but was confirmed after it is not booked to the new run.
  */
-export async function currentRunId(): Promise<string> {
+export async function currentRunId(at: Date = new Date()): Promise<string> {
+  // The latest run started by then, unless it had already been reset by then: "session".
+  // (Looking past a reset run would book to some older finished run instead.) A reset run
+  // without a recorded reset time (rows from before reset_wall existed) counts as reset.
   const { rows } = await db().query(
-    `SELECT run_id FROM runs WHERE status = 'running' ORDER BY started_wall DESC LIMIT 1`,
+    `SELECT run_id, status, reset_wall FROM runs WHERE started_wall <= $1
+     ORDER BY started_wall DESC, run_id DESC LIMIT 1`,
+    [at],
   );
-  return rows[0]?.run_id ?? "session";
+  const r = rows[0];
+  if (!r) return "session";
+  if (r.status !== "reset") return r.run_id;
+  return r.reset_wall && new Date(r.reset_wall) > at ? r.run_id : "session";
 }
 
 // ---------- policy pool ----------
@@ -63,19 +74,36 @@ export async function activeReservationFor(buyer: string): Promise<string | null
   return rows[0]?.policy_mint ?? null;
 }
 
-/** Reserve one free mint for a gauge for 2 minutes. Safe under concurrent buyers. */
-export async function reservePolicyMint(gaugeId: string, buyer: string, premiumUsd: number, payoutUsd: number) {
-  const { rows } = await db().query(
-    `UPDATE policy_pool SET status = 'reserved', reserved_by = $2, message_hash = NULL,
-            reserved_until = now() + INTERVAL '2 minutes', premium_usd = $3, payout_usd = $4
-     WHERE policy_mint = (
-       SELECT policy_mint FROM policy_pool
-       WHERE gauge_id = $1 AND (status = 'free' OR (status = 'reserved' AND reserved_until < now()))
-       ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-     RETURNING policy_mint, policy_id`,
-    [gaugeId, buyer, premiumUsd, payoutUsd],
-  );
-  return rows[0] ? { policyMint: rows[0].policy_mint as string, policyId: rows[0].policy_id as string } : null;
+/**
+ * Reserve one free mint for a gauge for 2 minutes. Safe under concurrent buyers, and atomic per
+ * wallet: the advisory lock makes "no active reservation" and "reserve" one step. Only `free`
+ * rows are taken; an expired reservation is freed by the confirmer once the chain shows the
+ * purchase never landed (a landed one is marked sold instead), so a paid mint is never resold.
+ */
+export async function reservePolicyMint(
+  gaugeId: string,
+  buyer: string,
+  premiumUsd: number,
+  payoutUsd: number,
+): Promise<{ policyMint: string; policyId: string } | "busy" | null> {
+  return inTx(async (c) => {
+    await c.query(`SELECT pg_advisory_xact_lock(hashtext('reserve:' || $1))`, [buyer]);
+    const busy = await c.query(
+      `SELECT 1 FROM policy_pool WHERE reserved_by = $1 AND status = 'reserved' AND reserved_until > now() LIMIT 1`,
+      [buyer],
+    );
+    if (busy.rowCount) return "busy" as const;
+    const { rows } = await c.query(
+      `UPDATE policy_pool SET status = 'reserved', reserved_by = $2, message_hash = NULL,
+              reserved_until = now() + INTERVAL '2 minutes', premium_usd = $3, payout_usd = $4
+       WHERE policy_mint = (
+         SELECT policy_mint FROM policy_pool WHERE gauge_id = $1 AND status = 'free'
+         ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
+       RETURNING policy_mint, policy_id`,
+      [gaugeId, buyer, premiumUsd, payoutUsd],
+    );
+    return rows[0] ? { policyMint: rows[0].policy_mint as string, policyId: rows[0].policy_id as string } : null;
+  });
 }
 
 export async function setReservationMessageHash(policyMint: string, hash: string) {
@@ -91,18 +119,28 @@ export async function reservationByMessageHash(hash: string) {
 }
 
 export async function reservedMints(): Promise<
-  { policy_mint: string; policy_id: string; gauge_id: string; reserved_by: string; premium_usd: number; payout_usd: number }[]
+  {
+    policy_mint: string;
+    policy_id: string;
+    gauge_id: string;
+    reserved_by: string;
+    reserved_until: Date | null;
+    premium_usd: number;
+    payout_usd: number;
+  }[]
 > {
   const { rows } = await db().query(`SELECT * FROM policy_pool WHERE status = 'reserved'`);
   return rows;
 }
 
-export async function releaseReservations(): Promise<number> {
+/** Free one reservation. Callers first check on-chain that the purchase never landed. */
+export async function releaseReservation(policyMint: string): Promise<boolean> {
   const r = await db().query(
     `UPDATE policy_pool SET status = 'free', reserved_by = NULL, reserved_until = NULL, message_hash = NULL
-     WHERE status = 'reserved'`,
+     WHERE policy_mint = $1 AND status = 'reserved'`,
+    [policyMint],
   );
-  return r.rowCount ?? 0;
+  return (r.rowCount ?? 0) > 0;
 }
 
 export async function poolCounts() {
@@ -129,10 +167,11 @@ export async function markSold(
     termDays: number;
     demo: boolean;
     txSig: string | null;
+    landedAt: Date; // block time of the purchase transaction
   },
-  writeEntry: (c: pg.PoolClient, runId: string) => Promise<void>,
+  writeEntry: (c: pg.PoolClient, runId: string) => Promise<unknown>,
 ): Promise<void> {
-  const runId = await currentRunId();
+  const runId = await currentRunId(row.landedAt);
   await inTx(async (c) => {
     await c.query(`UPDATE policy_pool SET status = 'sold' WHERE policy_mint = $1`, [row.policyMint]);
     const ins = await c.query(
@@ -229,7 +268,7 @@ export async function interimCandidates(gaugeId: string, eventTime: Date, stormI
   const { rows } = await db().query(
     `SELECT p.policy_mint, p.owner, p.gauge_id, p.payout_usd
      FROM policies p
-     WHERE p.gauge_id = $1 AND p.status = 'ACTV' AND p.starts_at <= $2 AND $2 < p.ends_at
+     WHERE p.gauge_id = $1 AND p.status = 'ACTV' AND p.starts_at <= $2 AND $2 < p.ends_at AND p.payout_usd > 0
        AND NOT EXISTS (SELECT 1 FROM payout_intents i
                        WHERE i.policy_mint = p.policy_mint AND i.storm_id = $3 AND i.kind = 'interim'
                          AND i.status <> 'expired')`,
@@ -254,8 +293,15 @@ export interface Intent {
   attempts: number;
 }
 
-export async function intentsForStorm(stormId: string, kind: "interim" | "trueup"): Promise<Intent[]> {
-  const { rows } = await db().query(`SELECT * FROM payout_intents WHERE storm_id = $1 AND kind = $2`, [stormId, kind]);
+export async function intentsForStorm(
+  stormId: string,
+  kind: "interim" | "trueup",
+): Promise<(Intent & { payout_usd: number | null })[]> {
+  const { rows } = await db().query(
+    `SELECT i.*, p.payout_usd FROM payout_intents i LEFT JOIN policies p ON p.policy_mint = i.policy_mint
+     WHERE i.storm_id = $1 AND i.kind = $2`,
+    [stormId, kind],
+  );
   return rows;
 }
 
@@ -299,7 +345,7 @@ export async function setIntentStatus(intentId: string, status: "sent" | "expire
  */
 export async function confirmIntent(
   intentId: string,
-  writeEntry: (c: pg.PoolClient, i: Intent) => Promise<void>,
+  writeEntry: (c: pg.PoolClient, i: Intent) => Promise<unknown>,
 ): Promise<boolean> {
   return inTx(async (c) => {
     const r = await c.query(

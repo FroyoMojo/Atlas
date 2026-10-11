@@ -118,6 +118,11 @@ def cmd_iv(conn, a):
                    SET stage_ft = EXCLUDED.stage_ft, discharge_cfs = EXCLUDED.discharge_cfs""", rows)
         stages = [r[2] for r in rows if r[2] is not None]
         print(f"iv {site}: {len(rows)} readings" + (f", stage {min(stages):.2f} to {max(stages):.2f} ft" if stages else ", no stage"))
+    # gauge_hourly's policy only refreshes the last 3 days, so backfilled history must be
+    # materialized once or the live charts (which read the aggregate) show nothing for it.
+    conn.execute("CALL refresh_continuous_aggregate('gauge_hourly', %s::timestamptz, %s::timestamptz)",
+                 (f"{a.start}T00:00:00Z", f"{a.end}T23:59:59Z"))
+    print(f"gauge_hourly refreshed for {a.start} to {a.end}")
 
 
 def main():

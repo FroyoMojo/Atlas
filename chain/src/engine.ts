@@ -11,9 +11,23 @@ export interface Quote {
   reason?: string | null;
 }
 
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${env.engineUrl}${path}`, { signal: AbortSignal.timeout(4_000) });
-  if (!res.ok) throw new Error(`engine ${path}: HTTP ${res.status}`);
+export class EngineError extends Error {
+  constructor(message: string, readonly status: number | null) {
+    super(message);
+  }
+}
+
+async function getJson<T>(path: string, timeoutMs = 4_000): Promise<T> {
+  let res: globalThis.Response;
+  try {
+    res = await fetch(`${env.engineUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) });
+  } catch (err) {
+    throw new EngineError(`engine ${path}: ${String(err)}`, null); // unreachable or timed out
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { detail?: unknown };
+    throw new EngineError(`engine ${path}: HTTP ${res.status} ${typeof body.detail === "string" ? body.detail : ""}`.trim(), res.status);
+  }
   return (await res.json()) as T;
 }
 
@@ -23,7 +37,10 @@ export async function getQuote(gaugeId: string, payout: number): Promise<Quote &
     const q = await getJson<Quote>(`/quote?gauge=${encodeURIComponent(gaugeId)}&payout=${payout}`);
     return { ...q, fallback: false };
   } catch (err) {
-    if (!env.demoMode) throw err;
+    // Fall back only when the engine is down (network error or 5xx), never on a 4xx: a rejected
+    // request (bad gauge or payout) must not be sold at the fallback premium.
+    const down = err instanceof EngineError && (err.status === null || err.status >= 500);
+    if (!env.demoMode || !down) throw err;
     return {
       premium: env.fallbackPremium,
       p_payout: 0,
@@ -36,12 +53,13 @@ export async function getQuote(gaugeId: string, payout: number): Promise<Quote &
   }
 }
 
-/** Bond NAV per unit from the engine's /pool. 1.0 if unavailable. */
-export async function getNavPerUnit(): Promise<number> {
+/** Bond NAV per unit from the engine's /pool (plan v3 7.4). null if unavailable: never guess a NAV. */
+export async function getNavPerUnit(): Promise<number | null> {
   try {
-    const pool = await getJson<{ onchain?: { nav_per_unit?: number } }>("/pool"); // NAV from the ledger (plan v3 7.4)
-    return pool.onchain?.nav_per_unit ?? 1;
+    const pool = await getJson<{ onchain?: { nav_per_unit?: number } }>("/pool", 12_000);
+    const nav = pool.onchain?.nav_per_unit;
+    return typeof nav === "number" && Number.isFinite(nav) && nav > 0 ? nav : null;
   } catch {
-    return 1;
+    return null;
   }
 }

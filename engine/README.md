@@ -27,7 +27,7 @@ app against it in dev: `VITE_USE_MOCKS=false VITE_ENGINE_URL=http://localhost:80
 
 ```bash
 python -m pytest -q                               # pricing unit tests
-ENGINE_TEST_ADMIN_URL="postgresql://postgres@/postgres?host=/tmp&port=5433" python -m pytest -q   # + API tests
+ENGINE_TEST_ADMIN_URL="postgresql://postgres@/postgres?host=/tmp&port=5433" python -m pytest -q   # + API and replay tests
 ```
 
 The API tests create and drop a throwaway `atlas_engine_test` database on a **local**
@@ -56,10 +56,12 @@ TimescaleDB. Never point `ENGINE_TEST_ADMIN_URL` at the Tiger service.
 | `/stress` | Each water year is a scenario across all gauges; `K = max(worst, Harvey) - mean`; reserve = premiums less expenses and coupons |
 | `/storms` | `storms`, `gauge_events`, confirmed `payout_intents` |
 | `/ledger` | Rows and totals for the run (`session` with no run) |
-| `POST /replay/start` | New `run-YYYYMMDD-HHMMSS`, opening balances from the chain; starts the built-in streamer (or `REPLAY_CMD` with `RUN_ID` set) |
+| `POST /replay/start` | New `run-YYYYMMDD-HHMMSS` (suffix `-2`, `-3` within the same second), opening balances from the chain; a run still running is abandoned (marked `reset`, so the bot stops paying it); starts the built-in streamer (or `REPLAY_CMD` with `RUN_ID` set). Start and Reset hold a lock: a second one at the same time gets 409 |
 | `POST /replay/reset` | Stops the streamer, marks the run `reset`, calls `POST /chain/reset`, reconciles. After a reset the default view is live data |
 
-Default reads skip a run that was reset, so Reset returns the map to normal.
+Default reads skip a run that was reset, so Reset returns the map to normal (the dashboard sends
+no `run_id` once the latest run is reset). A replay that crashes closes its open events and storm
+(`f_fin = f_int`) and marks the run `done`, so nothing is left "running".
 
 ## Replay streamer (`app/replay.py`)
 
@@ -86,9 +88,19 @@ Test without the API: `python -m app.replay --run RUN_ID --seconds 10` (the `run
 - Brays's older annual peaks are higher than its Harvey peak, a sign of a datum or channel change: set
   `record_start` before pricing (F11).
 
+**History charts** read the `gauge_hourly` continuous aggregate. Its policy only refreshes the
+last 3 days, so `data/usgs.py iv` refreshes it once for the window it loads; anything backfilled
+another way needs `CALL refresh_continuous_aggregate('gauge_hourly', '<start>', '<end>')`.
+
 ## Reference economics: Ezekiel to own
 
 The pricing constants are env settings with defaults: `PRICING_THETA=0.35`, `PRICING_C=0.06`,
 `PRICING_E=0.10`, `TERM_YEARS=1`, `MIN_PREMIUM=1`, `BOOTSTRAP_N=2000`, `HARVEY_WATER_YEAR=2017`,
 `SEED_RESERVE=300`. They are a working baseline written from the plan's formulas, so swap any
 of them, or any function in `pricing.py`, without touching the endpoints.
+
+**Known simplifications** (not bugs; say so if asked):
+- On-chain NAV is `(bond capital - losses absorbed) / bond capital`. The plan's NAV also adds
+  coupons accrued (`c k` per premium); on devnet premiums stay whole in the reserve.
+- Nothing moves a policy to `EXPD` at the end of its term: demo policies run 365 days, longer
+  than the hackathon. Expiry (status `EXPD`, PermanentDelegate burn) is the production step.

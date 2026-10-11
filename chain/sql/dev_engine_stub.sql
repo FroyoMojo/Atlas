@@ -52,3 +52,4 @@ CREATE TABLE IF NOT EXISTS replay_alerts (
 -- v3.1 [V3]: opening balances recorded at Start for per-run reconciliation.
 ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_vault NUMERIC;
 ALTER TABLE runs ADD COLUMN IF NOT EXISTS opening_float NUMERIC;
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS reset_wall TIMESTAMPTZ;

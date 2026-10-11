@@ -15,3 +15,6 @@ NWS flood stages and set `record_start` / `record_note` per gauge (datum check, 
 
 Still to build: the live poller (same `iv` call for the last few hours, on a timer) and the
 instantaneous-data event rate for pricing.
+
+`iv` also refreshes the `gauge_hourly` continuous aggregate for the loaded window; without that
+the live history charts stay empty, because the aggregate's policy only covers the last 3 days.

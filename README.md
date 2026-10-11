@@ -36,8 +36,8 @@ Architecture diagram: [build plan v3.1](docs/plan/Atlas_Build_Plan_v3.1.pdf), se
 ```
 chain/    Solana side (TypeScript): setup scripts, chain service, payout bot      [built]
 web/      Dashboard and phone view (Vite + React)                              [built]
-deploy/   Laptop hosting: gateway + Cloudflare Tunnel guide                     [built]
-tools/    g2_storm.py: opens a storm for Gate G2 before the replay exists       [built]
+deploy/   Laptop hosting guide (gateway code in chain/src/gateway)              [built]
+tools/    g2_storm.py: opens a storm directly (true-up rehearsal)              [built]
 docs/     Plan, API contract, evidence format, decisions, demo, guides
 data/     USGS loader: gauges, annual peaks, Harvey window (Python)            [built; live poller: Ezekiel]
 engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms  [built]
@@ -59,6 +59,8 @@ engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms
 
 ## Run
 
+- Engine (FastAPI, schema, replay streamer): [engine/README.md](engine/README.md)
+- USGS loader (gauges, peaks, Harvey window): [data/README.md](data/README.md)
 - Chain service and payout bot: [chain/README.md](chain/README.md)
 - Dashboard and phone view: [web/README.md](web/README.md)
 - Hosting: [deploy/README.md](deploy/README.md)

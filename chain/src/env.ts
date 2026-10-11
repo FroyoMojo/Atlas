@@ -36,6 +36,9 @@ export const env = {
   // Used when the engine's /quote is unreachable (demo mode only).
   fallbackPremium: Number(process.env.FALLBACK_PREMIUM ?? 48),
   defaultPayout: Number(process.env.DEFAULT_PAYOUT ?? 500),
+  // The only payout amounts the buy endpoints accept (the dashboard offers these).
+  payoutOptions: (process.env.PAYOUT_OPTIONS ?? "250,500").split(",").map(Number).filter((n) => Number.isFinite(n) && n > 0),
+  maxBondDeposit: Number(process.env.MAX_BOND_DEPOSIT ?? 100_000),
   botPollMs: Number(process.env.BOT_POLL_MS ?? 2_000),
 };
 

@@ -48,7 +48,7 @@ def iso(t: dt.datetime | None) -> str | None:
 
 
 def latest_run() -> dict | None:
-    return db.one("SELECT * FROM runs ORDER BY started_wall DESC LIMIT 1")
+    return db.one("SELECT * FROM runs ORDER BY started_wall DESC, run_id DESC LIMIT 1")
 
 
 def data_run(run_id: str | None) -> dict | None:
@@ -66,7 +66,7 @@ def data_run(run_id: str | None) -> dict | None:
 def require_admin(token: str | None) -> None:
     if not settings.ADMIN_TOKEN:
         raise HTTPException(503, "ADMIN_TOKEN is not set on the engine")
-    if not token or not hmac.compare_digest(token, settings.ADMIN_TOKEN):
+    if not token or not hmac.compare_digest(token.encode(), settings.ADMIN_TOKEN.encode()):
         raise HTTPException(401, "Admin token required")
 
 
@@ -144,7 +144,7 @@ def replay_status():
         return {"run_id": None, "status": None, "clock": None}
     clock = run["clock"] or (db.one(
         "SELECT max(event_time) AS t FROM gauge_readings WHERE run_id = %s", (run["run_id"],)) or {}).get("t")
-    return {"run_id": run["run_id"], "status": run["status"], "clock": iso(clock), "streaming": replay.running()}
+    return {"run_id": run["run_id"], "status": run["status"], "clock": iso(clock), "streaming": streaming()}
 
 
 @app.get("/gauges")
@@ -373,6 +373,21 @@ def ledger(run_id: str | None = None):
 # ---------- admin: replay controls ----------
 
 _streamer: subprocess.Popen | None = None
+# Start and Reset never run at the same time (double clicks, two admins): the second gets 409.
+_admin_lock = threading.Lock()
+
+
+def streaming() -> bool:
+    return replay.running() or bool(_streamer and _streamer.poll() is None)
+
+
+def admin_action(fn):
+    if not _admin_lock.acquire(blocking=False):
+        raise HTTPException(409, "Another Start or Reset is in progress")
+    try:
+        return fn()
+    finally:
+        _admin_lock.release()
 
 
 def _stop_streamer() -> None:
@@ -389,13 +404,24 @@ def _stop_streamer() -> None:
 
 @app.post("/replay/start")
 def replay_start(x_admin_token: str | None = Header(default=None)):
-    global _streamer
     require_admin(x_admin_token)
-    now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
-    run_id = "run-" + now.strftime("%Y%m%d-%H%M%S")
+    return admin_action(_replay_start)
+
+
+def _replay_start():
+    global _streamer
+    now = dt.datetime.now(dt.timezone.utc)   # full precision: orders runs started in the same second
+    run_id = base = "run-" + now.strftime("%Y%m%d-%H%M%S")
+    n = 1
+    while db.one("SELECT 1 AS x FROM runs WHERE run_id = %s", (run_id,)):
+        n += 1
+        run_id = f"{base}-{n}"
     bal = chain_balances(fresh=True)
     _stop_streamer()
-    db.execute("UPDATE runs SET status = 'done' WHERE status = 'running'")
+    # Starting over a running run abandons it: mark it reset so the bot stops paying its storms
+    # (marking it "done" left its open storm payable). Demo policies stay as they are; press
+    # Reset to restore them.
+    db.execute("UPDATE runs SET status = 'reset', reset_wall = now() WHERE status = 'running'")
     db.execute(
         """INSERT INTO runs (run_id, source, started_wall, status, opening_vault, opening_float)
            VALUES (%s, 'replay', %s, 'running', %s, %s)""",
@@ -412,11 +438,16 @@ def replay_start(x_admin_token: str | None = Header(default=None)):
 @app.post("/replay/reset")
 def replay_reset(x_admin_token: str | None = Header(default=None)):
     require_admin(x_admin_token)
-    run = db.one("SELECT * FROM runs WHERE status = 'running' ORDER BY started_wall DESC LIMIT 1") or latest_run()
+    return admin_action(_replay_reset)
+
+
+def _replay_reset():
+    run = db.one("SELECT * FROM runs WHERE status = 'running' ORDER BY started_wall DESC, run_id DESC LIMIT 1") or latest_run()
     if run is None:
         raise HTTPException(409, "No run to reset")
     _stop_streamer()
-    db.execute("UPDATE runs SET status = 'reset' WHERE run_id = %s", (run["run_id"],))
+    db.execute("UPDATE runs SET status = 'reset', reset_wall = coalesce(reset_wall, now()) WHERE run_id = %s",
+               (run["run_id"],))
     chain, error = None, None
     try:
         r = httpx.post(f"{settings.CHAIN_URL}/chain/reset", json={"run_id": run["run_id"]},

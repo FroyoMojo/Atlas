@@ -40,8 +40,12 @@ CLOSE_AFTER = 72 * H
 
 
 def _env_time(name: str, default: str | None) -> dt.datetime | None:
+    """ISO time from the environment; a value without a timezone is UTC (not server local time)."""
     v = os.environ.get(name) or default
-    return dt.datetime.fromisoformat(v.replace("Z", "+00:00")).astimezone(dt.timezone.utc) if v else None
+    if not v:
+        return None
+    t = dt.datetime.fromisoformat(v.replace("Z", "+00:00"))
+    return (t if t.tzinfo else t.replace(tzinfo=dt.timezone.utc)).astimezone(dt.timezone.utc)
 
 
 @dataclass
@@ -130,7 +134,9 @@ class Replay:
         return min(1.0, self.available(conn) / b) if b > 0 else 1.0
 
     def f_fin(self, conn, storm_id: str) -> float:
-        rows = conn.execute("SELECT gauge_id, opened_at FROM gauge_events WHERE storm_id = %s", (storm_id,)).fetchall()
+        # One row per gauge (its first event in the storm), so a gauge is never counted twice.
+        rows = conn.execute("""SELECT gauge_id, min(opened_at) AS opened_at FROM gauge_events
+                               WHERE storm_id = %s GROUP BY gauge_id""", (storm_id,)).fetchall()
         b = sum(self.exposure(conn, {r["gauge_id"]}, r["opened_at"], ("ACTV", "PAID")) for r in rows)
         f = min(1.0, self.available(conn) / b) if b > 0 else 1.0
         return max(f, self.storm.f_int if self.storm else 0.0)
@@ -250,11 +256,12 @@ class Replay:
         g = state.get(r["gauge_id"])
         t = r["event_time"] + shift
         stage = r["stage_ft"]
-        rejected = bool(r["rejected"]) or stage is None
-        if not rejected and g is not None and g.last_accepted is not None:
+        # No stage (discharge only, or the gauge was dark) is a gap, not a rejected reading.
+        rejected = bool(r["rejected"])
+        if stage is not None and not rejected and g is not None and g.last_accepted is not None:
             steps = max(1.0, (t - g.last_accepted_at) / dt.timedelta(minutes=15))
             rejected = abs(stage - g.last_accepted) > self.max_jump * steps
-        if g is not None and not rejected:
+        if g is not None and stage is not None and not rejected:
             g.last_accepted, g.last_accepted_at = stage, t
             if stage >= g.trigger:
                 g.above_run += 1
@@ -266,6 +273,25 @@ class Replay:
                 if g.open_event and g.last_above and t - g.last_above >= CLOSE_AFTER:
                     self.close_event(conn, g, t)
         return (t, r["gauge_id"], stage, r["discharge_cfs"], self.run_id, rejected)
+
+
+def finish_failed(run_id: str) -> None:
+    """A replay that crashed must not stay "running" with an open storm: close its open events
+    and storms at the run clock (f_fin = f_int, so no true-up is invented) and mark it done."""
+    try:
+        with psycopg.connect(settings.DATABASE_URL, row_factory=dict_row) as conn:
+            run = conn.execute("SELECT clock, status FROM runs WHERE run_id = %s", (run_id,)).fetchone()
+            if not run or run["status"] != "running":
+                return
+            at = run["clock"] or dt.datetime.now(dt.timezone.utc)
+            conn.execute("UPDATE gauge_events SET closed_at = %s WHERE run_id = %s AND closed_at IS NULL", (at, run_id))
+            conn.execute("""UPDATE storms SET closed_at = %s, f_fin = f_int, status = 'closed'
+                            WHERE run_id = %s AND status = 'open'""", (at, run_id))
+            conn.execute("UPDATE runs SET status = 'done' WHERE run_id = %s AND status = 'running'", (run_id,))
+            conn.commit()
+        log.warning("run %s marked done after the replay failed", run_id)
+    except Exception:
+        log.exception("could not close failed run %s", run_id)
 
 
 # ---------- background thread used by the engine ----------
@@ -284,6 +310,7 @@ def start_thread(run_id: str) -> None:
             Replay(run_id, stop).run()
         except Exception:
             log.exception("replay %s failed", run_id)
+            finish_failed(run_id)
 
     _thread = threading.Thread(target=target, name=f"replay-{run_id}", daemon=True)
     _thread.start()
@@ -308,7 +335,11 @@ def main():
     p.add_argument("--run", default=os.environ.get("RUN_ID"), required=not os.environ.get("RUN_ID"))
     p.add_argument("--seconds", type=float)
     a = p.parse_args()
-    print(Replay(a.run, seconds=a.seconds).run())
+    try:
+        print(Replay(a.run, seconds=a.seconds).run())
+    except Exception:
+        finish_failed(a.run)
+        raise
 
 
 if __name__ == "__main__":

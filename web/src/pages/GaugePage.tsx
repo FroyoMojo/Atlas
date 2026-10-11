@@ -2,7 +2,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api } from "../api";
+import { activeRunId, api } from "../api";
 import { explorer } from "../config";
 import { usePoll } from "../usePoll";
 import { useServerTx } from "../wallet";
@@ -11,7 +11,7 @@ export function GaugePage() {
   const id = decodeURIComponent(useParams().id ?? "");
   const [payout, setPayout] = useState(500);
   const { data: replay } = usePoll(api.replayStatus, 1000);
-  const runId = replay?.run_id ?? null;
+  const runId = activeRunId(replay);
   const { data: gauges } = usePoll(() => api.gauges(runId), 2000, [runId]);
   const { data: series } = usePoll(() => api.series(id, runId), 1000, [id, runId]);
   const { data: quote, error: quoteError } = usePoll(() => api.quote(id, payout, runId), 3000, [id, payout, runId]);
@@ -95,7 +95,7 @@ export function GaugePage() {
                 {(quote.p_payout * 100).toFixed(1)}% · capital share k {quote.k.toFixed(0)} aUSD · waiting period {quote.waiting_days} days
               </p>
               {!quote.sales_open && <p className="error">Sales frozen: {quote.reason}</p>}
-              <button className="primary wide" disabled={!quote.sales_open || buying} onClick={buy}>
+              <button className="primary wide" disabled={!quote.sales_open || buying || !!quoteError} onClick={buy}>
                 {buying ? "Confirm in your wallet…" : `Buy for ${quote.premium.toFixed(2)} aUSD`}
               </button>
             </>

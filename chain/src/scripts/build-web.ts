@@ -9,8 +9,12 @@ import { REPO_DIR, env, loadState } from "../env.js";
 // The browser bundle is public: never ship SOLANA_RPC_URL (it carries the provider API key).
 // WEB_RPC_URL is for a key locked to the site's domain; the public devnet RPC otherwise.
 const webRpc = process.env.WEB_RPC_URL || "https://api.devnet.solana.com";
+// Every variable the app reads is written here, so nothing from a dev web/.env.local (which
+// Vite also loads for production builds, at lower priority) leaks into the hosted bundle.
 const vars = {
   VITE_USE_MOCKS: process.env.VITE_USE_MOCKS ?? "false",
+  VITE_ENGINE_URL: "/engine", // same origin, through the gateway
+  VITE_CHAIN_URL: "", // same origin
   VITE_RPC_URL: webRpc,
   VITE_AUSD_MINT: loadState().ausdMint ?? "",
   VITE_EXPLORER_CLUSTER: /devnet/.test(webRpc) ? "devnet" : "custom",

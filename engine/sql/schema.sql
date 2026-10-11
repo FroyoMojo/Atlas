@@ -54,8 +54,11 @@ CREATE TABLE IF NOT EXISTS runs (
   clock         TIMESTAMPTZ,                      -- run clock (event time of the last reading) [F9]
   status        TEXT NOT NULL,                    -- running | done | reset
   opening_vault NUMERIC,                          -- from GET /chain/balances at start [V3]
-  opening_float NUMERIC
+  opening_float NUMERIC,
+  reset_wall    TIMESTAMPTZ                       -- when Reset (or a new Start) ended it
 );
+-- Added after the first schema; for databases created before it.
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS reset_wall TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS storms (
   storm_id      TEXT PRIMARY KEY,

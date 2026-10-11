@@ -1,6 +1,6 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
-import { api } from "../api";
+import { activeRunId, api } from "../api";
 import { explorer, short } from "../config";
 import { usePoll } from "../usePoll";
 import { useServerTx } from "../wallet";
@@ -9,7 +9,7 @@ const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 
 
 export function PoolPage() {
   const { data: replay } = usePoll(api.replayStatus, 1000);
-  const runId = replay?.run_id ?? null;
+  const runId = activeRunId(replay);
   const { data: pool, error } = usePoll(() => api.pool(runId), 1500, [runId]);
   const { data: harvey } = usePoll(() => api.stress("harvey"), 30_000);
   const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
