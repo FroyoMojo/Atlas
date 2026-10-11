@@ -86,7 +86,7 @@ export function ConnectOnSelect() {
  * how to install one (WalletHelp listens for NO_WALLET_EVENT).
  */
 export function useConnectWallet() {
-  const { wallets, wallet, connect } = useWallet();
+  const { wallets, wallet, connect, select } = useWallet();
   const { setVisible } = useWalletModal();
   return useCallback(() => {
     const injected = typeof window !== "undefined" && !!((window as any).phantom?.solana || (window as any).solana); // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -98,11 +98,23 @@ export function useConnectWallet() {
       return;
     }
     const found = injected || wallets.some((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
-    if (found && wallet) {
-      connect().catch(() => {}); // already chosen earlier: just connect, no list
+    // Inside Phantom (or any injected wallet): ask the wallet directly, which always shows its
+    // approval prompt, then hand the approved wallet to the adapter. Errors are shown, not swallowed.
+    if (injected) {
+      const provider = (window as any).phantom?.solana ?? (window as any).solana; // eslint-disable-line @typescript-eslint/no-explicit-any
+      provider
+        .connect()
+        .then(() => {
+          const phantom = wallets.find((w) => /phantom/i.test(w.adapter.name));
+          if (phantom && wallet?.adapter.name === phantom.adapter.name) return connect();
+          wantConnect = true;
+          if (phantom) select(phantom.adapter.name);
+          else setVisible(true);
+        })
+        .catch((e: unknown) => window.alert("Wallet connect failed: " + ((e as Error)?.message ?? String(e))));
     } else if (found) {
       wantConnect = true;
       setVisible(true);
     } else window.dispatchEvent(new Event(NO_WALLET_EVENT));
-  }, [wallets, wallet, connect, setVisible]);
+  }, [wallets, wallet, connect, select, setVisible]);
 }
