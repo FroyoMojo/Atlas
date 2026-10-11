@@ -15,8 +15,8 @@ the real simulated book.
 ```bash
 cd engine
 pip install -r requirements.txt
-psql "$DATABASE_URL" -f sql/schema.sql            # once; idempotent, safe to re-run
-(cd ../chain && npm run migrate)                  # chain tables: policy_pool, payout_intents
+(cd ../chain && npm run migrate)                  # this schema + the chain tables; safe to re-run
+# or: psql "$DATABASE_URL" -f sql/schema.sql && (cd ../chain && npm run migrate -- --chain)
 uvicorn app.main:app --port 8000                  # reads the repo-root .env
 ```
 

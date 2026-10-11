@@ -1,5 +1,8 @@
 # Hosting on the demo laptop (Jesse)
 
+**Demo laptop is Windows (Zeke's): follow [WINDOWS.md](WINDOWS.md), step by step.** This page is
+the general version (macOS/Linux commands).
+
 No server: everything runs on one laptop, and Cloudflare Tunnel gives it a public HTTPS URL
 (Devpost needs a hosted site). The GoDaddy Registry domain points at the same tunnel once its DNS
 is on Cloudflare. The site is up while the laptop is on, which is what in-person judging needs.
@@ -23,8 +26,8 @@ a normal laptop can.)
 - Node 22 and git.
 - cloudflared: macOS `brew install cloudflared`; Windows `winget install --id Cloudflare.cloudflared`;
   Linux: the `.deb` from https://github.com/cloudflare/cloudflared/releases.
-- Python 3.11+ for the engine (it runs on this laptop with everything else). On Windows, if
-  `python3` is not a command, change `python3` to `py` in the `engine` script of `chain/package.json`.
+- Python 3.11+ for the engine (it runs on this laptop with everything else). `npm run engine`
+  finds `py`, `python` or `python3` by itself; set `PYTHON` in `.env` to force one.
 
 ## 2. Code, keys, config
 
@@ -49,11 +52,10 @@ avoid it; `npm run web:build` overrides them anyway.
 ## 3. Build and start
 
 ```bash
-psql "$(grep ^DATABASE_URL= .env | cut -d= -f2-)" -f engine/sql/schema.sql   # engine tables (once; safe to re-run)
-# Gauges and history (once; Ezekiel's final gauge IDs and triggers, see data/README.md):
-#   python3 data/usgs.py gauges ...  &&  python3 data/usgs.py peaks  &&  python3 data/usgs.py iv --start 2017-08-23 --end 2017-09-04
 cd chain
-npm run migrate                              # chain tables in Tiger (once)
+npm run migrate                              # engine + chain tables in Tiger (safe to re-run; no psql needed)
+# Gauges and history (once; Ezekiel's final gauge IDs and triggers, see data/README.md):
+#   python3 ../data/usgs.py gauges ...  &&  python3 ../data/usgs.py peaks  &&  python3 ../data/usgs.py iv --start 2017-08-23 --end 2017-09-04
 npm run precreate -- G1,G2,G3,G4 10          # the four demo gauge IDs (once)
 npm run web:build                            # dashboard for hosting (same-origin API calls)
 npm run stack                                # engine + chain service + payout bot + gateway, auto-restart
@@ -70,7 +72,7 @@ FAIL; WARNs are advice.
 ## 4. Public URL now (no account)
 
 ```bash
-cloudflared tunnel --url http://localhost:8080
+cloudflared tunnel --url http://127.0.0.1:8080      # or: npm run tunnel
 ```
 
 It prints `https://<random>.trycloudflare.com`. That is the hosted URL until the domain is ready.
@@ -86,7 +88,7 @@ It changes each time you restart this command, so leave it running.
 cloudflared tunnel login                       # pick the domain in the browser
 cloudflared tunnel create atlas
 cloudflared tunnel route dns atlas your-domain.com
-cloudflared tunnel run --url http://localhost:8080 atlas
+cloudflared tunnel run --url http://127.0.0.1:8080 atlas
 ```
 
 4. Set `PUBLIC_BASE_URL=https://your-domain.com` in `.env`, restart `npm run stack`.

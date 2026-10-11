@@ -42,5 +42,5 @@ app.use((_req, res) => {
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`atlas gateway on http://127.0.0.1:${PORT}  (engine ${ENGINE}, chain ${CHAIN})`);
-  console.log(`expose it: cloudflared tunnel --url http://localhost:${PORT}`);
+  console.log(`expose it: cloudflared tunnel --url http://127.0.0.1:${PORT}`);
 });

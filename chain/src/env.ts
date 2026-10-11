@@ -16,8 +16,8 @@ export const env = {
   secretsDir: resolve(REPO_DIR, process.env.SECRETS_DIR ?? "secrets"),
   stateFile: resolve(REPO_DIR, process.env.CHAIN_STATE_FILE ?? "chain/state/devnet.json"),
   databaseUrl: process.env.DATABASE_URL,
-  engineUrl: process.env.ENGINE_URL ?? "http://localhost:8000",
-  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://localhost:8787",
+  engineUrl: process.env.ENGINE_URL ?? "http://127.0.0.1:8000",
+  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://127.0.0.1:8787",
   port: Number(process.env.CHAIN_PORT ?? 8787),
   // Localhost by default: the gateway (behind Cloudflare Tunnel) is the only public entry point.
   host: process.env.CHAIN_HOST ?? "127.0.0.1",

@@ -5,7 +5,7 @@
 import { Transaction } from "@solana/web3.js";
 import { KeyName, connection, env, explorer, loadKeypair } from "../env.js";
 
-const [gauge, holderName = "holder1", flow = env.purchaseFlow, server = `http://localhost:${env.port}`] = process.argv.slice(2);
+const [gauge, holderName = "holder1", flow = env.purchaseFlow, server = `http://127.0.0.1:${env.port}`] = process.argv.slice(2);
 if (!gauge) throw new Error("usage: npm run demo:buy -- <gaugeId> [holder] [a|b] [serverUrl]");
 const holder = loadKeypair(holderName as KeyName);
 

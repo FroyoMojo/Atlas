@@ -46,7 +46,7 @@ npm run fund -- <phantom-address> # SOL + aUSD to every demo wallet (and your ph
 npm run setup:multisig -- 300     # 2-of-3 vault, seeded with a 300 aUSD reserve
 npm run setup:bond                # bond mint
 npm run test:token2022            # Hour-0 check: extensions, sizes, name/status round trip
-npm run migrate                   # chain tables in Tiger (policy_pool, payout_intents)
+npm run migrate                   # engine + chain tables in Tiger (--chain: chain tables only)
 npm run precreate -- <gaugeId>,<gaugeId> 10   # 10 unminted policies per demo gauge
 npm run demo:bond -- 5000         # bond capital from the investor
 npm run fund:bot -- 2000          # vault -> bot float through a 2-of-3 proposal (or let reset mint it)

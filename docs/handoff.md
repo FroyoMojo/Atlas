@@ -51,11 +51,11 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [x] Jesse: devnet setup done (aUSD, wallets, 2-of-3 vault, bond mint, Token-2022 and Squads checks on real devnet); addresses below.
 - [x] Jesse: Helius devnet RPC in `.env` (`SOLANA_RPC_URL`); optional `WEB_RPC_URL` for the browser.
 - [x] Shared `ADMIN_TOKEN` chosen (in `.env` only; also in the laptop kit).
-- [ ] Jesse: laptop hosting with the laptop kit (keys + pre-filled `.env`), tunnel URL, then the domain on Cloudflare ([deploy/README.md](../deploy/README.md)); `npm run preflight` until READY.
+- [ ] Jesse: set up Zeke's Windows laptop with the laptop kit (keys + pre-filled `.env`) following [deploy/WINDOWS.md](../deploy/WINDOWS.md); tunnel URL, then the domain on Cloudflare; `npm run preflight` until READY.
 - [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)); record #10 and #11 in [decisions.md](decisions.md).
 - [ ] Ezekiel: share the Tiger connection string and the four `demo_ready` gauge IDs (and use the shared `ADMIN_TOKEN` from Jesse).
 - [ ] Jesse: on the demo laptop, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
-- [x] Schema written: `psql "$DATABASE_URL" -f engine/sql/schema.sql`, then `cd chain && npm run migrate` (run both on Tiger once it exists).
+- [x] Schema written: `cd chain && npm run migrate` applies the engine and chain tables (run it on Tiger once it exists; no psql needed).
 - [ ] Ezekiel: load `gauges`, `annual_peaks`, live `gauge_readings` and `sim_policies`; review the reference economics in [engine/README.md](../engine/README.md).
 - [x] Replay streamer with events, storms, `f_int`/`f_fin` and the sales freeze (`engine/app/replay.py`); tested on real Harvey data.
 - [ ] Ezekiel: confirm the demo gauges and trigger levels (NWS flood stage), then load them: `python3 data/usgs.py gauges ...`, `peaks`, `iv` ([data/README.md](../data/README.md)). Whiteoak went dark in Harvey: not a demo gauge.

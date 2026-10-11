@@ -55,7 +55,8 @@ engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms
 | [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
 | [docs/phone-test.md](docs/phone-test.md) | Phantom test that picks purchase Flow A or B |
 | [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
-| [deploy/README.md](deploy/README.md) | Hosting on the demo laptop: gateway, Cloudflare Tunnel, domain |
+| [deploy/WINDOWS.md](deploy/WINDOWS.md) | **Demo laptop (Windows) setup, step by step** |
+| [deploy/README.md](deploy/README.md) | Hosting on the demo laptop: gateway, Cloudflare Tunnel, domain (macOS/Linux) |
 
 ## Run
 

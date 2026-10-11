@@ -3,7 +3,7 @@
 import { Transaction } from "@solana/web3.js";
 import { env, explorer, loadKeypair } from "../env.js";
 
-const [amount = "5000", server = `http://localhost:${env.port}`] = process.argv.slice(2);
+const [amount = "5000", server = `http://127.0.0.1:${env.port}`] = process.argv.slice(2);
 const investor = loadKeypair("investor");
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${server}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

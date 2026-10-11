@@ -37,7 +37,7 @@ def fetch(url: str, params: dict, cache_name: str) -> str:
     full = f"{url}?{urllib.parse.urlencode(params)}"
     with urllib.request.urlopen(full, timeout=120) as r:
         body = r.read().decode("utf-8")
-    (CACHE / cache_name).write_text(body)
+    (CACHE / cache_name).write_text(body, encoding="utf-8")  # explicit: Windows defaults to cp1252
     return body
 
 
