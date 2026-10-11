@@ -1,7 +1,6 @@
-# Submission checklist
+# Submission checklist (deadline Oct 11, 1:00 pm CDT)
 
 Start with [morning.md](morning.md): what changed overnight and the steps in order.
- (deadline Oct 11, 1:00 pm CDT)
 
 Status as of about 2:30 am CDT. Tick items as you go; push this file so we share one copy.
 
