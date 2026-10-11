@@ -41,7 +41,7 @@ CLOSE_AFTER = 72 * H
 
 def _env_time(name: str, default: str | None) -> dt.datetime | None:
     """ISO time from the environment; a value without a timezone is UTC (not server local time)."""
-    v = os.environ.get(name) or default
+    v = settings.env_str(name) or default
     if not v:
         return None
     t = dt.datetime.fromisoformat(v.replace("Z", "+00:00"))
@@ -101,9 +101,9 @@ class Replay:
     def __init__(self, run_id: str, stop: threading.Event | None = None, seconds: float | None = None):
         self.run_id = run_id
         self.stop = stop or threading.Event()
-        self.seconds = seconds if seconds is not None else float(os.environ.get("REPLAY_SECONDS") or 90)
-        self.max_jump = float(os.environ.get("REPLAY_MAX_JUMP_FT") or 5)
-        self.force_f_int = os.environ.get("FORCE_F_INT")
+        self.seconds = seconds if seconds is not None else float(settings.env_str("REPLAY_SECONDS") or 90)
+        self.max_jump = float(settings.env_str("REPLAY_MAX_JUMP_FT") or 5)
+        self.force_f_int = settings.env_str("FORCE_F_INT") or None
         self.storm: Storm | None = None
         self.n_storms = self.n_events = 0
 

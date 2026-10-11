@@ -25,7 +25,8 @@
     "engine": "cd ../engine && python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
     "stack": "concurrently -n engine,chain,bot,gateway -c yellow,blue,magenta,green --restart-tries 20 --restart-after 2000 \"npm run engine\" \"tsx src/server/index.ts\" \"tsx src/bot/payout-bot.ts\" \"tsx src/gateway/index.ts\"",
     "tunnel": "cloudflared tunnel --url http://localhost:8080",
-    "web:build": "tsx src/scripts/build-web.ts"
+    "web:build": "tsx src/scripts/build-web.ts",
+    "preflight": "tsx src/scripts/preflight.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.14",

@@ -402,6 +402,13 @@ def _stop_streamer() -> None:
     _streamer = None
 
 
+@app.get("/admin/check")
+def admin_check(x_admin_token: str | None = Header(default=None)):
+    """Lets the preflight confirm the admin token without starting or resetting anything."""
+    require_admin(x_admin_token)
+    return {"ok": True}
+
+
 @app.post("/replay/start")
 def replay_start(x_admin_token: str | None = Header(default=None)):
     require_admin(x_admin_token)

@@ -62,6 +62,11 @@ npm run stack                                # engine + chain service + payout b
 `npm run stack` runs the engine (FastAPI) on `127.0.0.1:8000` with the rest. Then press **Reset**
 once on the dashboard (admin page) to fill the vault and float before the first run.
 
+In a second terminal: `cd chain && npm run preflight`. It checks configuration, keys, devnet,
+the database, every demo gauge (free policy mints, history, Harvey readings), the services, the
+admin token, reconciliation, the hosted build and the public URL, and changes nothing. Fix every
+FAIL; WARNs are advice.
+
 ## 4. Public URL now (no account)
 
 ```bash
@@ -92,5 +97,6 @@ Fallback if the nameservers are slow: at the registrar, forward the domain to th
 
 - Laptop plugged in; sleep off (macOS `caffeinate -dims`; Windows: Power settings -> never sleep).
 - `npm run stack` and the tunnel running in two terminals; hotspot ready if the venue Wi-Fi drops.
+- `npm run preflight` shows READY (no FAIL).
 - Reset, buy one backup policy, Start, and watch one full run end to end 20 minutes before judging.
 - Check: `https://your-domain.com/health`, the phone view, and `curl -X POST https://your-domain.com/chain/reset` returns 403.

@@ -48,6 +48,8 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | The web bundle never gets `SOLANA_RPC_URL`; it uses the public devnet RPC or `WEB_RPC_URL` | The provider URL carries the API key and the bundle is public | Jesse |
 | Oct 10 | Engine (schema, API, replay streamer) and USGS loader built for Ezekiel, who reviews the economics and gauges | Zeke was the bottleneck for G2 | Both |
 | Oct 10 | G2 run on a local TimescaleDB standing in for Tiger | Tiger connection not shared yet; same schema, real devnet | Jesse |
+| Oct 10 | `npm run preflight` is the readiness check for the laptop, G3 and judging | One command instead of a checklist; changes nothing | Jesse |
+| Oct 10 | Empty values in `.env.example` have their comment on the line above | python-dotenv reads `KEY=   # note` as the comment text (Node's dotenv doesn't); the engine also ignores comment-only values | Jesse |
 | Oct 10 | Whiteoak is not a demo gauge | Its gauge went dark in Harvey and reported one value, so it never gets two consecutive readings | Both |
 
 ## Audit fixes (Oct 10, about 8 pm)

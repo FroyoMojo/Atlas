@@ -8,8 +8,14 @@ ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
 
 
+def env_str(name: str, default: str = "") -> str:
+    """A value that is only a comment ("REPLAY_CMD=   # note" read by python-dotenv) is empty."""
+    v = (os.environ.get(name) or "").strip()
+    return default if not v or v.startswith("#") else v
+
+
 def _float(name: str, default: float) -> float:
-    return float(os.environ.get(name) or default)
+    return float(env_str(name) or default)
 
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -18,7 +24,7 @@ ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 DEMO_MODE = (os.environ.get("DEMO_MODE") or "true").lower() == "true"
 # Optional: command that streams the replay into gauge_readings. Started by POST /replay/start
 # with RUN_ID in its environment, stopped by POST /replay/reset. Ezekiel owns the streamer.
-REPLAY_CMD = os.environ.get("REPLAY_CMD", "")
+REPLAY_CMD = env_str("REPLAY_CMD")
 CORS_ORIGINS = [o for o in (os.environ.get("ENGINE_CORS_ORIGINS") or "*").split(",") if o]
 
 # On-chain capital at setup (chain .env): vault = seeded reserve + seeded bond capital.

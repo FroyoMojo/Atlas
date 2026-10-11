@@ -178,6 +178,11 @@ def test_admin(client, monkeypatch):
     assert client.get("/gauges").json()[0]["status"] != "triggered"   # back to live after reset
 
 
+def test_admin_check(client):
+    assert client.get("/admin/check").status_code == 401
+    assert client.get("/admin/check", headers={"X-Admin-Token": "test-token"}).json() == {"ok": True}
+
+
 def test_admin_lock(client):
     from app import main
     assert main._admin_lock.acquire(blocking=False)
