@@ -10,6 +10,9 @@ sudo -u atlas bash -c "cd chain && npm ci --no-audit --no-fund"
 sudo -u atlas bash -c "cd web && npm ci --no-audit --no-fund"
 sudo -u atlas "$ROOT/.venv/bin/pip" install --quiet -r engine/requirements.txt
 
+# Bring Tiger's schema up to date (adds missing tables and columns only; safe to re-run)
+sudo -u atlas bash -c "cd chain && npm run migrate"
+
 # Dashboard for this host: same-origin API calls through the gateway (see chain/src/scripts/build-web.ts)
 sudo -u atlas bash -c "cd chain && npm run web:build"
 
