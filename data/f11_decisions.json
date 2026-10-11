@@ -9,6 +9,10 @@
     "08076500": {"record_start": 2011, "evidence": "gage_ht_cd=6 in 2010; screen suggested 2016"},
     "08069000": {"record_start": 2013, "evidence": "gage_ht_cd=6 in 2012; screen inconclusive"},
     "08068500": {"record_start": 2015, "evidence": "gage_ht_cd=6 in 1946, 1965, 1976, 1995 and 2014; screen inconclusive"},
-    "08075500": {"record_start": 1953, "evidence": "UNRESOLVED: no datum flag in the peak file, but the screen suggested 2015. Kept the full record; read the USGS site page before relying on it. Not a demo gauge."}
+    "08073600": {"record_start": 2010, "evidence": "gage_ht_cd=6 in 2009 (peakcodes, Oct 10); candidate demo gauge"},
+    "08073700": {"record_start": 2010, "evidence": "gage_ht_cd=6 in 2009 (peakcodes, Oct 10); candidate demo gauge"},
+    "08074810": {"record_start": 2007, "evidence": "gage_ht_cd=6 in 2006 (peakcodes, Oct 10); candidate demo gauge, upstream Brays near Meyerland"},
+    "08075500": {"record_start": 2008, "evidence": "No datum flag in the peak file, but 20 of 71 peaks exceeded the NWS minor stage and only 1 since 2008 (Harvey); the stage-discharge screen suggested 2015. Truncated to the instantaneous record, where peak file and iv agree exactly. Not a demo gauge."}
   }
 }
+

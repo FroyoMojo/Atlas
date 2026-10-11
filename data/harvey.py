@@ -55,6 +55,14 @@ SELECT gauge_id, count(*), max(gap) FROM (
 GROUP BY gauge_id
 """
 
+GAPS_ONE = """
+SELECT count(*), max(gap) FROM (
+  SELECT event_time - lag(event_time) OVER (ORDER BY event_time) AS gap
+  FROM gauge_readings
+  WHERE gauge_id = %s AND source = 'usgs' AND run_id = 'live' AND NOT rejected
+    AND event_time >= %s AND event_time <= %s) t
+"""
+
 REJECTED = """
 SELECT gauge_id, event_time, stage_ft, prev_stage, next_stage FROM (
   SELECT gauge_id, event_time, stage_ft, rejected,
@@ -90,7 +98,14 @@ def main() -> None:
             return
 
         rows = conn.execute(CROSSINGS, (SCAN_START, SCAN_END)).fetchall()
-        gaps = {g: (n, gap) for g, n, gap in conn.execute(GAPS, (SCAN_START, SCAN_END)).fetchall()}
+        # Gap check per gauge over its own replay window (opened - 48 h to peak + 24 h), so
+        # later outages (after the peak) do not disqualify a gauge.
+        gaps = {}
+        for gid, _name, _trig, _peak, ptime, opened, _n in rows:
+            if opened:
+                n, gap = conn.execute(GAPS_ONE, (gid, opened - timedelta(hours=48),
+                                                 ptime + timedelta(hours=24))).fetchone()
+                gaps[gid] = (n, gap)
         gappy = {g for g, (_n, gap) in gaps.items() if gap and gap > timedelta(hours=GAP_HOURS)}
         print(f"{'gauge':<9} {'trigger':>7} {'peak':>6} {'margin':>6} {'opened (UTC)':<17} "
               f"{'peak time (UTC)':<17} {'n':>5} {'max gap':>8}  name")

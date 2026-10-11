@@ -113,12 +113,20 @@ def history(fresh: bool = False) -> dict:
             peaks.setdefault(r["gauge_id"], {})[r["water_year"]] = r["peak_stage_ft"]
         book = [pricing.BookPolicy(r["gauge_id"], num(r["payout_usd"]), num(r["premium_usd"]))
                 for r in db.rows("SELECT gauge_id, payout_usd, premium_usd FROM sim_policies")]
+        # Instantaneous event counts per complete water year (data/event_rate.py --store); the
+        # table may not exist or may be empty, in which case quotes fall back to peaks only.
+        event_counts: dict[str, list[int]] = {}
+        try:
+            for r in db.rows("SELECT gauge_id, iv_counts FROM gauge_rates"):
+                event_counts[r["gauge_id"]] = list(r["iv_counts"])
+        except Exception:
+            pass
         triggers = {g: v["trigger_ft"] for g, v in gauges.items()}
         losses = pricing.year_losses(book, peaks, triggers)
         capital = pricing.required_capital(losses, settings.HARVEY_WATER_YEAR)
         total_b = sum(p.payout for p in book)
         reserve = pricing.reserve_from_book(book, capital, settings.COST_OF_CAPITAL, settings.EXPENSE_RATIO)
-        return {"gauges": gauges, "peaks": peaks, "book": book, "losses": losses,
+        return {"gauges": gauges, "peaks": peaks, "events": event_counts, "book": book, "losses": losses,
                 "capital": capital, "total_b": total_b, "reserve": reserve}
     if fresh:
         _cache.pop("history", None)
@@ -234,16 +242,21 @@ def quote(gauge: str, payout: float = Query(gt=0, le=100_000), run_id: str | Non
     if not by_year:
         raise HTTPException(503, f"No annual peak history for gauge {gauge} yet")
     flags = pricing.exceedances(list(by_year.values()), g["trigger_ft"])
-    lam = pricing.annual_rate(flags)
+    counts = h["events"].get(gauge)
+    lam = pricing.rate_higher_of(flags, counts)   # C3: higher of lambda_peak and lambda_iv
     k = pricing.k_share(h["capital"], payout, h["total_b"])
     args = (settings.TERM_YEARS, settings.THETA, settings.COST_OF_CAPITAL, k)
     prem = pricing.premium(payout, lam, *args, minimum=settings.MIN_PREMIUM)
-    band = pricing.bootstrap_band(flags, payout, *args, n=settings.BOOTSTRAP_N, minimum=settings.MIN_PREMIUM)
+    band = pricing.bootstrap_band_higher_of(flags, counts, payout, *args, n=settings.BOOTSTRAP_N,
+                                            minimum=settings.MIN_PREMIUM)
     open_, reason = sales_status(gauge, data_run(run_id))
     return {"premium": round(prem, 2), "p_payout": pricing.p_payout(lam, settings.TERM_YEARS),
             "band": [round(band[0], 2), round(band[1], 2)], "k": round(k, 2),
             "waiting_days": 0 if settings.DEMO_MODE else 7, "sales_open": open_, "reason": reason,
-            "years": len(flags), "exceedances": sum(flags)}
+            "years": len(flags), "exceedances": sum(flags),
+            "lambda": round(lam, 4), "lambda_peak": round(pricing.annual_rate(flags), 4),
+            "lambda_iv": round(sum(counts) / len(counts), 4) if counts else None,
+            "term_days": round(settings.TERM_YEARS * 365)}
 
 
 def ledger_sums(run_id: str | None = None) -> dict[str, float]:

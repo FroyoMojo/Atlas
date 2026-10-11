@@ -1,4 +1,4 @@
-﻿"""Load gauges, annual peaks and instantaneous history into Tiger.
+"""Load gauges, annual peaks and instantaneous history into Tiger.
 
   python data/backfill.py gauges --sites 08075000 08074500 ... [--pctile 70]
   python data/backfill.py peaks
@@ -78,14 +78,16 @@ def cmd_gauges(args) -> None:
 
 def cmd_f11(args) -> None:
     """Apply data/f11_decisions.json to gauges.record_start and record_note."""
-    dec = json.loads((common.DATA_DIR / "f11_decisions.json").read_text(encoding="utf-8"))
+    dec = json.loads((common.DATA_DIR / "f11_decisions.json").read_text(encoding="utf-8-sig"))
     with db.connect() as conn:
         for site, d in dec["decisions"].items():
             note = (f" | F11 DECISION (USGS peak-file flags): record_start {d['record_start']}. "
                     f"{d['evidence']}.")
             cur = conn.execute(
-                "UPDATE gauges SET record_start = %s, record_note = COALESCE(record_note, '') "
-                "|| %s WHERE gauge_id = %s", (d["record_start"], note, site))
+                "UPDATE gauges SET record_start = %s, record_note = CASE "
+                "WHEN COALESCE(record_note, '') LIKE '%%F11 DECISION%%' THEN record_note "
+                "ELSE COALESCE(record_note, '') || %s END WHERE gauge_id = %s",
+                (d["record_start"], note, site))
             print(f"{site}: record_start {d['record_start']} ({cur.rowcount} row)")
 
 
@@ -146,8 +148,10 @@ def cmd_iv(args) -> None:
     since = datetime(args.since or CFG["iv_history_start_year"], 1, 1, tzinfo=timezone.utc)
     with db.connect() as conn:
         sites = [r[0] for r in conn.execute("SELECT gauge_id FROM gauges ORDER BY 1")]
+        if args.sites:
+            sites = [s for s in sites if s in args.sites]
         if not sites:
-            raise SystemExit("gauges table is empty: run `backfill.py gauges` first")
+            raise SystemExit("no gauges to load: run `backfill.py gauges` first")
         # Harvey window first so decision #4 can be answered early, then the rest, newest first.
         plans = [("harvey", [(hw[0], hw[1])])]
         if not args.harvey_only:

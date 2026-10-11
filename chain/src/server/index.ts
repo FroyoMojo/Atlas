@@ -17,7 +17,7 @@ import { sendIxs, serializeForWallet } from "../lib/tx.js";
 
 const DEVNET_CHAIN_ID = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"; // devnet genesis hash
 const ACTIONS_VERSION = "2.4";
-const TERM_DAYS = 365; // plan v3 6.5: at least 30 days so the future-dated replay stays inside
+const TERM_DAYS = Number(process.env.TERM_DAYS ?? 90); // policy term; must match the engine (TERM_YEARS = TERM_DAYS / 365). At least 30 days so the future-dated replay stays inside (plan v3 6.5)
 
 const issuer = loadKeypair("issuer");
 
@@ -450,3 +450,4 @@ app.listen(env.port, env.host, () => {
   if (env.demoMode && env.demoWallets.length === 0) console.warn("DEMO_WALLETS is empty: buy and bond accept any wallet.");
   if (!env.adminToken) console.warn("ADMIN_TOKEN is empty: /chain/reset is disabled.");
 });
+

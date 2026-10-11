@@ -36,3 +36,25 @@ def test_capital_and_waterfall():
     assert (w.reserve_used, w.bond_used, w.investor_loss_pct) == (300, 1000, 100)
     assert math.isclose(w.f_fin, 0.65)
     assert pricing.pay_factor(1300, 4000) == 0.325 and pricing.pay_factor(10, 0) == 1.0
+
+
+def test_rate_higher_of_uses_the_larger_estimate():
+    flags = [True, False, False, False]                 # lambda_peak = 0.25
+    assert pricing.rate_higher_of(flags, None) == 0.25
+    assert pricing.rate_higher_of(flags, [0, 0, 0, 1]) == 0.25   # lambda_iv = 0.25, equal
+    assert pricing.rate_higher_of(flags, [2, 1, 0, 0]) == 0.75   # two events in a year raise it
+    assert pricing.rate_higher_of(flags, [0, 0, 0, 0]) == 0.25   # peaks win when iv is lower
+
+
+def test_bootstrap_band_higher_of_brackets_the_point_premium_and_is_seeded():
+    flags = [True, False, False, False, True, False, False, False]
+    counts = [2, 0, 0, 1, 0, 0, 0, 1]
+    t, theta, c, k = 0.2466, 0.35, 0.06, 0.0
+    lam = pricing.rate_higher_of(flags, counts)
+    point = pricing.premium(500, lam, t, theta, c, k)
+    lo, hi = pricing.bootstrap_band_higher_of(flags, counts, 500, t, theta, c, k)
+    assert lo <= point <= hi
+    assert (lo, hi) == pricing.bootstrap_band_higher_of(flags, counts, 500, t, theta, c, k)
+    # without event counts it reduces to the peak-only band
+    assert pricing.bootstrap_band_higher_of(flags, None, 500, t, theta, c, k) == \
+        pricing.bootstrap_band(flags, 500, t, theta, c, k)

@@ -44,6 +44,37 @@ def bootstrap_band(flags: list[bool], payout: float, t_years: float, theta: floa
     return sims[int(0.05 * (n - 1))], sims[int(0.95 * (n - 1))]
 
 
+def rate_higher_of(flags: list[bool], event_counts: list[int] | None) -> float:
+    """C3 (7.1): price with the higher of lambda_peak (share of years whose annual peak reached the
+    trigger) and lambda_iv (events per year counted on the instantaneous record). lambda_iv can
+    exceed lambda_peak when a gauge crosses more than once in a year."""
+    lam_peak = annual_rate(flags)
+    lam_iv = sum(event_counts) / len(event_counts) if event_counts else 0.0
+    return max(lam_peak, lam_iv)
+
+
+def bootstrap_band_higher_of(flags: list[bool], event_counts: list[int] | None, payout: float,
+                             t_years: float, theta: float, c: float, k: float, n: int = 2000,
+                             seed: int = 7, minimum: float = 0.0) -> tuple[float, float]:
+    """5th to 95th percentile premium when pricing with the higher of the two rates: each draw
+    resamples the peak years and the event-count years separately and takes the larger rate, so
+    the band is consistent with `rate_higher_of`. Seeded, so the same history gives the same band."""
+    if not event_counts:
+        return bootstrap_band(flags, payout, t_years, theta, c, k, n, seed, minimum)
+    if not flags:
+        lam = sum(event_counts) / len(event_counts)
+        p = premium(payout, lam, t_years, theta, c, k, minimum)
+        return p, p
+    rng = random.Random(seed)
+    m, q = len(flags), len(event_counts)
+    sims = sorted(
+        premium(payout,
+                max(sum(rng.choices(flags, k=m)) / m, sum(rng.choices(event_counts, k=q)) / q),
+                t_years, theta, c, k, minimum)
+        for _ in range(n))
+    return sims[int(0.05 * (n - 1))], sims[int(0.95 * (n - 1))]
+
+
 @dataclass
 class BookPolicy:
     gauge_id: str
