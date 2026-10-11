@@ -21,11 +21,10 @@ if __name__ == "__main__":
     gauges, peaks = bsb.load(conn)
     # Harvey peak per gauge from annual peaks (same series the rates use)
     harvey = {g: peaks[g].get(settings.HARVEY_WATER_YEAR) for g in bsb.BOOK}
-    stored = {g: list(c) for g, c in conn.execute(
-        "SELECT gauge_id, iv_counts FROM gauge_rates WHERE gauge_id = ANY(%s)", (list(bsb.BOOK),))}
     for scheme in ("minor", "moderate", "major"):
         trig = {g: stages[g][scheme] for g in bsb.BOOK}
-        events = stored if scheme == "minor" else bsb.event_counts_at(conn, gauges, trig)
+        # Always recount: gauge_rates holds counts at the current triggers, not at this scheme's.
+        events = bsb.event_counts_at(conn, gauges, trig)
         r = bsb.evaluate(gauges, peaks, trig, events)
         hv = r["losses"].get(settings.HARVEY_WATER_YEAR, 0.0)
         mean_scn = sum(r["losses"].values()) / len(r["losses"])

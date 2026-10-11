@@ -1,6 +1,8 @@
 # /data: Person A pipeline (Hour 0 to 1.5 and the Hour 1.5 to 4 backfill)
 
-**Status:** written and unit-tested on fixtures only (`pytest data/tests`). It has never run against USGS, NWS or Tiger, because the build sandbox blocks those hosts. Treat the first live run of each step as the test, and fix what breaks.
+**Status:** run end to end against USGS, NWS and Tiger Cloud (Oct 10): 9 gauges, 2007 to 2026 history (5.8M readings), annual peaks, F11 record starts, moderate triggers, event counts and the simulated book are all in Tiger. Unit tests: `cd data && python -m pytest` (only `tests/`; see `pytest.ini`).
+
+**Tiger is already loaded. Re-running these steps is only for a rebuild**, and most of them are safe to repeat (upserts). `backfill.py gauges` refreshes name, location and NWS stage only; it never overwrites `trigger_ft`, `record_start` or `record_note`.
 
 ## Run order (from a laptop that can reach USGS, NWS and Tiger Cloud)
 
@@ -21,7 +23,17 @@ python data/harvey.py                    # which gauges cross trigger_ft; add --
 python data/backfill.py peaks
 python data/backfill.py iv               # decades of history, resumable from the cache
 python data/db.py finalize               # continuous aggregate refresh + columnstore + stats
+
+python data/backfill.py f11              # datum-change record starts (data/f11_decisions.json)
+python data/set_triggers.py moderate     # triggers = NWS moderate flood stage
+python data/event_rate.py --store        # instantaneous event counts at those triggers (gauge_rates)
+python data/build_sim_book.py --write    # the simulated 2,000-policy book (sim_policies)
+python data/migrate_v31.py               # v3.1 columns and chain tables (or: cd chain && npm run migrate)
+python data/run_numbers.py               # every slide number (docs/numbers.sql), same as the engine
 ```
+
+Order matters at the end: `event_rate.py --store` after any trigger change (the engine ignores
+counts made at an old trigger), and `build_sim_book.py --write` after that.
 
 ## Notes
 
@@ -32,7 +44,7 @@ python data/db.py finalize               # continuous aggregate refresh + column
 
 ## Also in this folder
 
-- `usgs_cli.py`: Jesse's minimal loader (gauges, peaks, iv upserts), kept from the first engine pass. It is superseded by `backfill.py` for everything above; the Tiger database was filled with this pipeline, not with the CLI.
+- `replay_check.py`: one throwaway replay against Tiger (`python data/replay_check.py [seconds]`); it deletes its own rows. Not a pytest file.
 - `verify.py`: what is in Tiger and whether it is usable for pricing.
 - `f11_decisions.json`: the datum-change record starts per gauge, applied with `py data\backfill.py f11`.
 

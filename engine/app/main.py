@@ -23,6 +23,7 @@ from . import db, pricing, replay, settings
 from .db import num
 from .evidence import self_test
 
+log = logging.getLogger("atlas.engine")
 logging.getLogger("atlas").setLevel(logging.INFO)
 logging.getLogger("atlas").addHandler(logging.StreamHandler())
 self_test()  # refuse to start if the evidence format drifted from docs/evidence.md
@@ -117,7 +118,14 @@ def history(fresh: bool = False) -> dict:
         # table may not exist or may be empty, in which case quotes fall back to peaks only.
         event_counts: dict[str, list[int]] = {}
         try:
-            for r in db.rows("SELECT gauge_id, iv_counts FROM gauge_rates"):
+            for r in db.rows("SELECT * FROM gauge_rates"):
+                # Counts made at an older trigger (before set_triggers.py) would misprice: skip them.
+                trig = gauges.get(r["gauge_id"], {}).get("trigger_ft")
+                made_at = r.get("trigger_ft")
+                if made_at is not None and trig is not None and abs(made_at - trig) > 1e-6:
+                    log.warning("gauge_rates for %s counted at %s ft, trigger is now %s ft: ignored",
+                                r["gauge_id"], made_at, trig)
+                    continue
                 event_counts[r["gauge_id"]] = list(r["iv_counts"])
         except Exception:
             pass
@@ -128,6 +136,8 @@ def history(fresh: bool = False) -> dict:
                  for g in {p.gauge_id for p in book} if g in triggers}
         mean_model = pricing.model_mean_loss(book, rates)
         capital = pricing.required_capital(losses, settings.HARVEY_WATER_YEAR, mean_model)
+        if book and capital == 0:
+            log.warning("capital K is 0 (no complete scenario years?): quotes carry no capital charge")
         total_b = sum(p.payout for p in book)
         reserve = pricing.reserve_from_book(book, capital, settings.COST_OF_CAPITAL, settings.EXPENSE_RATIO)
         return {"gauges": gauges, "peaks": peaks, "events": event_counts, "book": book, "losses": losses,

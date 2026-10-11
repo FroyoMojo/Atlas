@@ -108,7 +108,7 @@ def apply_sql(conn: Conn, path: Path, *, tolerate: bool = False) -> list[str]:
     """Run each statement on an autocommit connection (continuous aggregates cannot run inside a
     transaction block). Returns the statements that failed when tolerate=True."""
     failed = []
-    for stmt in split_sql(path.read_text()):
+    for stmt in split_sql(path.read_text(encoding="utf-8")):
         try:
             conn.execute(stmt)
         except DB_ERRORS as e:

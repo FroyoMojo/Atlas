@@ -91,8 +91,8 @@ export function GaugePage() {
             <>
               <div className="big">{quote.premium.toFixed(2)} aUSD</div>
               <p className="muted">
-                90% band {quote.band[0].toFixed(2)} to {quote.band[1].toFixed(2)} · chance of payout this year{" "}
-                {(quote.p_payout * 100).toFixed(1)}% · capital share k {quote.k.toFixed(0)} aUSD · waiting period {quote.waiting_days} days
+                Covers {quote.term_days ?? 90} days · {(quote.p_payout * 100).toFixed(1)}% chance of a payout in that time ·
+                90% range {quote.band[0].toFixed(2)} to {quote.band[1].toFixed(2)} aUSD · waiting period {quote.waiting_days} days
               </p>
               {!quote.sales_open && <p className="error">Sales frozen: {quote.reason}</p>}
               <button className="primary wide" disabled={!quote.sales_open || buying || !!quoteError} onClick={buy}>

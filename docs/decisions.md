@@ -61,7 +61,7 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | Trigger-level scan (`data/trigger_scan.py`): moderate flood stage cuts demo premiums to $22 / $36 / $32 / $58 (Brays / Piney Point / Cypress / Spring) from $48 / $56 / $52 / $72 and the book rate on line from 37.5% to 28.1%; Harvey margins stay 3.7 to 16.5 ft. Not yet applied | Decision pending | Ezekiel |
 | Oct 10 | **Triggers set to the NWS moderate flood stage** (Brays 42, Piney Point 57, Cypress 88, Spring Ck 95 ft; `nws_flood_ft` keeps the minor stage). `data/set_triggers.py moderate` | Cuts demo premiums to $22 / $36 / $32 / $58 per $500 over 90 days and the book's rate on line from 37.5% to 28.1%; Harvey margins stay 3.7 to 16.5 ft | Ezekiel (Jesse to confirm) |
 | Oct 10 | Replay streams only `demo_ready` gauges (`REPLAY_DEMO_ONLY`, default true) | Non-demo gauges (Whiteoak, Greens, Hunting, Buffalo at Houston) were going red first and opening events in the storm; one storm now has the four covered gauges, in order Brays, Piney Point, Cypress, Spring Ck | Ezekiel |
-| Oct 10 | Replay window with moderate triggers: 2017-08-25 06:15Z to 2017-08-30 04:00Z (4.9 days), 471 to 472 readings per gauge. Verified on Tiger with a throwaway run (`data/replay_test.py`): one storm, f_int 1, f_fin 1, 0 readings rejected | Event and storm logic now proven on our real data and triggers | Ezekiel |
+| Oct 10 | Replay window with moderate triggers: 2017-08-25 06:15Z to 2017-08-30 04:00Z (4.9 days), 471 to 472 readings per gauge. Verified on Tiger with a throwaway run (`data/replay_check.py`, formerly replay_test.py): one storm, f_int 1, f_fin 1, 0 readings rejected | Event and storm logic now proven on our real data and triggers | Ezekiel |
 | Oct 10 | GitHub repo renamed from Rug-Radar to Atlas | Matches the project; GitHub redirects the old URL | Jesse |
 | Oct 10 | The web bundle never gets `SOLANA_RPC_URL`; it uses the public devnet RPC or `WEB_RPC_URL` | The provider URL carries the API key and the bundle is public | Jesse |
 | Oct 10 | Engine (schema, API, replay streamer) and USGS loader built for Ezekiel, who reviews the economics and gauges | Zeke was the bottleneck for G2 | Both |
@@ -91,3 +91,23 @@ A full-repo audit found these; all fixed and re-tested.
 | Engine | A crashed replay stayed `running`; `f_fin` counted a gauge twice; stage-less readings counted as rejected; a non-ASCII token gave a 500 | Fixed, with tests |
 | Oct 10 | Vultr reinstated for hosting: Caddy -> the same gateway, `deploy/vultr/` (setup, deploy, systemd). The laptop and tunnel path stays as the fallback. The Best Use of Vultr track is back in | Zeke has a Vultr server; one always-on host is more robust at judging than one laptop | Zeke, Jesse (to confirm) |
 | Oct 10 | The domain `atlasflood.us` is registered at **Porkbun** (name servers `*.ns.porkbun.com`), not GoDaddy; `.us` is a GoDaddy Registry TLD. DNS records are edited at Porkbun | Confirm on the Devpost track page that a GoDaddy Registry TLD bought at another registrar qualifies | Jesse |
+
+## Audit fixes, round 2 (Oct 10, about 10:30 pm, after merging Ezekiel's data work)
+
+| Area | Bug | Fix |
+| --- | --- | --- |
+| Tiger | `runs.reset_wall` (audit round 1) was never added to Tiger, so Start, Reset and purchase booking would fail there | `data/migrate_v31.py` adds it; run `cd chain && npm run migrate` on Tiger once (tested safe on compressed chunks, same TimescaleDB version) |
+| Data | `data/replay_test.py` matched pytest's `*_test.py`: a bare `pytest` in `data/` would stream a replay into Tiger | Renamed `replay_check.py`; `data/pytest.ini` limits pytest to `tests/` |
+| Docs | Guides ran `data/usgs.py gauges/peaks/iv`, which is now a library (silently does nothing); the old CLI would have overwritten the moderate triggers | Load steps removed (Tiger is loaded); `data/usgs_cli.py` deleted (superseded by `backfill.py`); demo gauge IDs updated everywhere |
+| Stack | `concurrently --restart-tries 20` counts restarts for the whole run; after 20 the engine stays down and systemd never notices | `--restart-tries -1` (always restart) |
+| Data | Re-running `backfill.py gauges` reset triggers to the minor stage and wiped `record_start` and notes | It now refreshes name, location and NWS stage only |
+| Pricing | `gauge_rates` existed only if `event_rate.py` ran, and stale counts (made at an old trigger) were used silently | Table in `engine/sql/schema.sql` with `trigger_ft`; the engine and `numbers.sql` ignore counts made at another trigger; preflight warns if a demo gauge has none |
+| Term | Chain `TERM_DAYS` and engine `TERM_YEARS` were separate settings; an empty `TERM_DAYS=` meant 0 days | One setting (`TERM_DAYS`, engine derives years); preflight fails if the engine quotes a different term or the term is under 30 days |
+| Web | Quote said "chance of payout this year" for a 90-day probability; showed `k` | "Covers 90 days · X% chance of a payout in that time · 90% range" |
+| Data | Windows: cache files used the locale encoding; pg8000 (the Windows fallback driver) rejects named `%(g)s` parameters; trigger scan reused counts from the current trigger for the minor scheme; `set_triggers.py` appended its note on every run | UTF-8; positional parameters; always recount; the note is replaced |
+| Schema | `engine/sql/schema.sql` named the readings unique index differently from Tiger's, so `npm run migrate` would build a duplicate index on 5.8M rows | Same name (`gauge_readings_uq`); `policies.sql` segmentby matches |
+| Replay | `REPLAY_DEMO_ONLY` read raw (a comment-only value turned it off) | Read like every other setting; documented in `.env.example` |
+| Vultr | Guide skipped migrate and precreate; DNS step named the wrong parking records; `deploy.sh` failed if the stack took over 8 s; no swap on small plans | Steps added; DNS wording fixed; health retried for 90 s; 2 GB swap under 3 GB RAM |
+| Docs | Guides disagreed on hosting; one told you to move the nameservers to Cloudflare, which would take the Vultr site down | Vultr marked current everywhere, laptop guides marked fallback with a DNS warning; Vultr track back in `criteria.md` |
+| Devpost | Capital figures from the minor triggers; "decades" and "30+ years"; f_fin formula and jump guard didn't match the code; LaTeX that Devpost's Markdown would break | Corrected; capital figures left as a TODO for Ezekiel's `run_numbers.py` at moderate triggers |
+

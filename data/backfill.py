@@ -69,10 +69,11 @@ def cmd_gauges(args) -> None:
             conn.execute(
                 "INSERT INTO gauges (gauge_id, name, lat, lon, trigger_ft, nws_flood_ft, "
                 "record_start, record_note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) "
+                # A re-run refreshes metadata only. trigger_ft, record_start and record_note are
+                # set once here and then owned by set_triggers.py and `f11`: overwriting them
+                # would silently reset the moderate triggers and the datum decisions.
                 "ON CONFLICT (gauge_id) DO UPDATE SET name=EXCLUDED.name, lat=EXCLUDED.lat, "
-                "lon=EXCLUDED.lon, trigger_ft=EXCLUDED.trigger_ft, "
-                "nws_flood_ft=EXCLUDED.nws_flood_ft, record_start=EXCLUDED.record_start, "
-                "record_note=EXCLUDED.record_note", r)
+                "lon=EXCLUDED.lon, nws_flood_ft=EXCLUDED.nws_flood_ft", r)
             print(f"gauge {r[0]}  trigger {r[4]} ft  record_start {r[6]}  {r[1]}")
 
 

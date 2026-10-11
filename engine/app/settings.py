@@ -33,7 +33,10 @@ SNAPSHOT_FLOAT = _float("SNAPSHOT_FLOAT", 2000)
 SEED_RESERVE = _float("SEED_RESERVE", 300)
 
 # Reference economics (plan v3.1 section 7). Ezekiel owns these numbers.
-TERM_YEARS = _float("TERM_YEARS", 90 / 365)     # policy term t: 90 days (chain TERM_DAYS must match)
+# Policy term t. One setting for both sides: TERM_DAYS (the chain reads the same variable); an
+# explicit TERM_YEARS still wins for old .env files, and preflight checks the two agree.
+TERM_DAYS = _float("TERM_DAYS", 90)
+TERM_YEARS = _float("TERM_YEARS", TERM_DAYS / 365)
 THETA = _float("PRICING_THETA", 0.35)           # risk load
 COST_OF_CAPITAL = _float("PRICING_C", 0.06)     # bond coupon rate c on k
 EXPENSE_RATIO = _float("PRICING_E", 0.10)       # expenses e (simulated book only)

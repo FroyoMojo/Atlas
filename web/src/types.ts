@@ -26,6 +26,13 @@ export interface Quote {
   waiting_days: number;
   sales_open: boolean;
   reason?: string | null;
+  // Added by the engine (docs/api.md); optional so the mock and older engines still type-check.
+  term_days?: number;
+  lambda?: number;
+  lambda_peak?: number;
+  lambda_iv?: number | null;
+  years?: number;
+  exceedances?: number;
 }
 
 export interface Pool {

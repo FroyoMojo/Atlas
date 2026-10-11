@@ -18,16 +18,18 @@ WITH peaks AS (
   SELECT g.gauge_id, g.name, g.trigger_ft, g.record_start,
          count(*) AS n_years, count(*) FILTER (WHERE p.peak_stage_ft >= g.trigger_ft) AS exceed
   FROM gauges g JOIN annual_peaks p USING (gauge_id)
-  WHERE p.peak_stage_ft IS NOT NULL AND p.water_year >= g.record_start
+  WHERE p.peak_stage_ft IS NOT NULL AND (g.record_start IS NULL OR p.water_year >= g.record_start)
     AND g.gauge_id IN (SELECT DISTINCT gauge_id FROM sim_policies)
   GROUP BY 1, 2, 3, 4),
-iv AS (
-  SELECT gauge_id, avg(c)::numeric AS lam_iv, count(*) AS iv_years, sum(c) AS events
-  FROM gauge_rates, unnest(iv_counts) AS c GROUP BY 1)
+iv AS (  -- like the engine: only counts made at the gauge's current trigger
+  SELECT r.gauge_id, avg(c)::numeric AS lam_iv, count(*) AS iv_years, sum(c) AS events
+  FROM gauge_rates r JOIN gauges g USING (gauge_id), unnest(r.iv_counts) AS c
+  WHERE r.trigger_ft IS NULL OR r.trigger_ft = g.trigger_ft
+  GROUP BY 1)
 SELECT p.gauge_id, p.name, p.trigger_ft, p.record_start, p.n_years, p.exceed,
        p.exceed::numeric / p.n_years AS lam_peak, iv.events, iv.iv_years, iv.lam_iv,
-       greatest(p.exceed::numeric / p.n_years, iv.lam_iv) AS lam
-FROM peaks p JOIN iv USING (gauge_id);
+       greatest(p.exceed::numeric / p.n_years, coalesce(iv.lam_iv, 0)) AS lam
+FROM peaks p LEFT JOIN iv USING (gauge_id);   -- no counts: peaks only, as the engine does
 
 CREATE TEMP VIEW v_book AS
 SELECT gauge_id, count(*) AS n, sum(payout_usd) AS exposure, sum(premium_usd) AS annual_premium
@@ -38,7 +40,7 @@ CREATE TEMP VIEW v_scenarios AS
 SELECT p.water_year,
        coalesce(sum(b.exposure) FILTER (WHERE p.peak_stage_ft >= g.trigger_ft), 0) AS loss
 FROM annual_peaks p JOIN gauges g USING (gauge_id) JOIN v_book b USING (gauge_id)
-WHERE p.peak_stage_ft IS NOT NULL AND p.water_year >= g.record_start
+WHERE p.peak_stage_ft IS NOT NULL AND (g.record_start IS NULL OR p.water_year >= g.record_start)
 GROUP BY p.water_year
 HAVING count(*) = (SELECT count(*) FROM v_book);
 
@@ -106,8 +108,8 @@ FROM r;
 WITH cap AS (SELECT greatest(worst_year, harvey) - model_mean AS capital, exposure FROM v_capital)
 SELECT r.gauge_id, r.name, r.trigger_ft, r.exceed || ' of ' || r.n_years AS exceedance_years,
        round(r.lam, 4) AS lam,
-       round(500 * (1 - exp(-r.lam * p.term_y)) * (1 + p.theta)
-             + p.c * (cap.capital * 500 / cap.exposure) * p.term_y, 2) AS premium_usd,
+       round(greatest(1, 500 * (1 - exp(-r.lam * p.term_y)) * (1 + p.theta)      -- MIN_PREMIUM 1
+             + p.c * (cap.capital * 500 / cap.exposure) * p.term_y), 2) AS premium_usd,
        round(100 * (1 - exp(-r.lam * p.term_y)), 2) AS p_payout_pct
 FROM v_rates r, v_params p, cap
 WHERE r.gauge_id IN (SELECT gauge_id FROM gauges WHERE demo_ready)

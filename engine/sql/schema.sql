@@ -33,8 +33,20 @@ CREATE TABLE IF NOT EXISTS gauge_readings (
   rejected      BOOLEAN NOT NULL DEFAULT false    -- data-quality guard
 );
 SELECT create_hypertable('gauge_readings', by_range('event_time'), if_not_exists => true);
-CREATE UNIQUE INDEX IF NOT EXISTS gauge_readings_key ON gauge_readings (gauge_id, event_time, source, run_id);
+-- Same name as data/schema.sql, so applying both never builds a second index on a large table.
+CREATE UNIQUE INDEX IF NOT EXISTS gauge_readings_uq ON gauge_readings (gauge_id, event_time, source, run_id);
 CREATE INDEX IF NOT EXISTS gauge_readings_run ON gauge_readings (run_id, gauge_id, event_time DESC);
+
+-- Instantaneous events per complete water year at trigger_ft (data/event_rate.py --store); the
+-- engine prices with the higher of this rate and the annual-peak rate (rule C3).
+CREATE TABLE IF NOT EXISTS gauge_rates (
+  gauge_id      TEXT PRIMARY KEY,
+  iv_years      INT[] NOT NULL,
+  iv_counts     INT[] NOT NULL,
+  trigger_ft    DOUBLE PRECISION,                 -- counts are ignored once the trigger changes
+  computed_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE gauge_rates ADD COLUMN IF NOT EXISTS trigger_ft DOUBLE PRECISION;
 
 CREATE TABLE IF NOT EXISTS annual_peaks (
   gauge_id      TEXT NOT NULL,

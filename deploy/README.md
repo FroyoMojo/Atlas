@@ -1,7 +1,9 @@
 # Hosting on the demo laptop (Jesse)
 
-**Demo laptop is Windows (Zeke's): follow [WINDOWS.md](WINDOWS.md), step by step.** This page is
-the general version (macOS/Linux commands).
+> **Current hosting is the Vultr server: [vultr/README.md](vultr/README.md)** (`atlasflood.us` →
+> `45.32.196.119`). This page and [WINDOWS.md](WINDOWS.md) are the **fallback**: the demo laptop
+> behind a Cloudflare Tunnel, if the server fails. Don't change the domain's DNS for this while
+> Vultr is live.
 
 No server: everything runs on one laptop, and Cloudflare Tunnel gives it a public HTTPS URL
 (Devpost needs a hosted site). The GoDaddy Registry domain points at the same tunnel once its DNS
@@ -54,9 +56,8 @@ avoid it; `npm run web:build` overrides them anyway.
 ```bash
 cd chain
 npm run migrate                              # engine + chain tables in Tiger (safe to re-run; no psql needed)
-# Gauges and history (once; Ezekiel's final gauge IDs and triggers, see data/README.md):
-#   python3 ../data/usgs.py gauges ...  &&  python3 ../data/usgs.py peaks  &&  python3 ../data/usgs.py iv --start 2017-08-23 --end 2017-09-04
-npm run precreate -- G1,G2,G3,G4 10          # the four demo gauge IDs (once)
+# Gauges and history are already in Tiger (data/README.md); nothing to load here.
+npm run precreate -- 08075000,08073700,08069000,08068500 8   # the four demo gauges (once per new policies)
 npm run web:build                            # dashboard for hosting (same-origin API calls)
 npm run stack                                # engine + chain service + payout bot + gateway, auto-restart
 ```
@@ -78,7 +79,11 @@ cloudflared tunnel --url http://127.0.0.1:8080      # or: npm run tunnel
 It prints `https://<random>.trycloudflare.com`. That is the hosted URL until the domain is ready.
 It changes each time you restart this command, so leave it running.
 
-## 5. The GoDaddy Registry domain (keeps the GoDaddy track)
+## 5. The domain through Cloudflare (fallback only)
+
+> **Not while Vultr is live.** `atlasflood.us` points at the Vultr server through Porkbun DNS.
+> Moving the nameservers to Cloudflare would take the live site down. Use the trycloudflare URL
+> from step 4 instead.
 
 1. Free Cloudflare account -> **Add a site** -> your domain -> Free plan. Cloudflare shows two nameservers.
 2. At the registrar where you bought the domain, replace the nameservers with Cloudflare's. Usually minutes, sometimes up to an hour.

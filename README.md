@@ -1,6 +1,6 @@
 # Atlas: parametric flood protection for Houston
 
-> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on a local validator, and laptop hosting (`deploy/`) is ready. Devnet setup is done. The engine's schema and read API (`engine/`) are built and tested. The replay streamer replays real Harvey data. Next: the public URL, the phone test, and Ezekiel's final gauges and triggers. The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
+> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on devnet (G2 passed). The engine and replay streamer run on real Harvey data in Tiger, with Ezekiel's final gauges and moderate triggers. Hosting: a Vultr server at `atlasflood.us` (DNS done; deploy in progress, `deploy/vultr/`), with the laptop setup as the fallback. Next: finish the Vultr deploy, the phone test, G3. The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
 
 Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Ezekiel (data and risk) and Jesse (chain, product and hosting).
 
@@ -29,14 +29,15 @@ Architecture diagram: [build plan v3.1](docs/plan/Atlas_Build_Plan_v3.1.pdf), se
 | Best Environment Hack | Climate adaptation that protects a local community from flooding |
 | Best Use of Solana | Non-transferable Token-2022 policies, atomic purchase, Squads multisig vault, payout bot with intents, Memo evidence, catastrophe bond token |
 | Best Use of Tiger Data | Hypertables, continuous aggregates, columnstore, event and storm state, money ledger, pricing scenarios, replay engine |
-| Best Domain Name from GoDaddy Registry | Domain for the hosted site |
+| Best Domain Name from GoDaddy Registry | `atlasflood.us` (.us is a GoDaddy Registry domain) |
+| Best Use of Vultr | The whole stack (engine, chain service, payout bot, dashboard) on one Vultr instance behind Caddy |
 
 ## Repo layout
 
 ```
 chain/    Solana side (TypeScript): setup scripts, chain service, payout bot      [built]
 web/      Dashboard and phone view (Vite + React)                              [built]
-deploy/   Laptop hosting guide (gateway code in chain/src/gateway)              [built]
+deploy/   Hosting: vultr/ (current) and the laptop fallback; gateway code in chain/src/gateway
 tools/    g2_storm.py: opens a storm directly (true-up rehearsal)              [built]
 docs/     Plan, API contract, evidence format, decisions, demo, guides
 data/     USGS loader: gauges, annual peaks, Harvey window (Python)            [built; live poller: Ezekiel]
@@ -55,8 +56,9 @@ engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms
 | [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
 | [docs/phone-test.md](docs/phone-test.md) | Phantom test that picks purchase Flow A or B |
 | [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
-| [deploy/WINDOWS.md](deploy/WINDOWS.md) | **Demo laptop (Windows) setup, step by step** |
-| [deploy/README.md](deploy/README.md) | Hosting on the demo laptop: gateway, Cloudflare Tunnel, domain (macOS/Linux) |
+| [deploy/vultr/README.md](deploy/vultr/README.md) | **Hosting (current): the Vultr server at atlasflood.us** |
+| [deploy/WINDOWS.md](deploy/WINDOWS.md) | Fallback: the demo laptop (Windows), step by step |
+| [deploy/README.md](deploy/README.md) | Fallback: laptop + Cloudflare Tunnel (macOS/Linux) |
 
 ## Run
 
