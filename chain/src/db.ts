@@ -80,6 +80,16 @@ export async function activeReservationDetail(
     : null;
 }
 
+/** The wallet's policies that are still in force (bought, not paid out, not expired). */
+export async function activePoliciesOf(owner: string): Promise<{ gauge_id: string; gauge_name: string | null; ends_at: Date }[]> {
+  const { rows } = await db().query(
+    `SELECT p.gauge_id, g.name AS gauge_name, p.ends_at FROM policies p LEFT JOIN gauges g ON g.gauge_id = p.gauge_id
+     WHERE p.owner = $1 AND p.status = 'ACTV' AND p.ends_at > now() ORDER BY p.ends_at`,
+    [owner],
+  );
+  return rows;
+}
+
 export async function activeReservationFor(buyer: string): Promise<string | null> {
   const { rows } = await db().query(
     `SELECT policy_mint FROM policy_pool WHERE reserved_by = $1 AND status = 'reserved' AND reserved_until > now()`,
@@ -190,7 +200,7 @@ export async function markSold(
     await c.query(`UPDATE policy_pool SET status = 'sold' WHERE policy_mint = $1`, [row.policyMint]);
     const ins = await c.query(
       `INSERT INTO policies (policy_mint, owner, gauge_id, payout_usd, premium_usd, starts_at, ends_at, status, paid_amount, demo)
-       VALUES ($1, $2, $3, $4, $5, now() + make_interval(days => $6), now() + make_interval(days => $7), 'ACTV', 0, $8)
+       VALUES ($1, $2, $3, $4, $5, now() + make_interval(days => $6), now() + make_interval(days => $6 + $7), 'ACTV', 0, $8)
        ON CONFLICT (policy_mint) DO NOTHING`,
       [row.policyMint, row.owner, row.gaugeId, row.payoutUsd, row.premiumUsd, row.waitingDays, row.termDays, row.demo],
     );

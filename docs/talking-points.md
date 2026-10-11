@@ -102,6 +102,17 @@ insurer) to offer it, and an on-chain program so no server decides to pay."
 
 ## Likely questions, short answers
 
+- **Can't I just buy right before a storm?** "No. Protection starts 7 days after you buy, and sales close
+  as soon as the National Weather Service issues a flood or hurricane watch for that area. In the Harvey
+  replay you can see sales freeze a day before the river crosses. (The live demo has the wait set to zero
+  so you can watch a payout.)"
+- **If the flood is mild, do people get $500 for nothing?** "The trigger is the official moderate flood
+  level, where homes and roads near the river start flooding, not a heavy rain. Everyone paid for it, and
+  the price assumes it. A street can stay dry while the gauge floods, or the reverse: that's the trade for
+  paying in minutes with no adjuster. Next step is tiered payouts: less for minor flooding, more for major."
+- **Can one person buy a lot of policies?** "No: one policy in force per wallet. In production, address
+  verification makes it one per household."
+
 - **What does "ready" mean?** "Funds available divided by what we've promised, right now. 34% ready means
   each household would get about a third of its $500 if the river crossed the line this minute. It is the
   same share our engine applies in a storm, shown before the storm."

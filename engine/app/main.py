@@ -19,7 +19,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import db, markets, pricing, replay, settings
+from . import db, freeze, markets, pricing, replay, settings
 from .db import num
 from .evidence import self_test
 
@@ -247,9 +247,21 @@ def series(gauge_id: str, run_id: str | None = None):
             "trigger_ft": g["trigger_ft"], "rejected_count": rej}
 
 
-def sales_status(gauge_id: str, run: dict | None) -> tuple[bool, str | None]:
-    """Sales freeze while a trigger event or a flood watch/warning is active at the gauge (F5)."""
+def sales_status(gauge_id: str, run: dict | None, gauge: dict | None = None) -> tuple[bool, str | None]:
+    """Sales freeze while a trigger event or a flood watch/warning is active at the gauge (F5).
+    In a replay: the replay's own events and alerts. Live: the river at flood level, or an active
+    NWS flood or storm watch/warning at the gauge (app/freeze.py)."""
     if not run or run["status"] != "running":
+        if not settings.LIVE_FREEZE or gauge is None:
+            return True, None
+        latest = db.one("""SELECT stage_ft FROM gauge_readings WHERE gauge_id = %s AND run_id = 'live'
+                           AND NOT rejected AND stage_ft IS NOT NULL ORDER BY event_time DESC LIMIT 1""", (gauge_id,))
+        if latest and latest["stage_ft"] is not None and num(latest["stage_ft"]) >= num(gauge["trigger_ft"]):
+            return False, "The river is at flood level"
+        if gauge.get("lat") is not None and gauge.get("lon") is not None:
+            alert = freeze.nws_alert(float(gauge["lat"]), float(gauge["lon"]))
+            if alert:
+                return False, f"National Weather Service {alert} in effect"
         return True, None
     if db.one("SELECT 1 FROM gauge_events WHERE run_id = %s AND gauge_id = %s AND closed_at IS NULL",
               (run["run_id"], gauge_id)):
@@ -288,12 +300,12 @@ def quote(gauge: str, payout: float = Query(gt=0, le=100_000), run_id: str | Non
                                             minimum=settings.MIN_PREMIUM, **kw)
     ready_prem = pricing.premium(payout, lam, *args, minimum=settings.MIN_PREMIUM,
                                  readiness_c=1.0, expense=settings.EXPENSE_RATIO)
-    open_, reason = sales_status(gauge, data_run(run_id))
+    open_, reason = sales_status(gauge, data_run(run_id), g)
     return {"premium": round(prem, 2), "p_payout": pricing.p_payout(lam, settings.TERM_YEARS),
             "readiness": round(rd["total"], 4), "community_readiness": round(rd["community"], 4),
             "premium_if_ready": round(ready_prem, 2), "readiness_pricing": settings.READINESS_PRICING,
             "band": [round(band[0], 2), round(band[1], 2)], "k": round(k, 2),
-            "waiting_days": 0 if settings.DEMO_MODE else 7, "sales_open": open_, "reason": reason,
+            "waiting_days": settings.WAITING_DAYS, "sales_open": open_, "reason": reason,
             "years": len(flags), "exceedances": sum(flags),
             "lambda": round(lam, 4), "lambda_peak": round(pricing.annual_rate(flags), 4),
             "lambda_iv": round(sum(counts) / len(counts), 4) if counts else None,

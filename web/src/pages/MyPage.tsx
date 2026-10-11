@@ -145,6 +145,8 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
   if (active) {
     const daysLeft = Math.max(0, Math.ceil((Date.parse(active.ends_at) - Date.now()) / DAY));
     const until = new Date(active.ends_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const startsLater = Date.parse(active.starts_at) > Date.now();
+    const starts = new Date(active.starts_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
     return (
       <Shell standalone={standalone}>
         <div className="hero phone-hero">
@@ -157,7 +159,10 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
                 You're protected
               </span>
               <p className="headline">If {area} floods, {usd(active.payout)} lands here automatically.</p>
-              <p>Covered until {until}. You don't need to do anything.</p>
+              <p>
+                {startsLater ? `Protection starts ${starts} (after the waiting period) and runs until ${until}.` : `Covered until ${until}.`} You
+                don't need to do anything.
+              </p>
             </section>
           </div>
         </div>

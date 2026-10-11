@@ -146,6 +146,7 @@ export function CoverPage() {
             )}
             {buyError && <div className="notice bad">{buyError}</div>}
             <p className="fineprint">
+              {quote && (quote.waiting_days ?? 0) > 0 && <>Protection starts {quote.waiting_days} days after you buy. </>}
               Residents only, one per household. Not property insurance.{" "}
               {gauge && quote && (
                 <button className="why-link" onClick={() => setWhy(!why)} aria-expanded={why}>Why {price(quote.premium)}?</button>

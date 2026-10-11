@@ -209,6 +209,12 @@ app.post(
     // A reservation needs no signature, so anyone could reserve on a demo wallet's behalf and
     // lock it out with 409s. An open reservation for the same gauge and payout is therefore
     // handed back (same mint, same premium) instead of refused.
+    // One policy per household: a wallet with protection still in force can't buy another.
+    const inForce = await dbq.activePoliciesOf(buyer.toBase58());
+    if (inForce.length >= env.maxActivePerWallet) {
+      const until = inForce[0].ends_at.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      throw new HttpError(409, `This wallet is already protected until ${until}. One policy per household.`);
+    }
     const existing = await dbq.activeReservationDetail(buyer.toBase58());
     if (existing && (existing.gaugeId !== gauge || existing.payoutUsd !== payout)) {
       throw new HttpError(409, "This wallet already has a purchase in progress; finish it or wait 2 minutes.");
@@ -690,7 +696,7 @@ async function confirmPurchases(): Promise<void> {
           gaugeId: row.gauge_id,
           premiumUsd: row.premium_usd,
           payoutUsd: row.payout_usd,
-          waitingDays: env.demoMode ? 0 : 7,
+          waitingDays: env.waitingDays,
           termDays: TERM_DAYS,
           demo: env.demoMode,
           txSig,
