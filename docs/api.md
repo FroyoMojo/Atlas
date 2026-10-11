@@ -14,6 +14,7 @@ as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 | `GET /gauges?run_id=` | `[{gauge_id, name, lat, lon, trigger_ft, latest_ft, status, demo_ready}]`; status `normal` / `near` / `triggered` |
 | `GET /gauges/{id}/series?run_id=` | `{points: [{event_time, stage_ft}], trigger_ft, rejected_count}` |
 | `GET /quote?gauge=&payout=&run_id=` | `{premium, p_payout, band: [p5, p95], k, waiting_days, sales_open, reason}` |
+| `GET /readiness` | Funded status of every market (docs/readiness.md): `{pricing_mode, pool: {readiness, community_readiness, owed_usd, funds_usd, funding: {seed_reserve, household_premiums, sponsor_donations, outside_capital}, payout_if_fired_per_500}, markets: [{market_id, name, kind: live\|simulated, simulated, grade A\|B\|C, grade_reasons, years, exceedances, trigger_ft, policies, owed_usd, readiness, expected_payout_per_500, shortfall_per_500, gap_usd, gap_per_household, price_standard, price_now, price_if_ready, region?, households_assumed?}], assumptions}` |
 | `GET /pool?run_id=` | `{onchain: {seeded_capital, premiums_in, reserve, bond_capital, float, nav_per_unit, payouts_out, reconciled}, simulated: {policies, worst_year_loss, harvey_loss, reserve_used, bond_used, f_int, f_fin, investor_loss_pct}}` |
 | `GET /storms?run_id=` | `[{storm_id, status, f_int, f_fin, events: [{event_id, gauge_id, opened_at, closed_at, value, evidence_hash, preimage}], payouts: [{policy, kind, amount, tx_sig}]}]`. `payouts` = confirmed rows of `payout_intents`. |
 | `GET /stress?scenario=harvey\|worst_year` | `{aggregate_loss, reserve_used, bond_used, f_fin, investor_loss_pct}` |
@@ -24,7 +25,7 @@ as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 
 Implemented in [`engine/`](../engine/README.md). Additions to the shapes above (extra fields only):
 `latest_ft` is `null` before a gauge's first reading; `/quote` also returns `years`,
-`exceedances`, `lambda` (the rate used: the higher of `lambda_peak` and `lambda_iv`) and `term_days`;
+`exceedances`, `lambda` (the rate used: the higher of `lambda_peak` and `lambda_iv`), `term_days`, `readiness` (share of the promised payouts funded now, with this policy added), `community_readiness` (the part funded by seed reserve, premiums and donated sponsor funds), `premium_if_ready` and `readiness_pricing` (true when the premium itself falls with `community_readiness`; off by default);
 `p_payout` is the chance of a payout within the term (90 days), and `k` is `k_i` in aUSD (annual); `/pool` `onchain` also returns `reconcile_detail`, `vault`
 and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payout `owner` and
 `gauge_id`; `/stress` also returns `water_year`, `capital` and `reserve`; `GET /health`.
@@ -38,6 +39,7 @@ and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payou
 | `POST /api/purchase/submit` | Flow B. Body `{transaction}` (wallet-signed, base64). Co-signs only if the message hash matches what the server built; sends; returns `{signature}`. |
 | `POST /api/bond/deposit` | Body `{account, amount}`. Returns an unsigned transaction; the wallet signs, then `POST /api/bond/submit`. |
 | `POST /api/bond/submit` | Body `{transaction}`. Checks, co-signs, sends, writes the ledger entry. |
+| `POST /api/readiness/fund` | **To build (Jesse).** Body `{account, amount}`. A sponsor donates aUSD to the vault to raise readiness: same wallet-first flow as the bond deposit, but **no bond units are minted** (it is a donation, not a return-seeking deposit). Returns an unsigned transaction, then `POST /api/readiness/submit` `{transaction}`. Cap per donation `MAX_DONATION`; demo allowlist and rate limit as for the bond. Ledger rows below. |
 | `GET /policies?owner=` | `[{policy_mint, gauge_id, gauge_name, payout, status, paid_amount, last_payout: {amount, kind, tx_sig, at}}]` |
 | `GET /policies/:mint/onchain` | On-chain name, metadata fields, supply, holder |
 | `GET /chain/balances` | `{vault, float, bond_units, ausd_supply, at}` for reconciliation |
@@ -66,6 +68,7 @@ the next run's opening balances include those.
 | --- | --- |
 | Policy purchase | `holders −π`, `premiums +π` |
 | Bond deposit | `investors −D`, `bond +D` |
+| Readiness donation (sponsor funds the gap) | `donors −D`, `donations +D` (vault `+D`; the engine adds `donations` to the expected vault and to the community-funded reserve) |
 | Payout (interim or true-up) | `float −amount`, `holders +amount` |
 | Reset refill of the vault | `seeded −x`, `reserve +x` |
 | Reset refill of the float | `seeded −y`, `float +y` |

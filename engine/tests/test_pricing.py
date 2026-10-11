@@ -83,3 +83,35 @@ def test_capital_uses_the_model_mean_when_given():
     book = [pricing.BookPolicy("a", 500, 0), pricing.BookPolicy("b", 1000, 0)]
     m = pricing.model_mean_loss(book, {"a": 0.2, "b": 0.1})
     assert math.isclose(m, 500 * (1 - math.exp(-0.2)) + 1000 * (1 - math.exp(-0.1)))
+
+
+def test_readiness_is_the_funded_share_and_nothing_owed_is_ready():
+    assert pricing.readiness(1000, 2000) == 0.5
+    assert pricing.readiness(5000, 2000) == 1.0          # capped
+    assert pricing.readiness(0, 2000) == 0.0
+    assert pricing.readiness(-5, 2000) == 0.0             # a negative balance never goes below zero
+    assert pricing.readiness(0, 0) == 1.0                 # nothing owed
+
+
+def test_readiness_linked_premium_falls_with_community_funded_share():
+    lam, t, th, c, k, e = 0.1053, 90 / 365, 0.35, 0.06, 352.0, 0.10
+    base = pricing.premium(500, lam, t, th, c, k)
+    assert pricing.premium(500, lam, t, th, c, k, readiness_c=0.0, expense=e) == base      # unchanged at 0
+    half = pricing.premium(500, lam, t, th, c, k, readiness_c=0.5, expense=e)
+    full = pricing.premium(500, lam, t, th, c, k, readiness_c=1.0, expense=e)
+    assert base > half > full
+    el = 500 * pricing.p_payout(lam, t)
+    assert math.isclose(full, el / (1 - e))                # floor: expected loss plus expenses
+    assert math.isclose(half, el * (1 + th * 0.5) + c * k * t * 0.5)
+    assert pricing.premium(500, lam, t, th, c, k, readiness_c=7.0, expense=e) == full  # readiness is clamped
+
+
+def test_readiness_pricing_band_brackets_the_point_premium():
+    flags = [True, False, False, False, True, False, False, False]
+    kw = {"readiness_c": 0.5, "expense": 0.10}
+    t, th, c, k = 0.2466, 0.35, 0.06, 300.0
+    point = pricing.premium(500, pricing.annual_rate(flags), t, th, c, k, **kw)
+    lo, hi = pricing.bootstrap_band(flags, 500, t, th, c, k, **kw)
+    assert lo <= point <= hi
+    lo2, hi2 = pricing.bootstrap_band(flags, 500, t, th, c, k, readiness_c=1.0, expense=0.10)
+    assert lo2 <= lo and hi2 <= hi                          # cheaper at every percentile when more ready

@@ -19,7 +19,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import db, pricing, replay, settings
+from . import db, markets, pricing, replay, settings
 from .db import num
 from .evidence import self_test
 
@@ -260,11 +260,19 @@ def quote(gauge: str, payout: float = Query(gt=0, le=100_000), run_id: str | Non
     lam = pricing.rate_higher_of(flags, counts)   # C3: higher of lambda_peak and lambda_iv
     k = pricing.k_share(h["capital"], payout, h["total_b"])
     args = (settings.TERM_YEARS, settings.THETA, settings.COST_OF_CAPITAL, k)
-    prem = pricing.premium(payout, lam, *args, minimum=settings.MIN_PREMIUM)
+    # Readiness (docs/readiness.md): how much of the promised payouts is funded right now, with this
+    # policy added. Reported always; it changes the price only when READINESS_PRICING is on.
+    rd = readiness_for(payout)
+    kw = {"readiness_c": rd["community"], "expense": settings.EXPENSE_RATIO} if settings.READINESS_PRICING else {}
+    prem = pricing.premium(payout, lam, *args, minimum=settings.MIN_PREMIUM, **kw)
     band = pricing.bootstrap_band_higher_of(flags, counts, payout, *args, n=settings.BOOTSTRAP_N,
-                                            minimum=settings.MIN_PREMIUM)
+                                            minimum=settings.MIN_PREMIUM, **kw)
+    ready_prem = pricing.premium(payout, lam, *args, minimum=settings.MIN_PREMIUM,
+                                 readiness_c=1.0, expense=settings.EXPENSE_RATIO)
     open_, reason = sales_status(gauge, data_run(run_id))
     return {"premium": round(prem, 2), "p_payout": pricing.p_payout(lam, settings.TERM_YEARS),
+            "readiness": round(rd["total"], 4), "community_readiness": round(rd["community"], 4),
+            "premium_if_ready": round(ready_prem, 2), "readiness_pricing": settings.READINESS_PRICING,
             "band": [round(band[0], 2), round(band[1], 2)], "k": round(k, 2),
             "waiting_days": 0 if settings.DEMO_MODE else 7, "sales_open": open_, "reason": reason,
             "years": len(flags), "exceedances": sum(flags),
@@ -286,7 +294,8 @@ def reconcile(run: dict | None, bal: dict | None) -> tuple[bool, dict]:
     if bal is None or run["opening_vault"] is None or run["opening_float"] is None:
         return False, {"note": "missing chain balances or opening balances"}
     s = ledger_sums(run["run_id"])
-    vault_exp = num(run["opening_vault"]) + s.get("premiums", 0) + s.get("reserve", 0) + s.get("bond", 0)
+    vault_exp = (num(run["opening_vault"]) + s.get("premiums", 0) + s.get("reserve", 0) + s.get("bond", 0)
+                 + s.get("donations", 0))   # donated sponsor funds go into the vault (docs/readiness.md)
     float_exp = num(run["opening_float"]) + s.get("float", 0)
     detail = {"vault_expected": round(vault_exp, 6), "vault_chain": bal["vault"],
               "float_expected": round(float_exp, 6), "float_chain": bal["float"]}
@@ -296,6 +305,113 @@ def reconcile(run: dict | None, bal: dict | None) -> tuple[bool, dict]:
 def run_payouts(run_id: str) -> float:
     r = db.one("SELECT sum(amount) AS s FROM ledger WHERE run_id = %s AND account = 'holders' AND amount > 0", (run_id,))
     return num(r["s"]) or 0.0
+
+
+# ---------- readiness (docs/readiness.md) ----------
+
+def owed_now() -> tuple[float, dict[str, float], dict[str, int]]:
+    """Payouts promised by policies in force and not yet paid: total, per gauge, and policy counts."""
+    rows = db.rows("""SELECT gauge_id, sum(payout_usd) AS b, count(*) AS n FROM policies
+                      WHERE status = 'ACTV' AND ends_at > now() GROUP BY gauge_id""")
+    by_b = {r["gauge_id"]: num(r["b"]) for r in rows}
+    by_n = {r["gauge_id"]: int(r["n"]) for r in rows}
+    return sum(by_b.values()), by_b, by_n
+
+
+def funding_state() -> dict:
+    """Money standing behind the promises right now, by where it came from. Community money is the
+    seeded reserve, premiums and donated sponsor funds; outside capital is the bond, which expects a
+    return. Losses hit the reserve before the bond (7.4), as in /pool."""
+    run = data_run(None)
+    every = ledger_sums()
+    paid = run_payouts(run["run_id"]) if run else 0.0
+    reserve_in = settings.SEED_RESERVE + every.get("premiums", 0) + every.get("donations", 0)
+    bond_in = (settings.SNAPSHOT_VAULT - settings.SEED_RESERVE) + every.get("bond", 0)
+    w = pricing.waterfall(paid, reserve_in, bond_in)
+    community, outside = reserve_in - w.reserve_used, bond_in - w.bond_used
+    return {"community": community, "outside": outside, "funds": community + outside,
+            "seed": settings.SEED_RESERVE, "premiums": every.get("premiums", 0),
+            "donations": every.get("donations", 0)}
+
+
+def readiness_for(extra_owed: float = 0.0) -> dict:
+    """Readiness with `extra_owed` more promised (the policy being quoted). If the funding tables
+    cannot be read it reports no readiness, so a quote never gets a discount it has not earned."""
+    try:
+        owed, _, _ = owed_now()
+        fs = funding_state()
+    except Exception:  # noqa: BLE001
+        log.exception("readiness unavailable")
+        return {"total": 0.0, "community": 0.0, "owed": 0.0, "funds": 0.0}
+    owed += extra_owed
+    return {"total": pricing.readiness(fs["funds"], owed), "community": pricing.readiness(fs["community"], owed),
+            "owed": owed, "funds": fs["funds"]}
+
+
+@app.get("/readiness")
+def readiness_view():
+    """Funded status of every market: the share of the promised payout that would be paid if the
+    trigger fired now. Live markets (the demo gauges) share one pool, so they show the same share;
+    simulated candidates are not launched, so they show the gap to launch."""
+    h = history()
+    owed_total, owed_g, n_g = owed_now()
+    fs = funding_state()
+    r = pricing.readiness(fs["funds"], owed_total)
+    r_c = pricing.readiness(fs["community"], owed_total)
+    k500 = pricing.k_share(h["capital"], 500.0, h["total_b"])
+    args = (settings.TERM_YEARS, settings.THETA, settings.COST_OF_CAPITAL, k500)
+
+    def prices(lam: float, rc: float) -> dict:
+        std = pricing.premium(500.0, lam, *args, minimum=settings.MIN_PREMIUM)
+        full = pricing.premium(500.0, lam, *args, minimum=settings.MIN_PREMIUM, readiness_c=1.0,
+                               expense=settings.EXPENSE_RATIO)
+        now = (pricing.premium(500.0, lam, *args, minimum=settings.MIN_PREMIUM, readiness_c=rc,
+                               expense=settings.EXPENSE_RATIO) if settings.READINESS_PRICING else std)
+        return {"price_standard": round(std, 2), "price_now": round(now, 2), "price_if_ready": round(full, 2)}
+
+    out = []
+    for gid, g in h["gauges"].items():
+        if not g["demo_ready"]:
+            continue
+        by_year = h["peaks"].get(gid, {})
+        flags = pricing.exceedances(list(by_year.values()), g["trigger_ft"])
+        lam = pricing.rate_higher_of(flags, h["events"].get(gid))
+        grade, why = markets.grade_market(len(flags), sum(flags))
+        owed, n = owed_g.get(gid, 0.0), n_g.get(gid, 0)
+        gap = owed * (1 - r)
+        out.append({
+            "market_id": gid, "name": g["name"], "kind": "live", "simulated": False, "grade": grade,
+            "grade_reasons": why, "years": len(flags), "exceedances": sum(flags), "trigger_ft": g["trigger_ft"],
+            "policies": n, "owed_usd": round(owed, 2), "readiness": round(r, 4),
+            "expected_payout_per_500": round(500 * r, 2), "shortfall_per_500": round(500 * (1 - r), 2),
+            "gap_usd": round(gap, 2), "gap_per_household": round(gap / n, 2) if n else None,
+            **prices(lam, r_c)})
+    if db.table_exists("candidate_markets"):
+        for c in db.rows("SELECT * FROM candidate_markets ORDER BY grade, site"):
+            lam = c["exceedances"] / c["years"] if c["years"] else 0.0
+            gap = 500.0 * settings.SIM_HOUSEHOLDS
+            out.append({
+                "market_id": c["site"], "name": c["name"], "region": c["region"], "kind": "simulated",
+                "simulated": True, "grade": c["grade"], "grade_reasons": [c["note"]] if c["note"] else [],
+                "years": c["years"], "exceedances": c["exceedances"], "trigger_ft": c["trigger_ft"],
+                "stage_label": c["stage_label"], "policies": 0, "households_assumed": settings.SIM_HOUSEHOLDS,
+                "owed_usd": gap, "readiness": 0.0, "expected_payout_per_500": 0.0, "shortfall_per_500": 500.0,
+                "gap_usd": gap, "gap_per_household": 500.0, **prices(lam, 0.0)})
+    return {
+        "pricing_mode": "readiness" if settings.READINESS_PRICING else "standard",
+        "pool": {"readiness": round(r, 4), "community_readiness": round(r_c, 4), "owed_usd": round(owed_total, 2),
+                 "funds_usd": round(fs["funds"], 2),
+                 "funding": {"seed_reserve": round(fs["seed"], 2), "household_premiums": round(fs["premiums"], 2),
+                             "sponsor_donations": round(fs["donations"], 2),
+                             "outside_capital": round(fs["outside"], 2)},
+                 "payout_if_fired_per_500": round(500 * r, 2)},
+        "markets": out,
+        "assumptions": [
+            "Readiness = funds available / payouts owed on policies in force now: the share of each payout paid if the trigger fired this minute.",
+            "Live markets share one pool, so they show the same readiness.",
+            "Price falls only with community money (seed reserve, household premiums, donated sponsor funds), never with return-seeking bond capital.",
+            f"Simulated markets are not launched: gap = $500 x {settings.SIM_HOUSEHOLDS} assumed households. No real policies exist there.",
+        ]}
 
 
 @app.get("/pool")
@@ -308,12 +424,14 @@ def pool(run_id: str | None = None):
     # reserve is the seeded reserve plus every premium; losses hit it before the bond (7.4).
     bond_total = (settings.SNAPSHOT_VAULT - settings.SEED_RESERVE) + every.get("bond", 0)
     paid = run_payouts(run["run_id"]) if run else 0.0
-    w = pricing.waterfall(paid, settings.SEED_RESERVE + every.get("premiums", 0), bond_total)
+    reserve_in = settings.SEED_RESERVE + every.get("premiums", 0) + every.get("donations", 0)
+    w = pricing.waterfall(paid, reserve_in, bond_total)
     ok, detail = reconcile(run, bal)
     onchain = {
         "seeded_capital": settings.SNAPSHOT_VAULT + settings.SNAPSHOT_FLOAT,
         "premiums_in": every.get("premiums", 0),
-        "reserve": settings.SEED_RESERVE + every.get("premiums", 0) - w.reserve_used,
+        "donations_in": every.get("donations", 0),
+        "reserve": reserve_in - w.reserve_used,
         "bond_capital": bond_total - w.bond_used,
         # Chain unreachable: estimate the float from the snapshot and this run's ledger rows.
         "float": bal["float"] if bal else settings.SNAPSHOT_FLOAT + (ledger_sums(run["run_id"]).get("float", 0) if run else 0),

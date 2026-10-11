@@ -23,26 +23,48 @@ def p_payout(lam: float, t_years: float) -> float:
     return 1.0 - math.exp(-lam * t_years)
 
 
+def readiness(funds: float, owed: float) -> float:
+    """Share of the promised payouts that is funded right now: min(1, funds / owed). It is the pay
+    factor (7.5) the engine would apply if the trigger fired this minute. Nothing owed counts as
+    fully ready."""
+    if owed <= 0:
+        return 1.0
+    return min(1.0, max(0.0, funds) / owed)
+
+
 def premium(payout: float, lam: float, t_years: float, theta: float, c: float, k: float,
-            minimum: float = 0.0) -> float:
+            minimum: float = 0.0, *, readiness_c: float = 0.0, expense: float = 0.0) -> float:
     """pi = E[L](1 + theta) + c k t, with E[L] = B (1 - e^{-lambda t}) (7.2).
 
     The bond coupon rate c is per year, so the capital charge scales with the term: for the
-    plan's one-year term this is the plan's c k; for a 90-day policy it is a quarter of it."""
-    return max(minimum, payout * p_payout(lam, t_years) * (1 + theta) + c * k * t_years)
+    plan's one-year term this is the plan's c k; for a 90-day policy it is a quarter of it.
+
+    Readiness-linked pricing: `readiness_c` is the share of the promised payouts already covered
+    by the community's own money (premium reserve and donated sponsor funds, not return-seeking
+    capital). The risk load and the capital charge pay outside capital for carrying risk, so they
+    shrink with it: theta (1 - r) and c k t (1 - r). A fully ready market still pays expected loss
+    plus expenses (E[L] / (1 - expense)). With readiness_c = 0 this is the original formula."""
+    r = min(1.0, max(0.0, readiness_c))
+    el = payout * p_payout(lam, t_years)
+    price = el * (1 + theta * (1 - r)) + c * k * t_years * (1 - r)
+    if r > 0 and expense > 0:
+        price = max(price, el / (1 - expense))
+    return max(minimum, price)
 
 
 def bootstrap_band(flags: list[bool], payout: float, t_years: float, theta: float, c: float, k: float,
-                   n: int = 2000, seed: int = 7, minimum: float = 0.0) -> tuple[float, float]:
+                   n: int = 2000, seed: int = 7, minimum: float = 0.0, *, readiness_c: float = 0.0,
+                   expense: float = 0.0) -> tuple[float, float]:
     """5th to 95th percentile premium from resampling the years with replacement (7.2).
     Seeded, so the same history always gives the same band."""
+    kw = {"readiness_c": readiness_c, "expense": expense}
     if not flags:
-        p = premium(payout, 0.0, t_years, theta, c, k, minimum)
+        p = premium(payout, 0.0, t_years, theta, c, k, minimum, **kw)
         return p, p
     rng = random.Random(seed)
     m = len(flags)
     sims = sorted(
-        premium(payout, sum(rng.choices(flags, k=m)) / m, t_years, theta, c, k, minimum) for _ in range(n)
+        premium(payout, sum(rng.choices(flags, k=m)) / m, t_years, theta, c, k, minimum, **kw) for _ in range(n)
     )
     return sims[int(0.05 * (n - 1))], sims[int(0.95 * (n - 1))]
 
@@ -58,22 +80,24 @@ def rate_higher_of(flags: list[bool], event_counts: list[int] | None) -> float:
 
 def bootstrap_band_higher_of(flags: list[bool], event_counts: list[int] | None, payout: float,
                              t_years: float, theta: float, c: float, k: float, n: int = 2000,
-                             seed: int = 7, minimum: float = 0.0) -> tuple[float, float]:
+                             seed: int = 7, minimum: float = 0.0, *, readiness_c: float = 0.0,
+                             expense: float = 0.0) -> tuple[float, float]:
     """5th to 95th percentile premium when pricing with the higher of the two rates: each draw
     resamples the peak years and the event-count years separately and takes the larger rate, so
     the band is consistent with `rate_higher_of`. Seeded, so the same history gives the same band."""
+    kw = {"readiness_c": readiness_c, "expense": expense}
     if not event_counts:
-        return bootstrap_band(flags, payout, t_years, theta, c, k, n, seed, minimum)
+        return bootstrap_band(flags, payout, t_years, theta, c, k, n, seed, minimum, **kw)
     if not flags:
         lam = sum(event_counts) / len(event_counts)
-        p = premium(payout, lam, t_years, theta, c, k, minimum)
+        p = premium(payout, lam, t_years, theta, c, k, minimum, **kw)
         return p, p
     rng = random.Random(seed)
     m, q = len(flags), len(event_counts)
     sims = sorted(
         premium(payout,
                 max(sum(rng.choices(flags, k=m)) / m, sum(rng.choices(event_counts, k=q)) / q),
-                t_years, theta, c, k, minimum)
+                t_years, theta, c, k, minimum, **kw)
         for _ in range(n))
     return sims[int(0.05 * (n - 1))], sims[int(0.95 * (n - 1))]
 

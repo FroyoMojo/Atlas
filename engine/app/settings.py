@@ -45,3 +45,10 @@ BOOTSTRAP_N = int(_float("BOOTSTRAP_N", 2000))
 HARVEY_WATER_YEAR = int(_float("HARVEY_WATER_YEAR", 2017))
 NEAR_FRACTION = _float("NEAR_FRACTION", 0.9)    # status "near" at 90% of trigger
 
+
+# Readiness-linked pricing (docs/readiness.md). Off by default: quotes stay on the original formula
+# until this is set to true. When on, the risk load and capital charge shrink with the share of the
+# promised payouts already covered by the community's own money.
+READINESS_PRICING = (os.environ.get("READINESS_PRICING") or "false").lower() == "true"
+# Simulated candidate markets: how many households a launch is sized for (gap = payout x households).
+SIM_HOUSEHOLDS = int(_float("SIM_HOUSEHOLDS", 500))
