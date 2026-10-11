@@ -6,7 +6,7 @@ show it. Numbers below come from the live site (atlasflood.us) on Oct 11.
 
 ## Before judges arrive (set-up, 2 minutes)
 
-- Laptop: `https://atlasflood.us/#/` (map), admin token saved (`#/admin`), so **Start replay** and **Reset** show.
+- Laptop: `https://atlasflood.us/#/` (map), a second tab on `#/readiness`, admin token saved (`#/admin`), so **Start replay** and **Reset** show.
 - Phone: Phantom on devnet with a policy already bought on Meyerland, open at
   `https://atlasflood.us/#/phone?owner=<phone address>`. It should say **You're protected**.
 - Second tab on the laptop: `#/proof`. Third tab: the fallback video.
@@ -65,8 +65,21 @@ fingerprint from the USGS reading, and they match. And the money set aside match
 full: the premium reserve covers the first $200k, and catastrophe-bond investors cover the rest.
 They earn the premiums in normal years for taking that risk."
 
+**9b. Readiness (45 s). Laptop, `#/readiness`. The part no one else shows.**
+"Here is the question we think every flood product should answer: if the river crossed the line right
+now, how much of my payout is actually funded? This pool is **34% ready**: it would pay each household
+about **$169 of $500**. That is not a hidden number in a reserve report, it is on the page, per market.
+Watch what changes it." [Run 1 has just paid about $169.] "Now a sponsor funds readiness from a
+phone: $1,320." [Page goes to 100%; the Brays quote falls from $22.50 to about $15.91.] "Same storm,
+Run 2:" [Start again.] "Full $500. Preparing changed what the household got, and the price went down
+too, because the community's own money now covers the risk, not an outside investor."
+- Point at the grade badges and the simulated markets: "Atlas grades any gauge in the country from the
+  same data: how often it floods, how many years we trust. Eleven candidates here, simulated, nothing
+  sold. Four are A, two B, five C, and C means we would not sell it."
+- If readiness pricing is off at judging, skip the price lines and keep the $169 to $500 story.
+
 **10. How it's built (20 s, only if they're technical).**
-- Tiger Data: more than 5.8 million river readings since 2007, compressed 6.5x in columnstore,
+- Tiger Data: more than 6.5 million river readings since 2007, compressed 6.5x in columnstore,
   continuous aggregates for the charts; prices come straight from that history.
 - Solana: policies are non-transferable tokens; buying is one atomic transaction; payouts go out
   in seconds with the evidence hash in a Memo; capital sits in a 2-of-3 multisig.
@@ -77,6 +90,23 @@ They earn the premiums in normal years for taking that risk."
 insurer) to offer it, and an on-chain program so no server decides to pay."
 
 ## Likely questions, short answers
+
+- **What does "ready" mean?** "Funds available divided by what we've promised, right now. 34% ready means
+  each household would get about a third of its $500 if the river crossed the line this minute. It is the
+  same share our engine applies in a storm, shown before the storm."
+- **Why does the price fall as readiness rises?** "Part of the price pays outside capital for carrying risk.
+  When the community's own money (premiums and donated sponsor funds) covers more of it, that part shrinks.
+  Return-seeking bond capital does not lower the price."
+- **Why does my price go up when more people buy?** "More promises against the same reserve means a less
+  funded pool. Four buyers on Brays saw $16.69, $19.43, $20.33 and $20.77."
+- **Isn't someone already doing this?** "Parametric flood cover exists for businesses (FloodFlash), for
+  earthquake renters (Jumpstart) and in a New York City pilot. We found no open, on-chain, household-level
+  flood product that publishes its own funded status and ties its price to preparedness. We can't prove a negative."
+- **Why not just let a neighborhood insure itself?** "We tested it on the real record: Houston flooded three
+  years running (2015 to 2017), and a self-funded pool paid only 25 to 80% of what was owed. Preparation helps,
+  but a flood cluster needs outside money too."
+- **Are the other markets real?** "No. They are simulated: priced and graded from public data, nothing sold."
+- **Is the money real?** "Devnet test money. The donation is test aUSD."
 
 - **Why blockchain?** "Speed and proof. The payout settles in seconds at near-zero cost, and
   anyone can check that it followed the rule. A bank transfer can't carry its own evidence."

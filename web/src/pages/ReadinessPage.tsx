@@ -32,6 +32,8 @@ export function ReadinessPage() {
       ]
     : [];
   const fundTotal = funding.reduce((s, f) => s + Math.max(0, f.value), 0);
+  // Nothing sold: readiness reads 100% for any pool, so say what the pool can fully fund instead.
+  const nothingSold = !!pool && pool.owed_usd === 0;
 
   return (
     <>
@@ -49,12 +51,14 @@ export function ReadinessPage() {
           <div>
             <span>Houston pool is</span>
             <span className="big-num" style={{ fontSize: 44, whiteSpace: "nowrap", color: pool && pool.readiness < 1 ? "#B54708" : "#0A3A5F" }}>
-              {pool ? `${pct(pool.readiness)} ready` : "–"}
+              {pool ? (nothingSold ? "open" : `${pct(pool.readiness)} ready`) : "–"}
             </span>
           </div>
           <div>
-            <span>If a flood hit now, each household gets</span>
-            <span className="big-num" style={{ fontSize: 44, whiteSpace: "nowrap" }}>{pool ? `${usd(pool.payout_if_fired_per_500)} of $500` : "–"}</span>
+            <span>{nothingSold ? "No cover sold yet. The pool can fully fund" : "If a flood hit now, each household gets"}</span>
+            <span className="big-num" style={{ fontSize: 44, whiteSpace: "nowrap" }}>
+              {pool ? (nothingSold ? `${usd(pool.fully_funded_cover_usd ?? pool.funds_usd)} of cover` : `${usd(pool.payout_if_fired_per_500)} of $500`) : "–"}
+            </span>
           </div>
           <FundButton />
           {error && <p className="error small" style={{ flexBasis: "100%", margin: 0 }}>{error}</p>}

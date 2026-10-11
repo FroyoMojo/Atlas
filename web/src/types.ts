@@ -157,6 +157,11 @@ export interface Readiness {
     funds_usd: number;
     funding: { seed_reserve: number; household_premiums: number; sponsor_donations: number; outside_capital: number };
     payout_if_fired_per_500: number;
+    // Optional so older engines still type-check. With nothing sold, readiness reads 100%, so the
+    // page says what the pool can fully fund instead (cover_sold_usd = 0).
+    funds_source?: "chain" | "ledger estimate";
+    fully_funded_cover_usd?: number;
+    cover_sold_usd?: number;
   };
   markets: ReadinessMarket[];
   assumptions: string[];

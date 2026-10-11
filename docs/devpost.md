@@ -5,7 +5,7 @@ against what is live at submission (marked TODO where it depends on the final se
 
 ## Elevator pitch (Devpost limit: 200 characters)
 
-> Emergency money when your neighborhood floods: when the bayou crosses flood level, Atlas sends Houston renters $500 in seconds on Solana. No claim, no adjuster, no waiting.
+> Emergency money when your bayou floods, paid in seconds on Solana. Atlas shows how much of your payout is funded right now, and your price falls as your neighborhood gets ready.
 
 Alternatives:
 
@@ -33,6 +33,8 @@ We are a finance major and a quant. We wanted to build the product an insurer, a
 - **Trigger:** when a gauge records two consecutive accepted readings at or above its flood level, Atlas opens an event and records a hash of the exact reading.
 - **Pay:** the payout bot sends the money with a Memo carrying that hash, and the policy turns **PAID** in the same transaction. The phone switches to "Flood detected · Meyerland. We've sent you $500 for immediate costs", with what to do right now: call 911 if in danger, find a shelter, use the money for a room or food.
 - **Proof:** one page shows the money set aside and a "matches the blockchain" check, lists every payout with a **Verify** button that recomputes the reading's fingerprint in your browser, and stress-tests the pool against another Harvey.
+- **Readiness:** every market shows, live, how much of its promised payout is funded right now: "if the river crossed the line this minute you would get $169 of $500". The gap to fully funded is shown per household, and the price falls as the community's own money (premiums and donated sponsor funds) covers more of the risk. Anyone can fund readiness from a wallet, and a market that is only partly ready pays everyone the same share until it is topped up. TODO(live): confirm the $169 and the prices after the first production run.
+- **Markets:** the four live Houston gauges, plus eleven simulated candidates in other regions that Atlas grades A, B or C from the same data (how often the trigger was reached, how many comparable years, how many events). Simulated markets are priced and shown with their gap to launch; nothing is sold there.
 
 For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record: about five days of 15-minute readings at our four covered gauges (Brays Bayou, Buffalo Bayou at Piney Point, Cypress Creek and Spring Creek), squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, the live feed reports each flood in plain words, and payouts land on a real phone.
 
@@ -41,7 +43,7 @@ Cover runs for 90 days for one premium. Triggers sit at each gauge's National We
 ## How we built it
 
 **Tiger Data (TimescaleDB): the risk engine and the books**
-- Gauge readings and the money ledger are **hypertables**. The 2007 to 2026 instantaneous history (from 2011 for Spring Creek; **more than 5.8 million readings**) sits in **columnstore**, compressed from 1.05 GB to 162 MB (6.5x). The history charts read a **continuous aggregate** of hourly maxima, spot-checked against the raw readings.
+- Gauge readings and the money ledger are **hypertables**. The 2007 to 2026 instantaneous history (from 2011 for Spring Creek; **more than 6.5 million readings**) sits in **columnstore**, compressed from 1,000 MB to 155 MB (6.5x). The history charts read a **continuous aggregate** of hourly maxima, spot-checked against the raw readings.
 - Annual peaks go back 60 to 92 years per gauge. USGS datum-change flags set where each gauge's comparable, priced record starts (2007 to 2015), so prices rest on 11 to 19 comparable years.
 - Every money movement is a **double-entry ledger** row; every entry sums to zero.
 - Events, storms, policies and payout intents live alongside, so one database answers "who gets paid, how much, and why".
@@ -53,6 +55,11 @@ Cover runs for 90 days for one premium. Triggers sit at each gauge's National We
 - Purchase is **one atomic transaction**: premium to the vault, mint the policy, lock supply at 1. You can't pay without getting the policy, or the reverse.
 - The pool's capital sits in a **Squads v4 2-of-3 multisig** vault with a time lock. The payout bot only holds a capped float, refilled from the vault by a 2-of-3 proposal.
 - Every payout is **signed, recorded, then sent**. After a crash, the bot settles every recorded signature before building anything new, so a policy is never paid twice.
+
+**Readiness Markets: preparedness you can see and fund**
+- Readiness is the pay factor our engine already applies in a storm, shown before the storm: funds available divided by payouts owed. The funding split reads the vault's real balance from the chain, so the bar on the page adds up to what is actually there.
+- The price falls only with community money (seed reserve, household premiums, donated sponsor funds), never with return-seeking bond capital. A **Fund readiness** flow lets a sponsor donate aUSD to the vault from a wallet, with no bond units minted; the ledger books it as `donors -D, donations +D`, and reconciliation counts it.
+- Each market gets a grade from stated rules (trigger reached in 5 to 35% of years, 15 or more comparable years, at least two events) so the grade can be audited.
 
 **Vultr + GoDaddy Registry:** the whole stack (engine, chain service, payout bot and dashboard behind one gateway) runs on one Ubuntu Vultr instance behind Caddy (automatic HTTPS) and systemd at [atlasflood.us](https://atlasflood.us), a domain registered through the GoDaddy Registry offer.
 
@@ -78,6 +85,12 @@ $$ f_{\text{int}} = \min\Big(1 , \frac{A}{E_{\text{risk}}}\Big) \qquad f_{\text{
 
 Each triggered policy gets \\( f_{\text{int}} B \\) immediately, and a true-up of \\( (f_{\text{fin}} - f_{\text{int}}) B \\) when the storm closes. Losses hit the premium reserve first, then the catastrophe bond, whose NAV per unit falls accordingly.
 
+**Readiness and price.** With funds \\( F \\) available and payouts \\( O \\) owed on policies in force, readiness is \\( r = \min(1, F/O) \\): the share of each payout paid if the trigger fired now. Let \\( r_c \\) be the part covered by community money only. The two charges that pay outside capital for carrying risk shrink with it:
+
+$$ \pi(r_c) = \max\Big( \frac{\mathbb{E}[L]}{1-e} ,\ \mathbb{E}[L]\big(1+\theta(1-r_c)\big) + c\,k_i\,t\,(1-r_c) \Big) $$
+
+where \\( e \\) is the expense ratio. For a $500 policy on Brays Bayou over 90 days this is $22.50 with no community funding, about $17.70 at half and $14.20 when fully funded.
+
 **Evidence and books.** Each payout Memo is `atlas:v3:` followed by \\( \mathrm{SHA256}(\text{preimage}) \\), where the preimage fixes the gauge, the latched reading, its time, the run, the storm and the event, byte for byte across Python, the bot and the browser. Every run reconciles, separately for the vault and for the payout float:
 
 $$ \text{opening balance} + \sum \text{this run's ledger rows for that account} = \text{on-chain balance} $$
@@ -89,6 +102,8 @@ $$ \text{opening balance} + \sum \text{this run's ledger rows for that account} 
 - **Some places are too risky to insure cheaply.** Greens Bayou crosses its minor flood stage about once a year, which would have meant a 105 aUSD premium for 500 aUSD of cover. We dropped it rather than hide that, and moved triggers to the moderate flood stage.
 - **Never paying twice.** Crash recovery, expired blockhashes and retried submits all had to resolve to exactly one payout and exactly one ledger entry.
 - **Books that survive a demo reset.** Reset tops balances back up for the next judge, so absolute totals drift. We reconcile per run against opening balances instead, and book each transaction to the run open at its block time.
+- **A community cannot save its way out of a flood cluster.** We backtested a neighborhood pool that funds itself against the real record. Houston flooded three years running (2015 to 2017), before any pool could mature, and a self-funded pool paid only 25 to 80% of what was owed. That is why readiness is shown and funded openly, and why outside capital is still needed.
+- **Preparedness is relative to what is sold.** Selling more cover against the same reserve lowers readiness, so each buyer's price rises as the pool is stretched ($16.69, $19.43, $20.33, $20.77 for four buyers on Brays) and falls when it is funded. That is the point, and it needs explaining on stage.
 - **Devnet reality:** public RPC rate limits, and wallets that differ in how they accept a server-signed transaction.
 
 ## Accomplishments that we're proud of
@@ -99,10 +114,11 @@ $$ \text{opening balance} + \sum \text{this run's ledger rows for that account} 
 
 ## What we learned
 
-Parametric insurance is mostly a data problem and a trust problem. The data problem is choosing triggers from records that change under you. The trust problem is proving the payout followed the rule, which is what the hash, the public ledger and the reconciliation are for. And time-series databases make the actuarial work (annual peaks, scenario years, rolling aggregates) much simpler than we expected.
+We tested ideas against our own data and dropped the ones that failed: a retail catastrophe bond (the bond would have lost money in 5 of 10 years), a self-funded community chest (paid 25 to 80% in the 2015 to 2017 cluster) and early-warning payouts (about eight in ten action-stage alerts were false alarms). What survived is smaller and more honest: show how funded a market is, and let the price follow. Parametric insurance is mostly a data problem and a trust problem. The data problem is choosing triggers from records that change under you. The trust problem is proving the payout followed the rule, which is what the hash, the public ledger and the reconciliation are for. And time-series databases make the actuarial work (annual peaks, scenario years, rolling aggregates) much simpler than we expected.
 
 ## What's next for Atlas
 
+- Launch real markets beyond Houston from the graded candidates, with real sponsors and partner organizations, instead of simulated ones.
 - An on-chain program that enforces the payout rule, and an oracle (e.g. Switchboard) for gauge readings, so no server decides to pay.
 - Rainfall and multi-gauge triggers to reduce basis risk; NWS flood stages for every trigger.
 - A licensed partner (insurer, city programme or nonprofit) to sell it, and a cash-out path through an off-ramp or a linked card.
@@ -113,6 +129,9 @@ Parametric insurance is mostly a data problem and a trust problem. The data prob
 - **Devnet and test money only;** not a licensed insurance product, and the bond token would likely be a security.
 - **The bot decides to pay;** the Memo makes that auditable, not enforced.
 - **The catastrophe numbers** come from a simulated 2,000-policy book (the spread over gauges is an assumption); on-chain capital is seeded test money.
+- **Simulated markets are simulated.** The eleven candidate markets are priced and graded from public data, but no policies are sold there, and the diversification result (a pool spread across regions needs about a third less capital) rests on eight complete years.
+- **Readiness is about funds, not risk.** A market that has never flooded can read 100% ready; it says how much is funded, not how likely a flood is. On devnet the donations are test money.
+- **We found no open, on-chain, household-level flood product that publishes its own funded status and ties price to preparedness; we did not find none exist.** Parametric flood cover for businesses (FloodFlash), parametric earthquake cover for renters (Jumpstart) and a New York City flood pilot all exist.
 - **No seasonality yet:** the price uses a yearly rate for a 90-day term, so cover bought in the quiet season is overpriced and cover bought before hurricane season is underpriced.
 
 ---
