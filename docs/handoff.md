@@ -7,7 +7,7 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Its fixes (V1 to V17) are listed in the plan; the decisions that resulted are in [decisions.md](decisions.md).
 - **Built and tested:**
   - [`chain/`](../chain/README.md): chain service (purchase Flow A and B, bond, reset with refill, balances), storm payout bot (interim and true-up, intents, crash recovery), ledger writes.
-  - [`web/`](../web/README.md): map, Get protected, My protection, Markets (readiness), Invest, Proof and How it works, plus the phone view; Start/Reset behind the admin token.
+  - [`web/`](../web/README.md): map, Get protected, My protection, Markets (readiness), Invest and Proof (how it works is on the landing page), plus the phone view; Start/Reset behind the admin token.
   - [`engine/`](../engine/README.md): Tiger schema (one command), every read endpoint, Start/Reset, and the replay streamer (events, storms, `f_int`/`f_fin`, sales freeze), tested on real Harvey data.
   - [`data/`](../data/README.md): Ezekiel's pipeline (USGS and NWS backfill, F11, triggers, event counts, simulated book).
   - [`deploy/vultr/`](../deploy/vultr/README.md): **current hosting**, the Vultr server behind Caddy at `atlasflood.us`; `npm run stack` runs engine, chain service, bot and gateway under systemd. The laptop + Cloudflare Tunnel guides ([deploy/README.md](../deploy/README.md), [WINDOWS.md](../deploy/WINDOWS.md)) are the fallback.

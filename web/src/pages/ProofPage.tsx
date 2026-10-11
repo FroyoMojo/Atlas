@@ -129,13 +129,13 @@ export function ProofPage() {
                   <div style={{ width: pct(harvey.bond_used), background: "#4E8BC0" }} />
                 </div>
                 <div className="harvey-legend">
-                  <span><i className="dot" style={{ background: "#0A3A5F" }} />Premiums</span>
+                  <span><i className="dot" style={{ background: "#0A3A5F" }} />Community fund</span>
                   <span><i className="dot" style={{ background: "#4E8BC0" }} />Bond investors</span>
                   {harvey.f_fin < 0.999 && <span><i className="dot" style={{ background: "#EAEEF3" }} />Not covered</span>}
                 </div>
                 <span style={{ fontSize: 15, lineHeight: 1.5 }}>
                   {harvey.f_fin >= 0.999 ? (
-                    <>Yes. A Harvey-sized loss of <strong>{usd(harvey.aggregate_loss)}</strong> is covered by premiums and bond investors, so every household is paid in full.</>
+                    <>Yes. A Harvey-sized loss of <strong>{usd(harvey.aggregate_loss)}</strong> is covered by the community fund and bond investors, so every household is paid in full.</>
                   ) : (
                     <>Mostly. A Harvey-sized loss of <strong>{usd(harvey.aggregate_loss)}</strong> would use all of it, and every household would get the same <strong>{Math.round(harvey.f_fin * 100)}%</strong> of their payment.</>
                   )}{" "}

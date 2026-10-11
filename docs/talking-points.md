@@ -9,14 +9,14 @@ show it. Numbers below come from the live site (atlasflood.us) on Oct 11.
 - Laptop: `https://atlasflood.us/#/` (map), a second tab on `#/readiness`, admin token saved (`#/admin`), so **Start replay** and **Reset** show.
 - Phone: Phantom on devnet with a policy already bought on Meyerland, open at
   `https://atlasflood.us/#/phone?owner=<phone address>`. It should say **You're protected**.
-- Second tab on the laptop: `#/proof`. Third tab: the fallback video.
+- Third tab on the laptop: `#/proof`. Fourth tab: the fallback video.
 - After every judge: press **Reset** on the map, wait for it to finish, confirm the phone shows **You're protected** again.
 
 ## The 30-second version (if a judge only has a moment)
 
 "When Hurricane Harvey flooded Houston, renters waited weeks for help, and the first nights are
 when you need a hotel and food. Atlas is emergency money when your neighborhood floods. You
-protect your address for 90 days, about $22 for $500. When the river gauge next to you hits the
+protect your address for 90 days, about $20 for $500. When the river gauge next to you hits the
 official flood level, $500 lands in your phone in seconds. No claim, no adjuster. Watch: this is
 Harvey's real river data, replayed."
 
@@ -41,7 +41,7 @@ One tap in your wallet and you're protected."
 - Show an uncovered ZIP (77339, Kingwood) turning red: "We only cover areas next to a gauge we trust."
 
 **4. The phone before the storm (10 s).**
-"This is the phone of someone who's protected: the river is at 17 feet, flood level is 42. Nothing to do."
+"This is the phone of someone who's protected: the river is well below the line, flood level is 42 feet. Nothing to do."
 
 **5. Start the replay (10 s). Map, press Start replay.**
 "Now we replay Hurricane Harvey: five days of real 15-minute river readings from 2017, squeezed
@@ -79,12 +79,12 @@ it: an $837k loss, paid in full." (If asked: only Houston is live; the pooling i
   independently, it's 16 to 18 years of data, and the three-times multiple is market convention.
   In the live demo only Houston exists, so the bond behind it would still take a Harvey."
 
-**9b. Readiness (45 s). Laptop, `#/readiness`. The part no one else shows.**
+**9b. Readiness (45 s). Laptop, `#/readiness`. The part we lead with.**
 "Here is the question we think every flood product should answer: if the river crossed the line right
 now, how much of my payout is actually funded? This pool is **34% ready**: it would pay each household
 about **$169 of $500**. That is not a hidden number in a reserve report, it is on the page, per market.
 Watch what changes it." [Run 1 has just paid about $169.] "Now a sponsor funds readiness from a
-phone: $1,320." [Page goes to 100%; the Brays quote falls from $22.50 to about $15.91.] "Same storm,
+phone: $1,320." [Page goes to 100%; the Brays quote falls from about $20.80 to about $15.91.] "Same storm,
 Run 2:" [Start again.] "Full $500. Preparing changed what the household got, and the price went down
 too, because the community's own money now covers the risk, not an outside investor."
 - Point at the grade badges and the simulated markets: "Atlas grades any gauge in the country from the
@@ -107,7 +107,7 @@ insurer) to offer it, and an on-chain program so no server decides to pay."
 
 - **Can't I just buy right before a storm?** "No. Protection starts 7 days after you buy, and sales close
   as soon as the National Weather Service issues a flood or hurricane watch for that area. In the Harvey
-  replay you can see sales freeze a day before the river crosses. (The live demo has the wait set to zero
+  replay a simulated flood watch closes sales a day before the river crosses. (The live demo has the wait set to zero
   so you can watch a payout.)"
 - **If the flood is mild, do people get $500 for nothing?** "The trigger is the official moderate flood
   level, where homes and roads near the river start flooding, not a heavy rain. Everyone paid for it, and

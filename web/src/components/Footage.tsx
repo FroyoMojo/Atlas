@@ -73,7 +73,7 @@ export function Footage({ flooding }: { flooding: boolean }) {
   return (
     <div className="footage">
       {id ? <div ref={host} className="footage-frame" /> : (
-        <div className="footage-empty">Harvey footage goes here. Set VITE_FOOTAGE_ID to a YouTube video id.</div>
+        <div className="footage-empty">Hurricane Harvey, Houston, 2017</div>
       )}
       <span className={`footage-tag ${flooding ? "hot" : ""}`}>
         <i className="dot" style={{ background: flooding ? "#D92D20" : "#98A2B3" }} />

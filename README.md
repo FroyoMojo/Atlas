@@ -4,7 +4,7 @@
 
 When the river gauge next to your Houston neighborhood reaches the official flood level, Atlas sends you $500 in seconds, with a public receipt of the reading that triggered it. No claim, no adjuster, no waiting weeks. Demo: a replay of Hurricane Harvey's real 2017 river data.
 
-> **Status:** hosted on Vultr at atlasflood.us (Caddy, systemd, `deploy/vultr/`), with the laptop setup as the fallback. Submission checklist: `docs/checklist.md`. The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
+> **Status:** hosted on Vultr at atlasflood.us (Caddy, systemd, `deploy/vultr/`), with the laptop setup as the fallback.
 
 Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Ezekiel (data and risk) and Jesse (chain, product and hosting).
 
