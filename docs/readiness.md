@@ -68,6 +68,7 @@ Stretch, only if everything above is done: sponsored purchase (payer different f
 Each step depends on the one before. Reset only tops balances **up** to the snapshot and never takes
 money out, so shrinking the live vault needs its own step (the vault holds about $5,300 today).
 
+0. **Baseline.** The live server has not yet run a full replay (`docs/checklist.md`). Prove the plain demo first: one full replay with the current sizing, a payout on the phone, reconciliation green, then Reset. If this fails, stop: fix it before any readiness change.
 1. **Deploy the code.** On the server: `bash /opt/atlas/deploy/vultr/deploy.sh`. Check `https://atlasflood.us/engine/readiness` answers.
 2. **Set the env** in `/opt/atlas/.env`: `SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`, `MAX_DONATION=2000`. Run `deploy.sh` again so the stack restarts with it.
 3. **Press Reset** on the admin page. This puts every demo policy back to `ACTV` and writes a clean ledger baseline.

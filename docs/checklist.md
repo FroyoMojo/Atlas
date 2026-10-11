@@ -13,6 +13,7 @@ Status as of about 2:30 am CDT. Tick items as you go; push this file so we share
 
 ## Must do (in this order)
 
+0. [ ] **Baseline first.** Nothing below counts until the plain demo works on production: one full replay with the current sizing (vault about $5,300), a payout on the phone, the reconciliation badge green, then Reset. The readiness work sits on top of this.
 1. [ ] **Run one full replay on the live site** (Zeke or Jesse). The live server has never run one (`/engine/replay/status` shows no run).
    Laptop: `https://atlasflood.us/#/admin`, paste the admin token, go to the map, press **Start replay**.
    Check: dots turn red, "households paid" goes up, the phone with a policy flips to "We've sent you $500",
@@ -28,8 +29,9 @@ Status as of about 2:30 am CDT. Tick items as you go; push this file so we share
    - Links: https://atlasflood.us and the GitHub repo. Video link.
    - Tracks: Best Overall, Best Pitch/Demo, Best Environment Hack, Solana, Tiger Data, GoDaddy Registry domain, Vultr.
    - Both teammates added to the submission.
-5. [ ] **Confirm one number** (Zeke): readings count. Devpost says "more than 5.8 million"; if it is 6.5 million, change it.
+5. [x] **Readings count:** 6,503,183 readings (`python data/run_numbers.py`, section 1); Devpost and talking points now say more than 6.5 million, compressed 1,000 MB to 155 MB (6.5x).
 6. [x] **Repo is public** (FroyoMojo/Atlas) and the README opens with what Atlas is and the live link.
+6b. [ ] **Switch to the readiness demo** (`docs/readiness.md`, Production runbook): deploy, env (`SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`), Reset, `npm run shrink:vault -- 600`, four buys on Brays, Run 1 (about $169 each), donate about $1,320, Run 2 ($500 each). Replace every TODO(live) in `docs/devpost.md` with what you actually saw.
 7. [ ] **Rehearse the 30-second and full walkthrough** twice each, swapping who talks.
 
 ## At judging
