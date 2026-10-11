@@ -1,7 +1,7 @@
 -- Atlas engine schema for Tiger Data (TimescaleDB), build plan v3.1 section 6.2.
--- Idempotent: safe to run more than once. Apply, then the chain tables:
---   psql "$DATABASE_URL" -f engine/sql/schema.sql
---   (cd chain && npm run migrate)          # policy_pool, payout_intents
+-- Idempotent: safe to run more than once. Apply with the chain tables (no psql needed):
+--   cd chain && npm run migrate
+-- or: psql "$DATABASE_URL" -f engine/sql/schema.sql, then npm run migrate -- --chain
 -- Owner: Ezekiel. Chain side writes policies, ledger, payout_intents; see docs/api.md.
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
@@ -54,8 +54,11 @@ CREATE TABLE IF NOT EXISTS runs (
   clock         TIMESTAMPTZ,                      -- run clock (event time of the last reading) [F9]
   status        TEXT NOT NULL,                    -- running | done | reset
   opening_vault NUMERIC,                          -- from GET /chain/balances at start [V3]
-  opening_float NUMERIC
+  opening_float NUMERIC,
+  reset_wall    TIMESTAMPTZ                       -- when Reset (or a new Start) ended it
 );
+-- Added after the first schema; for databases created before it.
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS reset_wall TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS storms (
   storm_id      TEXT PRIMARY KEY,

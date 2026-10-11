@@ -2,19 +2,21 @@
 
 Read this first when you pick up the repo. Update the **Status** and **Next steps** sections whenever you stop working.
 
-## Status (Oct 10, about Hour 4.5)
+## Status (Oct 10, about 8 pm CDT, Hour 7: after G2 and a full repo audit)
 
-- Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Code and docs follow it; its fixes (V1 to V17) are logged in [decisions.md](decisions.md).
-- **Built and tested on a local validator (Jesse):**
+- Build plan **v3.1** is current: [docs/plan/Atlas_Build_Plan_v3.1.pdf](plan/Atlas_Build_Plan_v3.1.pdf). Its fixes (V1 to V17) are listed in the plan; the decisions that resulted are in [decisions.md](decisions.md).
+- **Built and tested:**
   - [`chain/`](../chain/README.md): chain service (purchase Flow A and B, bond, reset with refill, balances), storm payout bot (interim and true-up, intents, crash recovery), ledger writes.
-  - [`web/`](../web/README.md): map, gauge, pool, verify and phone view with the payout banner; Start/Reset behind the admin token; mock engine in v3.1 shapes.
-  - [`deploy/`](../deploy/README.md): laptop hosting with a gateway and Cloudflare Tunnel (no Vultr); routing tested locally.
-  - [`tools/g2_storm.py`](../tools/g2_storm.py): opens a storm for G2; tested with interim 0.6 and true-up 1.0.
-  - [`engine/`](../engine/README.md) (started for Ezekiel): `sql/schema.sql` (one command), FastAPI with every read endpoint, `/replay/start` and `/replay/reset`; tested on TimescaleDB, and the dashboard runs on it with mocks off.
-- **Devnet:** set up and checked; addresses below. RPC: Helius devnet (key in `.env` only).
-- **G2 passed on devnet (Oct 10, about 7 pm CDT)**, with a local TimescaleDB standing in for Tiger and real Harvey data: Reset refilled vault and float, holder1 bought a Brays policy (engine-priced), the replay crossed Brays and the bot paid 500 aUSD with the evidence Memo ([payout tx](https://explorer.solana.com/tx/3cfDne5GMs4ruDHkBP6AfqfotThG7VLM1xZJUE8yRdEd819k1SXr7NyUhA1XFYkPAymwPZVbDBSe5UGTtVfHKKwz?cluster=devnet)); the pool reconciled. Reset, then a second run: paid again, reconciled again. Repeat it on Tiger once Zeke shares it.
-- **Data side (Ezekiel, Oct 10, about Hour 7):** Tiger holds 9 gauges with NWS flood-stage triggers (7) , annual peaks (722), and the full 2007 to 2026 history (5.8M readings, hourly aggregate, columnstore 6.5x). `demo_ready` gauges: Brays 08075000, Buffalo at Piney Point 08073700, Cypress 08069000, Spring Ck 08068500 (Greens dropped: too frequent to price). **For Jesse:** triggers are now the NWS *moderate* flood stage; the policy term is 90 days (`TERM_DAYS=90` in the chain `.env`, the engine reads `TERM_YEARS`, default 90/365); `/quote` now returns `term_days`, `lambda`, `lambda_peak`, `lambda_iv`; quotes for $500 are about $22 (Brays), $36 (Piney Point), $32 (Cypress), $58 (Spring Ck), so `FALLBACK_PREMIUM=48` is only a fallback. Re-run `npm run precreate` if the pre-created policy terms embed a premium. The replay streams only the four demo gauges. `record_start` per gauge from USGS datum flags (`data/f11_decisions.json`). Pipeline: [data/README.md](../data/README.md). Still to do: `sim_policies`, pricing review, `docs/numbers.sql`, G2 repeat on Tiger.
-- **Not done:** public URL and domain, phone test, and Ezekiel's data side: ingestion and backfill, replay streamer, events and storms (`f_int`/`f_fin`), the real simulated book and pricing review.
+  - [`web/`](../web/README.md): map, gauge, pool, verify and phone view with the payout banner; Start/Reset behind the admin token.
+  - [`engine/`](../engine/README.md): Tiger schema (one command), every read endpoint, Start/Reset, and the replay streamer (events, storms, `f_int`/`f_fin`, sales freeze), tested on real Harvey data.
+  - [`data/usgs.py`](../data/README.md): loads gauges, annual peaks and the Harvey window from USGS.
+  - [`deploy/`](../deploy/README.md): laptop hosting; `npm run stack` runs engine, chain service, bot and gateway.
+  - [`tools/g2_storm.py`](../tools/g2_storm.py): opens a storm directly (true-up rehearsal); tested with interim 0.6 and true-up 1.0.
+- **Devnet:** set up and checked; addresses below. RPC: Helius devnet (key in `.env` only, never in the web bundle).
+- **G2 passed on devnet (Oct 10, about 7 pm CDT)**, with a local TimescaleDB standing in for Tiger and real Harvey data: Reset refilled vault and float, holder1 bought a Brays policy (engine-priced), the replay crossed Brays and the bot paid 500 aUSD with the evidence Memo ([payout tx](https://explorer.solana.com/tx/3cfDne5GMs4ruDHkBP6AfqfotThG7VLM1xZJUE8yRdEd819k1SXr7NyUhA1XFYkPAymwPZVbDBSe5UGTtVfHKKwz?cluster=devnet)); the pool reconciled. Reset, then a second run: paid again, reconciled again.
+- **Data side (Ezekiel, Oct 10, about Hour 9):** Tiger holds the full 2007 to 2026 history (6.5M readings, hourly aggregate, columnstore 6.5x), 10 gauges with NWS **moderate** flood-stage triggers, annual peaks, `record_start` per gauge from USGS datum flags ([data/f11_decisions.json](../data/f11_decisions.json)), yearly event counts (`gauge_rates`) and the simulated 2,000-policy book. `demo_ready`: Brays 08075000, Buffalo at Piney Point 08073700, Cypress 08069000, Spring Ck 08068500 (Greens dropped: it triggers about once a year). Policy term is 90 days; `/quote` prices with the higher of the peak and event rates; capital K is measured against the model mean. The schema was migrated to v3.1 in place (`data/migrate_v31.py`). **For Jesse:** set `TERM_DAYS=90` in the chain `.env`; quotes for $500 are about $22 (Brays), $36 (Piney Point), $32 (Cypress), $58 (Spring Ck), so `FALLBACK_PREMIUM=48` is only a fallback; the replay now streams only the four demo gauges (`REPLAY_DEMO_ONLY`); `docs/numbers.sql` reproduces the slide numbers (`python data/run_numbers.py`). Pipeline: [data/README.md](../data/README.md).
+- **Audit (Oct 10, 8 pm):** 8 demo-affecting bugs and about 10 smaller ones fixed (see [decisions.md](decisions.md), "Audit fixes"), all re-tested.
+- **Not done:** G2 repeat on Tiger with the chain service, public URL and domain (atlasflood.us), phone test, slides, the live poller (optional).
 - Commits go straight to `main` (no pull requests).
 
 ## Key times
@@ -22,8 +24,8 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 | When | What |
 | --- | --- |
 | Oct 10, 1:00 pm CDT | Hacking started (Hour 0) |
-| Now (overdue) | Gate G1: every check in `decisions.md` answered, including the phone test |
-| Hour 6.5 (7:30 pm) | Gate G2: a storm pays a real devnet policy; ledger and chain agree |
+| Open | Gate G1: every check in `decisions.md` answered; only the phone test is left |
+| Hour 6.5 (7:30 pm) | Gate G2: a storm pays a real devnet policy; ledger and chain agree. **Passed about 7 pm** |
 | Hour 16 (5:00 am) | Gate G3: feature freeze; start, run, reset, run again on the hosted URL |
 | Hour 19.5 (8:30 am) | Target submission |
 | Oct 11, 1:00 pm CDT | Devpost deadline (Hour 24) |
@@ -48,12 +50,13 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 ## Next steps
 
 - [x] Jesse: devnet setup done (aUSD, wallets, 2-of-3 vault, bond mint, Token-2022 and Squads checks on real devnet); addresses below.
-- [ ] Jesse: get a free devnet RPC URL (Helius or QuickNode) for `SOLANA_RPC_URL`; the public RPC rate-limits hard.
-- [ ] Jesse: laptop hosting, tunnel URL, then the domain on Cloudflare ([deploy/README.md](../deploy/README.md)).
+- [x] Jesse: Helius devnet RPC in `.env` (`SOLANA_RPC_URL`); optional `WEB_RPC_URL` for the browser.
+- [x] Shared `ADMIN_TOKEN` chosen (in `.env` only; also in the laptop kit).
+- [ ] Jesse: set up Zeke's Windows laptop with the laptop kit (keys + pre-filled `.env`) following [deploy/WINDOWS.md](../deploy/WINDOWS.md); tunnel URL, then the domain on Cloudflare; `npm run preflight` until READY.
 - [ ] Jesse: phone test, Flow A or B ([phone-test.md](phone-test.md)); record #10 and #11 in [decisions.md](decisions.md).
-- [ ] Ezekiel: share the Tiger connection string, the four `demo_ready` gauge IDs and one `ADMIN_TOKEN`.
+- [ ] Ezekiel: share the Tiger connection string and the four `demo_ready` gauge IDs (and use the shared `ADMIN_TOKEN` from Jesse).
 - [ ] Jesse: on the demo laptop, `npm run migrate` and `npm run precreate -- G1,G2,G3,G4 10` with those gauge IDs.
-- [x] Schema: `psql "$DATABASE_URL" -f engine/sql/schema.sql`, then `cd chain && npm run migrate`.
+- [x] Schema written: `cd chain && npm run migrate` applies the engine and chain tables (run it on Tiger once it exists; no psql needed).
 - [ ] Ezekiel: load `gauges`, `annual_peaks`, live `gauge_readings` and `sim_policies`; review the reference economics in [engine/README.md](../engine/README.md).
 - [x] Replay streamer with events, storms, `f_int`/`f_fin` and the sales freeze (`engine/app/replay.py`); tested on real Harvey data.
 - [ ] Ezekiel: confirm the demo gauges and trigger levels (NWS flood stage), then load them: `python3 data/usgs.py gauges ...`, `peaks`, `iv` ([data/README.md](../data/README.md)). Whiteoak went dark in Harvey: not a demo gauge.
@@ -69,7 +72,7 @@ Fill these in as they are created. Public addresses only; never paste private ke
 | Item | Value |
 | --- | --- |
 | Hosted URL | |
-| Domain | |
+| Domain | `atlasflood.us` (Porkbun, via the MLH GoDaddy Registry offer; expires 2027-10-11). DNS: A records to the Vultr IP, once the server exists |
 | Tunnel URL (trycloudflare) | |
 | Tiger Cloud service | (connection string in `.env` only) |
 | `aUSD` mint | `8rcNwXHnYbUG9Nm9gb3dXEJujPXsdkQAnCiL8UbnBbxo` |

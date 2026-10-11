@@ -24,8 +24,10 @@ export function PhonePage() {
       const ata = getAssociatedTokenAddressSync(new PublicKey(config.ausdMint), new PublicKey(owner));
       try {
         return (await connection.getTokenAccountBalance(ata, "confirmed")).value.uiAmount ?? 0;
-      } catch {
-        return 0;
+      } catch (e) {
+        // No token account yet means 0. Any other error (e.g. a 429) keeps the last balance shown.
+        if (/could not find account/i.test(String((e as Error).message ?? e))) return 0;
+        throw e;
       }
     },
     1500,
@@ -33,23 +35,24 @@ export function PhonePage() {
   );
 
   // Banner when a new payout confirms: "+$500 • PAID • Brays Bayou".
-  const seen = useRef<Set<string> | null>(null);
+  const seen = useRef<{ owner: string; sigs: Set<string> } | null>(null);
   const [banner, setBanner] = useState<{ amount: number; place: string; kind: string; sig: string } | null>(null);
   useEffect(() => {
-    if (!policies) return;
+    if (!policies || !owner) return;
     const sigs = policies.filter((p) => p.last_payout).map((p) => p.last_payout!.tx_sig);
-    if (seen.current === null) {
-      seen.current = new Set(sigs); // don't banner payouts that happened before the page opened
+    if (seen.current?.owner !== owner) {
+      // First real fetch for this owner: don't banner payouts that happened before the page opened.
+      seen.current = { owner, sigs: new Set(sigs) };
       return;
     }
     for (const p of policies) {
       const lp = p.last_payout;
-      if (lp && !seen.current.has(lp.tx_sig)) {
-        seen.current.add(lp.tx_sig);
+      if (lp && !seen.current.sigs.has(lp.tx_sig)) {
+        seen.current.sigs.add(lp.tx_sig);
         setBanner({ amount: lp.amount, place: p.gauge_name ?? p.gauge_id, kind: lp.kind, sig: lp.tx_sig });
       }
     }
-  }, [policies]);
+  }, [policies, owner]);
 
   if (!owner) {
     return (

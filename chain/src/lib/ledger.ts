@@ -10,24 +10,36 @@
 // The engine owns the economic split (expenses, coupon, which layer absorbs a loss) and
 // reconciliation; it reads these rows.
 import type { PoolClient } from "pg";
-import { db } from "../db.js";
+import { inTx } from "../db.js";
 
 export interface LedgerRow {
   account: "seeded" | "premiums" | "reserve" | "bond" | "float" | "holders" | "investors";
   amount: number;
 }
 
+/**
+ * Write one balanced entry. Idempotent per entry_id: a second call with the same id (a retried
+ * submit, two confirmers) writes nothing and returns false. The advisory lock serialises
+ * concurrent writers of the same id; pass `client` to join the caller's transaction.
+ */
 export async function writeLedgerEntry(
   entry: { runId: string; entryId: string; memo: string; txSig?: string | null; rows: LedgerRow[] },
   client?: PoolClient,
-): Promise<void> {
+): Promise<boolean> {
   const sum = entry.rows.reduce((s, r) => s + r.amount, 0);
+  if (!entry.rows.every((r) => Number.isFinite(r.amount))) throw new Error(`ledger entry ${entry.entryId} has a non-finite amount`);
   if (Math.abs(sum) > 1e-9) throw new Error(`ledger entry ${entry.entryId} does not balance (${sum})`);
-  const q = client ?? db();
-  for (const r of entry.rows) {
-    await q.query(
-      `INSERT INTO ledger (run_id, entry_id, account, amount, memo, tx_sig) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [entry.runId, entry.entryId, r.account, r.amount, entry.memo, entry.txSig ?? null],
-    );
-  }
+  const write = async (q: PoolClient) => {
+    await q.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [entry.entryId]);
+    const seen = await q.query(`SELECT 1 FROM ledger WHERE entry_id = $1 LIMIT 1`, [entry.entryId]);
+    if (seen.rowCount) return false;
+    for (const r of entry.rows) {
+      await q.query(
+        `INSERT INTO ledger (run_id, entry_id, account, amount, memo, tx_sig) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [entry.runId, entry.entryId, r.account, r.amount, entry.memo, entry.txSig ?? null],
+      );
+    }
+    return true;
+  };
+  return client ? write(client) : inTx(write);
 }

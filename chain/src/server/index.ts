@@ -6,7 +6,7 @@ import { PublicKey, Transaction } from "@solana/web3.js";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import * as dbq from "../db.js";
-import { getNavPerUnit, getQuote } from "../engine.js";
+import { EngineError, getNavPerUnit, getQuote } from "../engine.js";
 import { connection, env, explorer, loadKeypair, requireState } from "../env.js";
 import { AUSD_PROGRAM_ID, ausdAta, fromUnits, toUnits } from "../lib/ausd.js";
 import { buildBondDepositTx } from "../lib/bond.js";
@@ -17,7 +17,7 @@ import { sendIxs, serializeForWallet } from "../lib/tx.js";
 
 const DEVNET_CHAIN_ID = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"; // devnet genesis hash
 const ACTIONS_VERSION = "2.4";
-const TERM_DAYS = Number(process.env.TERM_DAYS ?? 90); // policy term; must match the engine (TERM_YEARS = TERM_DAYS / 365). At least 30 days so the future-dated replay stays inside (plan v3 6.5)
+const TERM_DAYS = env.termDays; // at least 30 days so the future-dated replay stays inside (plan v3 6.5); engine prices the same term
 
 const issuer = loadKeypair("issuer");
 
@@ -56,6 +56,34 @@ class HttpError extends Error {
   constructor(public status: number, message: string) {
     super(message);
   }
+}
+
+/** Only the payout amounts on offer; anything else (huge, negative, NaN) is refused. */
+function parsePayout(value: unknown): number {
+  const payout = value === undefined ? env.defaultPayout : Number(value);
+  if (!env.payoutOptions.includes(payout)) {
+    throw new HttpError(400, `payout must be one of ${env.payoutOptions.join(", ")} aUSD`);
+  }
+  return payout;
+}
+
+/**
+ * Wait for a signature to reach "confirmed" by polling its status (no websocket), up to
+ * `timeoutMs`. Returns the block time once confirmed, null if still unknown, and throws if it
+ * failed on-chain.
+ */
+async function waitConfirmed(signature: string, timeoutMs = 45_000): Promise<Date | null> {
+  const until = Date.now() + timeoutMs;
+  while (Date.now() < until) {
+    const st = (await connection.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
+    if (st?.err) throw new HttpError(400, `Transaction failed on-chain: ${JSON.stringify(st.err)}`);
+    if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) {
+      const t = await connection.getBlockTime(st.slot).catch(() => null);
+      return t ? new Date(t * 1000) : new Date();
+    }
+    await new Promise((r) => setTimeout(r, 1_500));
+  }
+  return null;
 }
 
 function parseAccount(value: unknown): PublicKey {
@@ -132,7 +160,7 @@ app.get(
   "/api/actions/buy",
   wrap(async (req, res) => {
     const gauge = String(req.query.gauge ?? "");
-    const payout = Number(req.query.payout ?? env.defaultPayout);
+    const payout = parsePayout(req.query.payout);
     const quote = await getQuote(gauge, payout);
     res.json({
       type: "action",
@@ -162,7 +190,7 @@ app.post(
   rateLimit(5),
   wrap(async (req, res) => {
     const gauge = String(req.query.gauge ?? "");
-    const payout = Number(req.query.payout ?? env.defaultPayout);
+    const payout = parsePayout(req.query.payout);
     const flow = flowOf(req);
     const buyer = parseAccount(req.body?.account);
     requireAllowlisted(buyer);
@@ -171,7 +199,11 @@ app.post(
     }
     const quote = await getQuote(gauge, payout);
     if (!quote.sales_open) throw new HttpError(403, quote.reason ?? "Sales are closed for this gauge");
+    if (!(Number.isFinite(quote.premium) && quote.premium > 0)) throw new HttpError(503, "No valid premium from the engine");
     const reservation = await dbq.reservePolicyMint(gauge, buyer.toBase58(), quote.premium, payout);
+    if (reservation === "busy") {
+      throw new HttpError(409, "This wallet already has a purchase in progress; finish it or wait 2 minutes.");
+    }
     if (!reservation) throw new HttpError(409, `No policies left for gauge ${gauge}. Run npm run precreate.`);
 
     const tx = await buildPurchaseTx({
@@ -212,14 +244,53 @@ app.post(
     tx.partialSign(issuer);
     if (!tx.verifySignatures()) throw new HttpError(400, "Missing or invalid wallet signature.");
     const signature = await connection.sendRawTransaction(tx.serialize());
-    await connection.confirmTransaction(signature, "confirmed");
-    res.json({ signature, explorer: explorer(signature), policy_mint: reservation.policy_mint });
+    // The confirmer books the policy from chain state either way; this only shapes the reply.
+    const landed = await waitConfirmed(signature);
+    res.status(landed ? 200 : 202).json({ signature, explorer: explorer(signature), policy_mint: reservation.policy_mint, confirmed: !!landed });
   }),
 );
 
 // ---------- bond deposit (plan v3 8.8): wallet signs first, server co-signs and submits ----------
 
 const pendingBonds = new Map<string, { investor: string; amount: number; expires: number }>();
+// Sent deposits waiting for their ledger entry: booked by the confirmer loop if the submit
+// request timed out before confirmation. In memory: a restart in that window needs a manual entry.
+const unbookedBonds = new Map<string, { investor: string; amount: number; sentAt: number }>();
+
+async function bookBond(signature: string, b: { investor: string; amount: number }, landedAt: Date): Promise<void> {
+  await writeLedgerEntry({
+    runId: await dbq.currentRunId(landedAt),
+    entryId: `bond:${signature}`, // idempotent: a second booking of the same signature writes nothing
+    memo: `bond deposit by ${b.investor}`,
+    txSig: signature,
+    rows: [
+      { account: "investors", amount: -b.amount },
+      { account: "bond", amount: b.amount },
+    ],
+  });
+  unbookedBonds.delete(signature);
+}
+
+async function settleBonds(): Promise<void> {
+  if (!unbookedBonds.size) return;
+  const sigs = [...unbookedBonds.keys()];
+  const statuses = (await connection.getSignatureStatuses(sigs, { searchTransactionHistory: true })).value;
+  for (const [n, sig] of sigs.entries()) {
+    const b = unbookedBonds.get(sig)!;
+    const st = statuses[n];
+    if (st?.err) {
+      unbookedBonds.delete(sig);
+      console.warn(`bond ${sig} failed on-chain; nothing booked`);
+    } else if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) {
+      const t = await connection.getBlockTime(st.slot).catch(() => null);
+      await bookBond(sig, b, t ? new Date(t * 1000) : new Date());
+      console.log(`bond ${sig} booked after confirmation`);
+    } else if (!st && Date.now() - b.sentAt > 5 * 60_000) {
+      unbookedBonds.delete(sig);
+      console.warn(`bond ${sig} never landed; nothing booked`);
+    }
+  }
+}
 
 app.post(
   "/api/bond/deposit",
@@ -228,8 +299,11 @@ app.post(
     const investor = parseAccount(req.body?.account);
     requireAllowlisted(investor);
     const amount = Number(req.body?.amount);
-    if (!(amount > 0)) throw new HttpError(400, "amount must be a positive number of aUSD");
+    if (!(Number.isFinite(amount) && amount > 0 && amount <= env.maxBondDeposit)) {
+      throw new HttpError(400, `amount must be a number of aUSD between 0 and ${env.maxBondDeposit}`);
+    }
     const navPerUnit = await getNavPerUnit();
+    if (navPerUnit === null) throw new HttpError(503, "Bond NAV unavailable (engine down); try again shortly.");
     const tx = await buildBondDepositTx({
       connection,
       investor,
@@ -260,20 +334,12 @@ app.post(
     if (!pending || pending.expires < Date.now()) throw new HttpError(409, "Unknown, changed or expired deposit; request a new one.");
     tx.partialSign(issuer);
     if (!tx.verifySignatures()) throw new HttpError(400, "Missing or invalid wallet signature.");
+    pendingBonds.delete(key); // before sending: a double submit of the same deposit gets 409
     const signature = await connection.sendRawTransaction(tx.serialize());
-    await connection.confirmTransaction(signature, "confirmed");
-    pendingBonds.delete(key);
-    await writeLedgerEntry({
-      runId: await dbq.currentRunId(),
-      entryId: `bond:${signature}`,
-      memo: `bond deposit by ${pending.investor}`,
-      txSig: signature,
-      rows: [
-        { account: "investors", amount: -pending.amount },
-        { account: "bond", amount: pending.amount },
-      ],
-    });
-    res.json({ signature, explorer: explorer(signature) });
+    unbookedBonds.set(signature, { investor: pending.investor, amount: pending.amount, sentAt: Date.now() });
+    const landed = await waitConfirmed(signature);
+    if (landed) await bookBond(signature, pending, landed);
+    res.status(landed ? 200 : 202).json({ signature, explorer: explorer(signature), confirmed: !!landed });
   }),
 );
 
@@ -384,29 +450,55 @@ app.post(
       );
     }
 
-    // 3. Same in Tiger; release reservations.
+    // 3. Same in Tiger; release reservations whose purchase never landed. A landed one (supply 1)
+    //    stays reserved so the confirmer records the policy instead of losing it.
     await dbq.resetDemoPoliciesDb();
-    const released = await dbq.releaseReservations();
+    let released = 0;
+    for (const row of await dbq.reservedMints()) {
+      const onchain = await readPolicy(connection, new PublicKey(row.policy_mint), new PublicKey(row.reserved_by));
+      if (onchain.supply === 0n && (await dbq.releaseReservation(row.policy_mint))) released++;
+    }
 
     res.json({ ok: true, run_id: runId, before, after: await balances(), policies_reset: mints.length, reservations_released: released });
   }),
 );
 
 app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  // An engine 4xx (unknown gauge, bad input) is the caller's error; pass its status through.
+  if (err instanceof EngineError && err.status !== null && err.status < 500) {
+    res.status(err.status).json({ message: err.message });
+    return;
+  }
   if (!(err instanceof HttpError)) console.error(err);
   res.status(err.status ?? 500).json({ message: err.message });
 });
 
 // ---------- confirmer: confirmed purchases become policies + a premium ledger entry ----------
 
+// Unpaid reservations are freed only well after the purchase blockhash can no longer land.
+const RELEASE_AFTER_MS = 2 * 60_000;
+
 async function confirmPurchases(): Promise<void> {
   for (const row of await dbq.reservedMints()) {
     try {
       const mint = new PublicKey(row.policy_mint);
       const policy = await readPolicy(connection, mint, new PublicKey(row.reserved_by));
-      if (policy.supply !== 1n || !policy.holder) continue;
-      const [latest] = await connection.getSignaturesForAddress(mint, { limit: 1 }, "confirmed");
-      const txSig = latest?.signature ?? null;
+      if (policy.supply === 0n) {
+        const expiredFor = row.reserved_until ? Date.now() - new Date(row.reserved_until).getTime() : 0;
+        if (expiredFor > RELEASE_AFTER_MS && (await dbq.releaseReservation(row.policy_mint))) {
+          console.log(`released unpaid reservation ${row.policy_id}`);
+        }
+        continue;
+      }
+      if (!policy.holder) {
+        console.warn(`confirmer: ${row.policy_mint} has supply ${policy.supply} but ${row.reserved_by} does not hold it`);
+        continue;
+      }
+      // Oldest first: [precreate, purchase, later status updates...]. The purchase is the second.
+      const sigs = (await connection.getSignaturesForAddress(mint, { limit: 50 }, "confirmed")).reverse();
+      const purchase = sigs[1] ?? sigs[0];
+      const txSig = purchase?.signature ?? null;
+      const landedAt = purchase?.blockTime ? new Date(purchase.blockTime * 1000) : new Date();
       await dbq.markSold(
         {
           policyMint: row.policy_mint,
@@ -418,6 +510,7 @@ async function confirmPurchases(): Promise<void> {
           termDays: TERM_DAYS,
           demo: env.demoMode,
           txSig,
+          landedAt,
         },
         (c, runId) =>
           writeLedgerEntry(
@@ -441,7 +534,14 @@ async function confirmPurchases(): Promise<void> {
   }
 }
 
-setInterval(() => void confirmPurchases().catch((e) => console.warn("confirmer", e)), 4_000);
+let confirming = false;
+setInterval(() => {
+  if (confirming) return; // never overlap: RPC calls are serial and can be slow
+  confirming = true;
+  void Promise.all([confirmPurchases(), settleBonds()])
+    .catch((e) => console.warn("confirmer", e))
+    .finally(() => (confirming = false));
+}, 4_000);
 
 app.listen(env.port, env.host, () => {
   console.log(

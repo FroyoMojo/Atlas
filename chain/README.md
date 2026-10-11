@@ -1,6 +1,6 @@
 # Atlas chain (Jesse)
 
-Solana side of Atlas, aligned to build plan v3 (section 8): the `aUSD` test stablecoin,
+Solana side of Atlas, aligned to build plan v3.1 (section 8): the `aUSD` test stablecoin,
 Token-2022 policy tokens, the Squads vault, the **chain service** (the only process besides the
 bot that signs) and the **storm payout bot**. TypeScript on `@solana/web3.js` 1.x.
 
@@ -26,7 +26,11 @@ validator with the real Squads program cloned from devnet.
 | Second run | After reset, the same policies were paid again in a new storm |
 | Phone banner | "+$500 • PAID • Brays Bayou" appeared live when the payout confirmed |
 
-Not yet tested: devnet itself (needs faucet SOL), Phantom on a phone, Blinks.
+**Devnet (Oct 10):** setup done (addresses in `state/devnet.json`) and G2 passed: reset refill,
+engine-priced purchase, replay, payout with the evidence Memo, reconciliation, then a second run
+([docs/handoff.md](../docs/handoff.md)).
+
+Not yet tested: Phantom on a phone, Blinks.
 
 ## Setup (once)
 
@@ -42,7 +46,7 @@ npm run fund -- <phantom-address> # SOL + aUSD to every demo wallet (and your ph
 npm run setup:multisig -- 300     # 2-of-3 vault, seeded with a 300 aUSD reserve
 npm run setup:bond                # bond mint
 npm run test:token2022            # Hour-0 check: extensions, sizes, name/status round trip
-npm run migrate                   # chain tables in Tiger (policy_pool, payout_intents)
+npm run migrate                   # engine + chain tables in Tiger (--chain: chain tables only)
 npm run precreate -- <gaugeId>,<gaugeId> 10   # 10 unminted policies per demo gauge
 npm run demo:bond -- 5000         # bond capital from the investor
 npm run fund:bot -- 2000          # vault -> bot float through a 2-of-3 proposal (or let reset mint it)
@@ -53,8 +57,13 @@ Addresses are saved to `chain/state/devnet.json` (public; commit it).
 ## Run
 
 ```bash
-npm run server      # chain service on 127.0.0.1:8787 (npm run stack also starts the bot and the gateway; see deploy/README.md)
-npm run bot         # storm payout bot
+npm run stack       # engine + chain service + bot + gateway, auto-restart (see deploy/README.md)
+npm run server      # chain service alone on 127.0.0.1:8787
+npm run bot         # storm payout bot alone
+npm run engine      # the engine alone (FastAPI on 127.0.0.1:8000)
+npm run gateway     # the gateway alone on :8080
+npm run web:build   # dashboard for hosting (writes web/.env.production.local)
+npm run tunnel      # quick Cloudflare tunnel to :8080
 npm run status      # balances of every wallet and the vault
 npm run demo:buy -- <gaugeId> holder1 a   # buy without a browser (flow a or b)
 ```
@@ -64,14 +73,20 @@ Keys the server needs: `issuer` (policy and bond mint authority, metadata author
 
 ## How the money moves
 
-- **Purchase:** one transaction creates the buyer's policy account, moves the premium to the
-  vault, mints the policy, and removes the mint authority. A confirmer turns a confirmed mint
-  into a `policies` row plus a premium ledger entry.
+- **Purchase:** only the offered payouts (`PAYOUT_OPTIONS`, default 250 and 500). One transaction
+  creates the buyer's policy account, moves the premium to the vault, mints the policy, and
+  removes the mint authority. A confirmer turns a confirmed mint into a `policies` row plus a
+  premium ledger entry, booked to the run at the transaction's block time. An expired
+  reservation is freed only once the chain shows the purchase never landed.
 - **Payout:** per storm, interim `f_int * B` as each gauge's event appears, true-up
   `(f_fin - f_int) * B` after the engine closes the storm. Interim transactions also set the
   policy name and status to `PAID`. Every payout is signed, recorded as an intent, then sent.
 - **Reset:** mints aUSD to refill vault and float to the snapshot, resets demo policies to
-  `ACTV`, releases reservations, writes `seeded` ledger rows.
+  `ACTV`, releases reservations whose purchase never landed, writes `seeded` ledger rows.
+- **Ledger:** every entry balances and is written once per `entry_id` (retries write nothing).
+  Money is booked to the latest run not reset, or `session` before the first Start after a reset.
+- **Bond deposit:** refused (503) when the engine can't give a NAV. If confirmation times out,
+  the confirmer loop books it later (in memory: a restart in that window needs a manual entry).
 
 Ledger entries and reconciliation: see `docs/api.md`.
 

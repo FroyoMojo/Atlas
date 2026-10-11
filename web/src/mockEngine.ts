@@ -3,7 +3,8 @@
 import gaugesRaw from "../mocks/gauges.json";
 import poolRaw from "../mocks/pool.json";
 import stressRaw from "../mocks/stress.json";
-import type { Gauge, Pool, Quote, ReplayStatus, Series, Storm, Stress } from "./types";
+import { sha256Hex } from "./evidence";
+import type { Gauge, Pool, Quote, ReplayStatus, Series, Storm, StormEvent, Stress } from "./types";
 
 interface MockGauge {
   gauge_id: string;
@@ -22,6 +23,7 @@ const WINDOW_HOURS = 108; // about 4.5 days of flood squeezed into 90 seconds
 const STEP_MIN = 15;
 
 let runId: string | null = null;
+let resetRunId: string | null = null; // like the engine: after Reset, status reports the reset run
 let startedAt = 0;
 
 function progress(): number {
@@ -102,21 +104,25 @@ export const mockEngine = {
   async storms(): Promise<Storm[]> {
     if (!runId) return delay([]);
     const t = progress();
-    const events = gauges
-      .map((g) => ({ g, c: crossing(g, t) }))
-      .filter((x): x is { g: MockGauge; c: number } => x.c !== null)
-      .map(({ g, c }) => {
-        const opened = replayTime(c).toISOString().replace(/\.\d{3}Z$/, "Z");
-        return {
-          event_id: `${runId}-${g.gauge_id}`,
-          gauge_id: g.gauge_id,
-          opened_at: opened,
-          closed_at: t >= 1 ? replayTime(1).toISOString() : null,
-          value: stageAt(g, c),
-          evidence_hash: "0".repeat(64),
-          preimage: `atlas|v3|${g.gauge_id}|${stageAt(g, c).toFixed(2)}|${opened}|${runId}|${runId}-s1|${runId}-${g.gauge_id}|-|-`,
-        };
-      });
+    const seconds = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
+    const events: StormEvent[] = await Promise.all(
+      gauges
+        .map((g) => ({ g, c: crossing(g, t) }))
+        .filter((x): x is { g: MockGauge; c: number } => x.c !== null)
+        .map(async ({ g, c }) => {
+          const opened = seconds(replayTime(c));
+          const preimage = `atlas|v3|${g.gauge_id}|${stageAt(g, c).toFixed(2)}|${opened}|${runId}|${runId}-s1|${runId}-${g.gauge_id}|-|-`;
+          return {
+            event_id: `${runId}-${g.gauge_id}`,
+            gauge_id: g.gauge_id,
+            opened_at: opened,
+            closed_at: t >= 1 ? seconds(replayTime(1)) : null,
+            value: Math.round(stageAt(g, c) * 100) / 100,
+            evidence_hash: await sha256Hex(preimage),
+            preimage,
+          };
+        }),
+    );
     if (!events.length) return delay([]);
     const closed = t >= 1;
     return delay([
@@ -153,10 +159,12 @@ export const mockEngine = {
 
   async replayStatus(): Promise<ReplayStatus> {
     const t = progress();
+    if (!runId) return delay({ run_id: resetRunId, status: resetRunId ? "reset" : null, clock: null, streaming: false } as ReplayStatus);
     return delay({
       run_id: runId,
-      status: runId ? (t < 1 ? "running" : "done") : null,
-      clock: runId ? replayTime(t).toISOString() : null,
+      status: t < 1 ? "running" : "done",
+      clock: replayTime(t).toISOString().replace(/\.\d{3}Z$/, "Z"),
+      streaming: t < 1,
     } as ReplayStatus);
   },
 
@@ -167,7 +175,8 @@ export const mockEngine = {
   },
 
   async replayReset(): Promise<{ run_id: string }> {
-    const old = runId ?? "none";
+    const old = runId ?? resetRunId ?? "none";
+    resetRunId = runId ?? resetRunId;
     runId = null;
     return delay({ run_id: old });
   },

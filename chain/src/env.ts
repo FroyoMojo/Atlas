@@ -16,8 +16,8 @@ export const env = {
   secretsDir: resolve(REPO_DIR, process.env.SECRETS_DIR ?? "secrets"),
   stateFile: resolve(REPO_DIR, process.env.CHAIN_STATE_FILE ?? "chain/state/devnet.json"),
   databaseUrl: process.env.DATABASE_URL,
-  engineUrl: process.env.ENGINE_URL ?? "http://localhost:8000",
-  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://localhost:8787",
+  engineUrl: process.env.ENGINE_URL ?? "http://127.0.0.1:8000",
+  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://127.0.0.1:8787",
   port: Number(process.env.CHAIN_PORT ?? 8787),
   // Localhost by default: the gateway (behind Cloudflare Tunnel) is the only public entry point.
   host: process.env.CHAIN_HOST ?? "127.0.0.1",
@@ -36,6 +36,11 @@ export const env = {
   // Used when the engine's /quote is unreachable (demo mode only).
   fallbackPremium: Number(process.env.FALLBACK_PREMIUM ?? 48),
   defaultPayout: Number(process.env.DEFAULT_PAYOUT ?? 500),
+  // Policy term in days. Must match the engine (TERM_YEARS = TERM_DAYS / 365): the premium is one payment for this term.
+  termDays: Number(process.env.TERM_DAYS ?? 90),
+  // The only payout amounts the buy endpoints accept (the dashboard offers these).
+  payoutOptions: (process.env.PAYOUT_OPTIONS ?? "250,500").split(",").map(Number).filter((n) => Number.isFinite(n) && n > 0),
+  maxBondDeposit: Number(process.env.MAX_BOND_DEPOSIT ?? 100_000),
   botPollMs: Number(process.env.BOT_POLL_MS ?? 2_000),
 };
 

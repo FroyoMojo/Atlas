@@ -1,13 +1,14 @@
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { NavLink, Outlet } from "react-router-dom";
 import { getAdminToken } from "../admin";
-import { api } from "../api";
+import { activeRunId, api } from "../api";
 import { config } from "../config";
 import { usePoll } from "../usePoll";
 
 export function Layout() {
   const { data: replay } = usePoll(api.replayStatus, 1000);
-  const { data: storms } = usePoll(() => api.storms(replay?.run_id ?? null), 1500, [replay?.run_id]);
+  const runId = activeRunId(replay);
+  const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
   const storm = storms?.at(-1);
   return (
     <div className="app">

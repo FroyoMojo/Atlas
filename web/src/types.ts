@@ -90,6 +90,7 @@ export interface ReplayStatus {
   run_id: string | null;
   status: "running" | "done" | "reset" | null;
   clock: string | null;
+  streaming?: boolean;
 }
 
 export interface Policy {

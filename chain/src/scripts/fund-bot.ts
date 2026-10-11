@@ -26,7 +26,7 @@ if (env.databaseUrl) {
   const { currentRunId, closeDb } = await import("../db.js");
   const { writeLedgerEntry } = await import("../lib/ledger.js");
   await writeLedgerEntry({
-    runId: await currentRunId(),
+    runId: await currentRunId(), // now: the proposal executed moments ago
     entryId: `float:${sig}`,
     memo: "vault to bot float (2-of-3 proposal)",
     txSig: sig,

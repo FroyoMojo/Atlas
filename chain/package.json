@@ -22,9 +22,11 @@
     "server": "tsx src/server/index.ts",
     "bot": "tsx src/bot/payout-bot.ts",
     "gateway": "tsx src/gateway/index.ts",
-    "stack": "concurrently -n chain,bot,gateway -c blue,magenta,green --restart-tries 20 --restart-after 2000 \"tsx src/server/index.ts\" \"tsx src/bot/payout-bot.ts\" \"tsx src/gateway/index.ts\"",
-    "tunnel": "cloudflared tunnel --url http://localhost:8080",
-    "web:build": "tsx src/scripts/build-web.ts"
+    "engine": "tsx src/scripts/run-engine.ts",
+    "stack": "concurrently -n engine,chain,bot,gateway -c yellow,blue,magenta,green --restart-tries 20 --restart-after 2000 \"npm run engine\" \"tsx src/server/index.ts\" \"tsx src/bot/payout-bot.ts\" \"tsx src/gateway/index.ts\"",
+    "tunnel": "cloudflared tunnel --url http://127.0.0.1:8080",
+    "web:build": "tsx src/scripts/build-web.ts",
+    "preflight": "tsx src/scripts/preflight.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.14",

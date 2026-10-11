@@ -4,7 +4,7 @@ Agreed shapes between the engine (Ezekiel, read-only FastAPI) and the chain serv
 (Jesse). The web app builds against mocks with these exact shapes until the engine is live.
 Python never builds or signs a Solana transaction; only the chain service and the bot hold keys.
 
-All engine reads take `run_id` (default: the latest run). Times are ISO 8601 UTC. Money is aUSD
+All engine reads except `/stress` take `run_id` (default: the latest run, unless it was reset, then live data; the dashboard sends no `run_id` after a reset). Times are ISO 8601 UTC. Money is aUSD
 as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 
 ## Engine (FastAPI, Ezekiel, default `:8000`)
@@ -18,9 +18,9 @@ as decimal numbers. Policy status is a fixed-width code: `ACTV`, `PAID`, `EXPD`.
 | `GET /storms?run_id=` | `[{storm_id, status, f_int, f_fin, events: [{event_id, gauge_id, opened_at, closed_at, value, evidence_hash, preimage}], payouts: [{policy, kind, amount, tx_sig}]}]`. `payouts` = confirmed rows of `payout_intents`. |
 | `GET /stress?scenario=harvey\|worst_year` | `{aggregate_loss, reserve_used, bond_used, f_fin, investor_loss_pct}` |
 | `GET /ledger?run_id=` | Ledger rows and totals by account |
-| `GET /replay/status` | `{run_id, status, clock}`. **Proposed addition**: v3 omits it, but every page needs the current run and its clock. |
-| `POST /replay/start` | `{run_id}`. Header `X-Admin-Token`. Records the run's opening balances from `GET /chain/balances`. |
-| `POST /replay/reset` | `{run_id}`. Header `X-Admin-Token`. Stops the run, marks it `reset`, calls `POST /chain/reset`, then reconciles. |
+| `GET /replay/status` | `{run_id, status, clock, streaming}` for the latest run (status `running`, `done` or `reset`). Added to v3: every page needs the current run and its clock. |
+| `POST /replay/start` | `{run_id, opening: {vault, float}, streamer}`. Header `X-Admin-Token`. Records opening balances from `GET /chain/balances` and starts the replay. A run still running is abandoned (marked `reset`). 409 while another Start/Reset is in progress. |
+| `POST /replay/reset` | `{run_id, chain, chain_error, reconciled, reconcile_detail}`. Header `X-Admin-Token`. Stops the run, marks it `reset`, calls `POST /chain/reset`, then reconciles. |
 
 Implemented in [`engine/`](../engine/README.md). Additions to the shapes above (extra fields only):
 `latest_ft` is `null` before a gauge's first reading; `/quote` also returns `years` and
@@ -32,7 +32,7 @@ and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payou
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /api/actions/buy?gauge=&payout=` | Solana Action metadata with the live quote |
+| `GET /api/actions/buy?gauge=&payout=` | Solana Action metadata with the live quote. `payout` must be one of `PAYOUT_OPTIONS` (default 250, 500) |
 | `POST /api/actions/buy?gauge=&payout=&flow=a\|b` | Body `{account}`. Flow A: transaction already signed by the server. Flow B: unsigned; the wallet signs, then `POST /api/purchase/submit`. 5/min/IP. Demo allowlist; one reservation per wallet. |
 | `POST /api/purchase/submit` | Flow B. Body `{transaction}` (wallet-signed, base64). Co-signs only if the message hash matches what the server built; sends; returns `{signature}`. |
 | `POST /api/bond/deposit` | Body `{account, amount}`. Returns an unsigned transaction; the wallet signs, then `POST /api/bond/submit`. |
@@ -40,7 +40,7 @@ and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payou
 | `GET /policies?owner=` | `[{policy_mint, gauge_id, gauge_name, payout, status, paid_amount, last_payout: {amount, kind, tx_sig, at}}]` |
 | `GET /policies/:mint/onchain` | On-chain name, metadata fields, supply, holder |
 | `GET /chain/balances` | `{vault, float, bond_units, ausd_supply, at}` for reconciliation |
-| `POST /chain/reset` | Localhost only, header `X-Admin-Token`, body `{run_id}`. Mints aUSD to refill vault and float to the snapshot, sets demo policies to `ACTV` (name and status), releases reservations, writes `seeded` ledger rows. Returns `{before, after, policies_reset}`. |
+| `POST /chain/reset` | Localhost only, header `X-Admin-Token`, body `{run_id}`. Mints aUSD to refill vault and float to the snapshot, sets demo policies to `ACTV` (name and status), releases reservations whose purchase never landed, writes `seeded` ledger rows. Returns `{ok, run_id, before, after, policies_reset, reservations_released}`. |
 | `GET /terms/:policyId.json`, `/actions.json`, `/icon.svg`, `/health` | Terms JSON for metadata `uri`, Actions rules, icon, health |
 
 ## Tables: who writes what
@@ -56,8 +56,10 @@ and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payou
 
 ## Ledger entries the chain side writes
 
-Each entry's rows sum to zero. `run_id` is the running run, or `session` when no run is running
-(purchases made before Start; audit fix).
+Each entry's rows sum to zero, and each `entry_id` is written once (retries write nothing).
+`run_id` is the latest run that has not been reset, taken at the transaction's block time
+(running, or done after its replay ended), or `session` after a Reset and before the next Start;
+the next run's opening balances include those.
 
 | Movement | Rows |
 | --- | --- |

@@ -22,6 +22,14 @@ const q = encodeURIComponent;
 const run = (runId: string | null, sep = "?") => (runId ? `${sep}run_id=${q(runId)}` : "");
 const admin = (): RequestInit => ({ method: "POST", headers: { "X-Admin-Token": getAdminToken() ?? "" } });
 
+/**
+ * The run the dashboard shows: the latest run unless it was reset, in which case the dashboard
+ * is back to live data (the engine still serves a reset run when asked for it by id, which the
+ * verify page uses for older payouts).
+ */
+export const activeRunId = (replay: ReplayStatus | null | undefined): string | null =>
+  replay && replay.status !== "reset" ? replay.run_id : null;
+
 export const api = {
   replayStatus: (): Promise<ReplayStatus> => (config.useMocks ? mockEngine.replayStatus() : eng("/replay/status")),
   gauges: (runId: string | null): Promise<Gauge[]> => (config.useMocks ? mockEngine.gauges() : eng(`/gauges${run(runId)}`)),
