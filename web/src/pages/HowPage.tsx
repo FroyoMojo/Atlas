@@ -52,6 +52,10 @@ export function HowPage() {
             <p>Premiums go into a reserve held by a 2-of-3 multisig. Behind it, bond investors put up capital and earn the premiums in return; they take the loss in a storm like Harvey. If a storm were ever bigger than both, everyone gets the same share right away and the rest when the storm ends. <Link to="/proof">See the numbers →</Link></p>
           </div>
           <div>
+            <h3>Three ways to take part</h3>
+            <p><b>Households</b> buy protection and get a fixed payment when the river floods. <b>Sponsors</b> donate to a market on the <Link to="/readiness">Markets</Link> page: it raises how much of every payout is funded and lowers the price, and it earns no return. <b>Investors</b> put money into the <Link to="/invest">bond</Link>, are paid a share of premiums for the risk, and lose first-after-the-reserve in a storm like Harvey.</p>
+          </div>
+          <div>
             <h3>This demo</h3>
             <p>It runs on Solana devnet with test dollars, and replays Hurricane Harvey's real 2017 river readings in about 90 seconds.</p>
           </div>

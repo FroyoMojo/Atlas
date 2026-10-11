@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { areaOf, AREAS, lookup } from "../areas";
 import { CheckIcon, Contours, price } from "../components/ui";
+import { friendlyError } from "../errors";
 import { usePoll } from "../usePoll";
 import { useReplay } from "../useReplay";
 import { useConnectWallet, useServerTx } from "../wallet";
@@ -48,7 +49,7 @@ export function CoverPage() {
       await purchase(transaction, flow);
       navigate("/me", { state: { justBought: true } });
     } catch (e) {
-      setBuyError(String((e as Error).message ?? e));
+      setBuyError(friendlyError(e));
     } finally {
       setBuying(false);
     }

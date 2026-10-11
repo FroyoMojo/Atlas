@@ -1,4 +1,4 @@
-# API contract (plan v3 section 4.2)
+﻿# API contract (plan v3 section 4.2)
 
 Agreed shapes between the engine (Ezekiel, read-only FastAPI) and the chain service and web app
 (Jesse). The web app builds against mocks with these exact shapes until the engine is live.
@@ -39,7 +39,7 @@ and `bond_units`; `/storms` also returns `opened_at`/`closed_at`, and each payou
 | `POST /api/purchase/submit` | Flow B. Body `{transaction}` (wallet-signed, base64). Co-signs only if the message hash matches what the server built; sends; returns `{signature}`. |
 | `POST /api/bond/deposit` | Body `{account, amount}`. Returns an unsigned transaction; the wallet signs, then `POST /api/bond/submit`. |
 | `POST /api/bond/submit` | Body `{transaction}`. Checks, co-signs, sends, writes the ledger entry. |
-| `POST /api/readiness/fund` | **To build (Jesse).** Body `{account, amount}`. A sponsor donates aUSD to the vault to raise readiness: same wallet-first flow as the bond deposit, but **no bond units are minted** (it is a donation, not a return-seeking deposit). Returns an unsigned transaction, then `POST /api/readiness/submit` `{transaction}`. Cap per donation `MAX_DONATION`; demo allowlist and rate limit as for the bond. Ledger rows below. |
+| `POST /api/readiness/fund` | Built. Body `{account, amount}`. A sponsor donates aUSD to the vault to raise readiness: same wallet-first flow as the bond deposit, but **no bond units are minted** (it is a donation, not a return-seeking deposit). Returns an unsigned transaction, then `POST /api/readiness/submit` `{transaction}`. Cap per donation `MAX_DONATION`; demo allowlist and rate limit as for the bond. Ledger rows below. |
 | `GET /policies?owner=` | `[{policy_mint, gauge_id, gauge_name, payout, status, paid_amount, last_payout: {amount, kind, tx_sig, at}}]` |
 | `GET /policies/:mint/onchain` | On-chain name, metadata fields, supply, holder |
 | `GET /chain/balances` | `{vault, float, bond_units, ausd_supply, at}` for reconciliation |

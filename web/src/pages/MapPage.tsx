@@ -105,6 +105,27 @@ export function MapPage() {
         {adminError && <p className="error small" style={{ margin: 0, flexBasis: "100%" }}>{adminError}</p>}
       </section>
 
+      <section className="roles" aria-label="Ways to take part">
+        <Link to="/protect" className="lift role">
+          <span className="role-tag">Households</span>
+          <b>Get $500 if your river floods</b>
+          <span>Pick your neighborhood, pay once for 90 days, and the payment comes to your wallet. No claim.</span>
+          <span className="link-row">Get protected →</span>
+        </Link>
+        <Link to="/readiness" className="lift role">
+          <span className="role-tag">Sponsors</span>
+          <b>Fund a neighborhood's readiness</b>
+          <span>Donate to a market so its payouts are fully funded before the storm. No return, and prices fall for everyone there.</span>
+          <span className="link-row">See the markets →</span>
+        </Link>
+        <Link to="/invest" className="lift role">
+          <span className="role-tag">Investors</span>
+          <b>Earn a return, carry the storm</b>
+          <span>Bond capital sits behind the reserve and is paid for taking the loss in a storm like Harvey.</span>
+          <span className="link-row">See the bond →</span>
+        </Link>
+      </section>
+
       <div className="map-layout">
         <div className="map-box">
           <MapContainer center={[29.83, -95.45]} zoom={10} scrollWheelZoom={false} attributionControl>

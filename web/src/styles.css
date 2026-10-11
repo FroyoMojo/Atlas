@@ -126,6 +126,12 @@ input { font: inherit; }
 .replay-stats span { font-size: 13px; color: var(--muted); }
 .replay-admin { display: flex; gap: 8px; }
 
+.roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 24px 40px 0; }
+.role { display: flex; flex-direction: column; gap: 8px; padding: 20px; text-decoration: none; color: inherit; border: 1px solid var(--line); }
+.role:hover { color: inherit; border-color: var(--navy); }
+.role b { font-size: 18px; font-family: var(--display); }
+.role > span:not(.role-tag):not(.link-row) { font-size: 14px; line-height: 1.5; color: var(--muted); }
+.role-tag { align-self: flex-start; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--navy); background: var(--tint); border-radius: 999px; padding: 3px 10px; }
 .map-layout { display: flex; flex-wrap: wrap; gap: 24px; padding: 24px 40px 24px; }
 .map-box { flex: 999 1 560px; min-width: 0; min-height: 540px; border-radius: 12px; overflow: hidden; border: 1px solid #dde3ea; position: relative; background: #e9eef3; }
 .map-box .leaflet-container { position: absolute; inset: 0; font-family: inherit; background: #eef2f6; }
@@ -253,6 +259,7 @@ input { font: inherit; }
   .replay-card { margin: -48px 16px 0; padding: 16px; }
   .replay-id { min-width: 0; }
   .map-layout { padding: 20px 16px; }
+  .roles { grid-template-columns: 1fr; padding: 20px 16px 0; }
   .map-box { min-height: 380px; flex-basis: 100%; }
   .page { padding: 0 16px 32px; }
   .money-card { padding: 20px; }

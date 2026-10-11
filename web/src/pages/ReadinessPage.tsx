@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { areaOf } from "../areas";
 import { explorer } from "../config";
+import { friendlyError } from "../errors";
 import { Contours, price, usd } from "../components/ui";
 import type { ReadinessMarket } from "../types";
 import { usePoll } from "../usePoll";
@@ -40,9 +41,9 @@ export function ReadinessPage() {
       <div className="hero pad-mid">
         <Contours />
         <section className="hero-body center">
-          <span className="eyebrow">Readiness</span>
-          <h1 style={{ fontSize: 46 }}>If the river flooded right now, how much would you get?</h1>
-          <p>Every market shows how much of its promised $500 is funded today. As the community prepares, readiness rises and the price falls.</p>
+          <span className="eyebrow">Markets · for sponsors</span>
+          <h1 style={{ fontSize: 46 }}>Fund the neighborhoods before the flood.</h1>
+          <p>Each market shows how much of its promised $500 is funded today. Money you donate raises that share and lowers the price for every household there. It is a gift: no return, no units.</p>
         </section>
       </div>
 
@@ -98,6 +99,10 @@ export function ReadinessPage() {
             <div className="market-grid">{sim.map((m) => <MarketCard key={m.market_id} m={m} />)}</div>
           </section>
         )}
+
+        <p className="small muted" style={{ margin: 0 }}>
+          Live in Houston? <Link to="/protect">Get protected</Link>. Want a return for carrying risk? <Link to="/invest">Invest in the bond</Link>.
+        </p>
       </div>
     </>
   );
@@ -146,7 +151,7 @@ function MarketCard({ m }: { m: ReadinessMarket }) {
           {m.price_if_ready < m.price_now - 0.005 && <span className="small muted">{price(m.price_if_ready)} when fully ready</span>}
         </span>
       </div>
-      {!m.simulated && <Link to={`/protect/${encodeURIComponent(m.market_id)}`} className="link-row">Get protected here →</Link>}
+      {!m.simulated && <Link to={`/protect/${encodeURIComponent(m.market_id)}`} className="small muted">Live here? Get protected →</Link>}
     </div>
   );
 }
@@ -167,10 +172,10 @@ function FundButton() {
     try {
       const { transaction } = await api.donateTx(publicKey.toBase58(), amount);
       const sig = await donate(transaction);
-      setMsg({ ok: true, text: `Thank you: ${usd(amount)} added to the pool.`, sig });
+      setMsg({ ok: true, text: `Thank you: ${usd(amount)} added to the pool. Readiness updates within a few seconds.`, sig });
       setOpen(false);
     } catch (e) {
-      setMsg({ ok: false, text: String((e as Error).message ?? e) });
+      setMsg({ ok: false, text: friendlyError(e) });
     } finally {
       setBusy(false);
     }
@@ -188,6 +193,7 @@ function FundButton() {
       ) : (
         <button className="btn btn-primary" onClick={() => setOpen(true)}>Fund readiness</button>
       )}
+      <span className="small muted">A donation, not an investment. It sits in the reserve and pays households first, ahead of bond investors.</span>
       {msg && (
         <span className={`small ${msg.ok ? "" : "error"}`} style={msg.ok ? { color: "#067647" } : undefined}>
           {msg.text} {msg.sig && <a href={explorer(msg.sig)} target="_blank" rel="noreferrer">View</a>}
