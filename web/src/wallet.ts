@@ -75,9 +75,15 @@ export function useConnectWallet() {
   const { setVisible } = useWalletModal();
   return useCallback(() => {
     const injected = typeof window !== "undefined" && !!((window as any).phantom?.solana || (window as any).solana); // eslint-disable-line @typescript-eslint/no-explicit-any
+    // A phone browser outside Phantom lists Phantom (and the Android mobile-wallet adapter) as
+    // "detected", but connecting from there does nothing. Reopen the page inside Phantom, where
+    // the wallet is injected and connect works.
+    if (!injected && isMobile()) {
+      window.location.href = phantomBrowseUrl();
+      return;
+    }
     const found = injected || wallets.some((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
     if (found) setVisible(true);
-    else if (isMobile()) window.location.href = phantomBrowseUrl();
     else window.dispatchEvent(new Event(NO_WALLET_EVENT));
   }, [wallets, setVisible]);
 }
