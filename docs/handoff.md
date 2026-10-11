@@ -73,8 +73,9 @@ Fill these in as they are created. Public addresses only; never paste private ke
 
 | Item | Value |
 | --- | --- |
-| Hosted URL | |
-| Domain | `atlasflood.us` (Porkbun, via the MLH GoDaddy Registry offer; expires 2027-10-11). DNS: A records to the Vultr IP, once the server exists |
+| Hosted URL | **https://atlasflood.us** (live Oct 11, about Hour 17: Caddy on Vultr, valid certificate, `/chain/reset` returns 403 from outside, engine and chain healthy) |
+| Vultr server | `45.76.239.177` (Ubuntu, 2 GB+, Dallas); Caddy -> gateway :8080 -> engine, chain, bot under systemd (`atlas-stack`); redeploy with `bash /opt/atlas/deploy/vultr/deploy.sh` |
+| Domain | `atlasflood.us` (Porkbun, via the MLH GoDaddy Registry offer; expires 2027-10-11). DNS: A records (root and www) point to the Vultr IP `45.76.239.177` |
 | Tunnel URL (trycloudflare) | |
 | Tiger Cloud service | (connection string in `.env` only) |
 | `aUSD` mint | `8rcNwXHnYbUG9Nm9gb3dXEJujPXsdkQAnCiL8UbnBbxo` |
