@@ -43,8 +43,8 @@ export function InvestPage() {
         <Contours />
         <section className="hero-body center">
           <span className="eyebrow">For investors</span>
-          <h1 style={{ fontSize: 46 }}>Get paid to carry the storm.</h1>
-          <p>Bond capital sits behind the premium reserve. In a normal year it earns its share of the premiums. In a storm like Harvey it pays households first and takes the loss.</p>
+          <h1 style={{ fontSize: 46 }}>A catastrophe bond for floods.</h1>
+          <p>Atlas bond holders take only the remote tail: the losses that come after premiums and community money are used up. In return they earn T-bill interest plus a spread sized to that risk.</p>
         </section>
       </div>
       <div className="page">
@@ -60,24 +60,34 @@ export function InvestPage() {
         </section>
 
         <section className="stack">
-          <h2 className="section-title" style={{ fontSize: 22 }}>What you earn and what you risk</h2>
+          <h2 className="section-title" style={{ fontSize: 22 }}>The bond's terms</h2>
           <div className="steps3" style={{ marginTop: 0 }}>
             <div className="lift">
-              <h3>The return</h3>
-              <p>Every price Atlas quotes includes a charge of about 6% a year on the capital held for risk, set aside to pay bond holders. That is the return this bond is priced to pay.</p>
+              <h3>Where it sits</h3>
+              <p>Premiums pay the expected losses. Community money (seed reserve, saved surplus, sponsor donations) pays the next layer. The bond attaches at <b>40%</b> of total exposure and is used up at <b>90%</b>. Households share anything above that equally.</p>
             </div>
             <div className="lift">
-              <h3>The risk</h3>
-              <p>
-                {harvey
-                  ? <>In a Harvey-sized storm our simulation has bond holders losing about <b>{Math.round(harvey.investor_loss_pct)}%</b> of their capital, after the premium reserve is used up. Households are paid in full first.</>
-                  : "Loading the Harvey stress test…"}
-              </p>
+              <h3>What it pays</h3>
+              <p>T-bill interest plus about <b>4 points</b>, roughly <b>8%</b> a year, paid in aUSD held as collateral. The spread is set at three times the bond's expected loss, the usual cat bond rule of thumb.</p>
             </div>
             <div className="lift">
-              <h3>The demo</h3>
-              <p>This runs on devnet with test dollars. The coupon is part of the price but is not paid out here, so value per unit only moves down when a storm pays out. It does not rise.</p>
+              <h3>What it risks</h3>
+              <p>An expected loss of <b>1.4%</b> a year. You lose some principal in about one year in nine, and in the model never all of it. That works because the bond pools about seven flood markets, not Houston alone.</p>
             </div>
+          </div>
+          <table className="terms" aria-label="Why pooling matters">
+            <thead><tr><th></th><th>Houston alone</th><th>Seven markets pooled</th></tr></thead>
+            <tbody>
+              <tr><td>Expected loss per year</td><td>13.7%</td><td>1.4%</td></tr>
+              <tr><td>Chance of any loss in a year</td><td>19%</td><td>11%</td></tr>
+              <tr><td>Fair coupon (T-bills + 3x expected loss)</td><td>45%</td><td>8%</td></tr>
+            </tbody>
+          </table>
+          <div className="notice info" style={{ fontSize: 14 }}>
+            <b>What is real in this demo.</b> Only Houston is live, so the bond here sits directly behind Houston
+            {harvey ? <> and a Harvey-sized storm would take about <b>{Math.round(harvey.investor_loss_pct)}%</b> of it.</> : "."}{" "}
+            The pooled figures are a simulation: six more graded markets, assumed to flood independently, on 16 to 18 years of
+            public data. Devnet test dollars; the coupon is not paid out here, so value per unit only falls when a storm pays out.
           </div>
         </section>
 

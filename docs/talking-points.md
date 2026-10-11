@@ -68,6 +68,13 @@ city or a reinsurer. We ran Harvey's real flood levels through it: an $837k loss
 - If asked "why would investors take that?": "Because they're only on the hook for the rare, huge
   storm, and they're paid more than it costs on average. Our first version had investors cover
   every bad year; our own data showed they'd lose money in 5 of 10 years, so we moved them up."
+- If asked for numbers: "A cat bond is priced at about three times its expected loss. Our old layer
+  lost 16 to 26% a year on average, so it would need a coupon of 50 to 80%. Pooling seven markets
+  brings the expected loss to 1.4% a year and the coupon to about 8%. Houston alone would need
+  about 45%, so one city can't carry a cat bond; seven can."
+- Be straight about it: "That pooled result is a simulation. We assumed the regions flood
+  independently, it's 16 to 18 years of data, and the three-times multiple is market convention.
+  In the live demo only Houston exists, so the bond behind it would still take a Harvey."
 
 **9b. Readiness (45 s). Laptop, `#/readiness`. The part no one else shows.**
 "Here is the question we think every flood product should answer: if the river crossed the line right

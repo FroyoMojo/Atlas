@@ -126,6 +126,11 @@ input { font: inherit; }
 .replay-stats span { font-size: 13px; color: var(--muted); }
 .replay-admin { display: flex; gap: 8px; }
 
+.terms { width: 100%; border-collapse: collapse; font-size: 15px; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.terms th, .terms td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.terms th { font-size: 13px; color: var(--muted); font-weight: 700; background: var(--bg); }
+.terms td:not(:first-child), .terms th:not(:first-child) { text-align: right; }
+.terms tr:last-child td { border-bottom: 0; }
 .roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 24px 40px 0; }
 .role { display: flex; flex-direction: column; gap: 8px; padding: 20px; text-decoration: none; color: inherit; border: 1px solid var(--line); }
 .role:hover { color: inherit; border-color: var(--navy); }

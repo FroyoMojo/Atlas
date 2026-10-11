@@ -69,6 +69,7 @@ Every check below needs an answer, or the fallback we picked, by **Gate G1 (Hour
 | Oct 10 | `npm run preflight` is the readiness check for the laptop, G3 and judging | One command instead of a checklist; changes nothing | Jesse |
 | Oct 10 | Empty values in `.env.example` have their comment on the line above | python-dotenv reads `KEY=   # note` as the comment text (Node's dotenv doesn't); the engine also ignores comment-only values | Jesse |
 | Oct 10 | Whiteoak is not a demo gauge | Its gauge went dark in Harvey and reported one value, so it never gets two consecutive readings | Both |
+| Oct 11 | **The investor layer is repositioned as a pooled catastrophe bond**, attaching at 40% of exposure and exhausted at 90%, priced at T-bills + 3x expected loss. Old layer (reserve to reserve + K, Houston only): expected loss 16 to 26% a year, fair coupon 50 to 80% (`data/cat_bond_design.py`). Pooling Houston with six A/B graded markets: expected loss 1.4% a year, loses principal in about 1 year in 9, fair coupon about 8% (`data/cat_bond_pooled.py`). Houston alone would need about 45% | At 6% the old bond lost 20 points a year for its holders in expectation, so nobody would buy it. Cost to households is about unchanged ($475k x 8% = $38k a year vs $669k x 6% = $40k). Caveats: regions assumed independent (best case), 16 to 18 years of data, 3x multiple is convention, only Houston is live. Engine pricing (c = 6%) and the demo mechanics are unchanged; the page and docs describe the design | Ezekiel |
 
 ## Audit fixes (Oct 10, about 8 pm)
 

@@ -49,11 +49,11 @@ export function HowPage() {
           </div>
           <div>
             <h3>Where the money comes from</h3>
-            <p>Premiums go into a reserve held by a 2-of-3 multisig. Behind it, bond investors put up capital and earn the premiums in return; they take the loss in a storm like Harvey. If a storm were ever bigger than both, everyone gets the same share right away and the rest when the storm ends. <Link to="/proof">See the numbers →</Link></p>
+            <p>Premiums go into a reserve held by a 2-of-3 multisig. Behind it sits community money (seed reserve, saved surplus, sponsor donations), and behind that a catastrophe bond: investors earn T-bill interest plus a spread and lose principal only in the remote tail. If a storm were ever bigger than all of it, everyone gets the same share right away and the rest when the storm ends. <Link to="/proof">See the numbers →</Link></p>
           </div>
           <div>
             <h3>Three ways to take part</h3>
-            <p><b>Households</b> buy protection and get a fixed payment when the river floods. <b>Sponsors</b> donate to a market on the <Link to="/readiness">Markets</Link> page: it raises how much of every payout is funded and lowers the price, and it earns no return. <b>Investors</b> put money into the <Link to="/invest">bond</Link>, are paid a share of premiums for the risk, and lose first-after-the-reserve in a storm like Harvey.</p>
+            <p><b>Households</b> buy protection and get a fixed payment when the river floods. <b>Sponsors</b> donate to a market on the <Link to="/readiness">Markets</Link> page: it raises how much of every payout is funded and lowers the price, and it earns no return. <b>Investors</b> buy the <Link to="/invest">catastrophe bond</Link>: it takes only the remote tail of flood losses, after premiums and community money, and pays T-bill interest plus a spread for that risk.</p>
           </div>
           <div>
             <h3>This demo</h3>

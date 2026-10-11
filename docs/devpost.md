@@ -82,10 +82,10 @@ where \\( \mathbb{E}[L] \\) is the expected annual loss implied by the priced ra
 **How the money is layered.** Our first design put investors right behind a thin premium reserve, so they took almost every bad year; on our own data that bond lost money in 5 of 10 years, which nobody would buy. The design we're pitching stacks the money in three layers:
 
 1. **Community fund** (premiums plus sponsor donations): pays first and covers ordinary bad years. This is what the readiness meter shows.
-2. **Investors:** only pay once a storm is bigger than the community fund, a Harvey-scale year. Their money is spread across many regions so one flood never wipes them out, and they're paid more each year than that risk costs on average.
+2. **Investors (a catastrophe bond):** attaches at 40% of total exposure and is used up at 90%. It pays T-bill interest plus a spread set at three times its expected loss. Priced on our data, the old structure had an expected loss of 16 to 26% a year, which would need a coupon of 50 to 80%. A bond that pools seven markets (Houston plus six graded candidates, flooding independently) has an expected loss of 1.4% a year, loses some principal in about one year in nine, and needs a coupon of about 8%. Houston alone would need about 45%, which is why Atlas pools markets.
 3. **Public backstop** (a city, state or reinsurer): anything bigger than both.
 
-In the demo, the pool runs a simpler version of this: a reserve, then bond capital.
+The pooled bond is a simulation, not a live product: it assumes the regions flood independently, uses 16 to 18 years of public data, and takes the 3x multiple from market convention. The same cost holds for households: $475k of bond at 8% is about $38k a year, against about $40k today for 6% on $669k. In the demo only Houston is live, so the pool runs a simpler version: a reserve, then bond capital. The figures come from `data/cat_bond_design.py` and `data/cat_bond_pooled.py`.
 
 **Paying fairly in a big storm.** If the pool can't cover everyone at once, everyone in the storm gets the same share, whatever order their gauges cross in. With available funds \\( A \\) (reserve plus bond capital at the start of the run), \\( E_{\text{risk}} \\) the payouts of active policies on gauges under a flood watch when the storm opens, and \\( E_{\text{trig}} \\) the payouts on gauges that actually triggered:
 

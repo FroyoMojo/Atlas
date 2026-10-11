@@ -120,8 +120,8 @@ export function MapPage() {
         </Link>
         <Link to="/invest" className="lift role">
           <span className="role-tag">Investors</span>
-          <b>Earn a return, carry the storm</b>
-          <span>Bond capital sits behind the reserve and is paid for taking the loss in a storm like Harvey.</span>
+          <b>A catastrophe bond for floods</b>
+          <span>Take only the remote tail of flood losses and earn T-bill interest plus a spread sized to that risk.</span>
           <span className="link-row">See the bond →</span>
         </Link>
       </section>
