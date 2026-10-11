@@ -1,5 +1,6 @@
 // Send SOL (for fees) and aUSD from the treasury to every demo wallet.
-// Extra addresses (e.g. your Phantom phone wallet) can be passed as arguments.
+// Extra addresses (e.g. your Phantom phone wallet) can be passed as arguments, each optionally
+// with the aUSD to top up to: `npm run fund -- <address>` (1,000) or `<address>:3000`.
 import { getOrCreateAssociatedTokenAccount, transferChecked } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import { KeyName, connection, loadKeypair, requireState } from "../env.js";
@@ -15,7 +16,12 @@ const plan: { name: string; to: PublicKey; sol: number; ausd: number }[] = [
   })),
   ...(["holder1", "holder2", "holder3"] as KeyName[]).map((n) => ({ name: n, to: loadKeypair(n).publicKey, sol: 0.05, ausd: 1_000 })),
   { name: "investor", to: loadKeypair("investor").publicKey, sol: 0.05, ausd: 20_000 },
-  ...process.argv.slice(2).map((a) => ({ name: "extra", to: new PublicKey(a), sol: 0.05, ausd: 1_000 })),
+  ...process.argv.slice(2).map((a) => {
+    const [addr, amt] = a.split(":");
+    const ausd = amt ? Number(amt) : 1_000;
+    if (!(Number.isFinite(ausd) && ausd > 0)) throw new Error(`bad aUSD amount in ${a}`);
+    return { name: "extra", to: new PublicKey(addr), sol: 0.05, ausd };
+  }),
 ];
 
 for (const p of plan) {
