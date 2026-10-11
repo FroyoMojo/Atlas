@@ -62,10 +62,12 @@ reading that triggered it. Press Verify: your browser fetches the transaction, r
 fingerprint from the USGS reading, and they match. And the money set aside matches the blockchain."
 
 **9. Can it survive another Harvey? (20 s).**
-"The money is stacked in layers. First, the community fund: premiums plus sponsor donations. That
-covers normal bad years. Above it, investors cover only a once-in-a-generation storm like Harvey,
-spread across many cities so one flood never wipes them out. Above that, a public backstop like a
-city or a reinsurer. We ran Harvey's real flood levels through it: an $837k loss, paid in full."
+"The money is stacked in layers. First, the community fund: premiums, the seed reserve and sponsor
+donations. That covers normal bad years. Above it, investors hold a catastrophe bond that only loses
+money in rare, big years, about one year in nine; pooled across seven flood markets it pays about 8%
+for a 1.4% expected loss. If a storm were ever bigger than all of it, every household gets the same
+share; in production a city or reinsurer backs that layer. We ran Harvey's real flood levels through
+it: an $837k loss, paid in full." (If asked: only Houston is live; the pooling is simulated.)
 - If asked "why would investors take that?": "Because they're only on the hook for the rare, huge
   storm, and they're paid more than it costs on average. Our first version had investors cover
   every bad year; our own data showed they'd lose money in 5 of 10 years, so we moved them up."
