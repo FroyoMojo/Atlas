@@ -32,6 +32,16 @@ def readiness(funds: float, owed: float) -> float:
     return min(1.0, max(0.0, funds) / owed)
 
 
+def funding_split(vault: float, bond_nominal: float) -> tuple[float, float]:
+    """Split the vault into (community money, outside capital). The bond is the last layer (7.4:
+    losses hit the reserve first), so outside capital is what remains of the nominal bond, up to
+    the vault, and everything above it is community money (seed reserve, premiums, donations).
+    After payouts that exhaust the reserve, community money is zero and the bond is what is left."""
+    vault = max(0.0, vault)
+    outside = min(vault, max(0.0, bond_nominal))
+    return vault - outside, outside
+
+
 def premium(payout: float, lam: float, t_years: float, theta: float, c: float, k: float,
             minimum: float = 0.0, *, readiness_c: float = 0.0, expense: float = 0.0) -> float:
     """pi = E[L](1 + theta) + c k t, with E[L] = B (1 - e^{-lambda t}) (7.2).

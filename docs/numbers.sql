@@ -118,3 +118,36 @@ ORDER BY r.gauge_id;
 -- name: 8_demo_gauges_and_triggers
 SELECT gauge_id, name, trigger_ft, nws_flood_ft AS nws_minor_ft, record_start, demo_ready
 FROM gauges ORDER BY demo_ready DESC, gauge_id;
+
+-- ---------------------------------------------------------------------------------------------
+-- Readiness Markets (docs/readiness.md). Price when a share r of the promised payouts is already
+-- covered by community money (seed reserve, premiums, donated sponsor funds, never the bond):
+--   price(r) = max( E[L] / (1 - e),  E[L] (1 + theta (1 - r)) + c k t (1 - r) ),  E[L] = B (1 - e^-lambda t)
+-- The demo sequence (price per buyer as the pool stretches, run 1 and run 2 payouts) is run, not
+-- queried, by:  python data/demo_sizing.py 4 600 300 brays
+-- ---------------------------------------------------------------------------------------------
+
+-- name: 9_readiness_price_curve_500_aUSD_90_days
+WITH cap AS (SELECT greatest(worst_year, harvey) - model_mean AS capital, exposure FROM v_capital),
+x AS (
+  SELECT r.gauge_id, r.name, r.lam, p.theta, p.c, p.e, p.term_y, 500 * (1 - exp(-r.lam * p.term_y)) AS el,
+         p.c * (cap.capital * 500 / cap.exposure) * p.term_y AS cap_charge
+  FROM v_rates r, v_params p, cap WHERE r.gauge_id IN (SELECT gauge_id FROM gauges WHERE demo_ready))
+SELECT gauge_id, name, round(lam, 4) AS lam,
+       round(greatest(el / (1 - e), el * (1 + theta) + cap_charge), 2) AS price_0pct_ready,
+       round(greatest(el / (1 - e), el * (1 + theta * 0.5) + cap_charge * 0.5), 2) AS price_50pct_ready,
+       round(greatest(el / (1 - e), el), 2) AS price_100pct_ready,
+       round(100 * (1 - greatest(el / (1 - e), el) / (el * (1 + theta) + cap_charge)), 0) AS pct_cheaper_when_ready
+FROM x ORDER BY gauge_id;
+
+-- name: 10_graded_candidate_markets (simulated: priced and graded, nothing is sold there)
+SELECT site, name, region, trigger_ft, stage_label, exceedances || ' of ' || years AS years_triggered,
+       round(100.0 * exceedances / years) AS pct_of_years, grade, note
+FROM candidate_markets ORDER BY grade, site;
+
+-- name: 11_demo_pool_arithmetic (SNAPSHOT_VAULT 600 = seed 300 + bond 300; 4 policies of 500; premiums about 77 in)
+SELECT 600 AS snapshot_vault, 300 AS seed_reserve, 300 AS bond, 4 * 500 AS owed_usd,
+       round(100.0 * (600 + 77.23) / (4 * 500)) AS readiness_run1_pct,
+       round(500 * (600 + 77.23) / (4 * 500), 2) AS paid_each_run1,
+       round(4 * 500 - (600 + 77.23), 2) AS donation_to_reach_100pct,
+       500 AS paid_each_run2;

@@ -115,3 +115,25 @@ def test_readiness_pricing_band_brackets_the_point_premium():
     assert lo <= point <= hi
     lo2, hi2 = pricing.bootstrap_band(flags, 500, t, th, c, k, readiness_c=1.0, expense=0.10)
     assert lo2 <= lo and hi2 <= hi                          # cheaper at every percentile when more ready
+
+
+def test_funding_split_uses_the_vault_and_treats_the_bond_as_the_last_layer():
+    # demo sizing: vault 1000 = seed reserve 300 + bond 700
+    assert pricing.funding_split(1000, 700) == (300, 700)
+    assert pricing.funding_split(2000, 700) == (1300, 700)     # a 1000 donation is community money
+    assert pricing.funding_split(1090, 700) == (390, 700)      # premiums too
+    assert pricing.funding_split(500, 700) == (0, 500)          # reserve gone, bond partly used
+    assert pricing.funding_split(0, 700) == (0, 0)              # drained after payouts
+    assert pricing.funding_split(-3, 700) == (0, 0)
+
+
+def test_demo_sequence_readiness_and_payouts():
+    """The demo (docs/readiness.md): four $500 policies, vault 1000, then a 1000 donation."""
+    owed = 4 * 500.0
+    r1 = pricing.readiness(1000, owed)
+    assert r1 == 0.5 and 500 * r1 == 250                          # run 1: each household is paid $250
+    r2 = pricing.readiness(2000, owed)
+    assert r2 == 1.0 and 500 * r2 == 500                          # after the donation: the full $500
+    c1, _ = pricing.funding_split(1000, 700)
+    c2, _ = pricing.funding_split(2000, 700)
+    assert pricing.readiness(c1, owed) == 0.15 and pricing.readiness(c2, owed) == 0.65   # price drivers

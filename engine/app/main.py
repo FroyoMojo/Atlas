@@ -327,14 +327,20 @@ def funding_state() -> dict:
     """Money standing behind the promises right now, by where it came from. Community money is the
     seeded reserve, premiums and donated sponsor funds; outside capital is the bond, which expects a
     return. Losses hit the reserve before the bond (7.4), as in /pool."""
-    run = data_run(None)
     every = ledger_sums()
-    paid = run_payouts(run["run_id"]) if run else 0.0
-    reserve_in = settings.SEED_RESERVE + every.get("premiums", 0) + every.get("donations", 0)
-    bond_in = (settings.SNAPSHOT_VAULT - settings.SEED_RESERVE) + every.get("bond", 0)
-    w = pricing.waterfall(paid, reserve_in, bond_in)
-    community, outside = reserve_in - w.reserve_used, bond_in - w.bond_used
-    return {"community": community, "outside": outside, "funds": community + outside,
+    bond_nominal = (settings.SNAPSHOT_VAULT - settings.SEED_RESERVE) + every.get("bond", 0)
+    bal = chain_balances()
+    if bal and bal.get("vault") is not None:
+        vault, source = float(bal["vault"]), "chain"        # ground truth: the vault's real balance
+    else:
+        # Chain unreachable: estimate from the ledger, the way /pool does.
+        run = data_run(None)
+        paid = run_payouts(run["run_id"]) if run else 0.0
+        reserve_in = settings.SEED_RESERVE + every.get("premiums", 0) + every.get("donations", 0)
+        w = pricing.waterfall(paid, reserve_in, bond_nominal)
+        vault, source = (reserve_in - w.reserve_used) + (bond_nominal - w.bond_used), "ledger estimate"
+    community, outside = pricing.funding_split(vault, bond_nominal)
+    return {"community": community, "outside": outside, "funds": community + outside, "source": source,
             "seed": settings.SEED_RESERVE, "premiums": every.get("premiums", 0),
             "donations": every.get("donations", 0)}
 
@@ -405,10 +411,14 @@ def readiness_view():
     return {
         "pricing_mode": "readiness" if settings.READINESS_PRICING else "standard",
         "pool": {"readiness": round(r, 4), "community_readiness": round(r_c, 4), "owed_usd": round(owed_total, 2),
-                 "funds_usd": round(fs["funds"], 2),
-                 "funding": {"seed_reserve": round(fs["seed"], 2), "household_premiums": round(fs["premiums"], 2),
-                             "sponsor_donations": round(fs["donations"], 2),
-                             "outside_capital": round(fs["outside"], 2)},
+                 "funds_usd": round(fs["funds"], 2), "funds_source": fs["source"],
+                 # What the pool could pay in full today: with nothing sold, readiness reads 100%, so
+                 # the page should say "can fully fund $X of cover" and how much is sold already.
+                 "fully_funded_cover_usd": round(fs["funds"], 2), "cover_sold_usd": round(owed_total, 2),
+                 "funding": {"community_money": round(fs["community"], 2), "outside_capital": round(fs["outside"], 2),
+                             "contributed": {"seed_reserve": round(fs["seed"], 2),
+                                             "household_premiums": round(fs["premiums"], 2),
+                                             "sponsor_donations": round(fs["donations"], 2)}},
                  "payout_if_fired_per_500": round(500 * r, 2)},
         "markets": out,
         "assumptions": [
