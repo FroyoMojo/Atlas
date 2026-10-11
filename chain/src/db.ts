@@ -193,6 +193,7 @@ export async function policiesByOwner(owner: string) {
             (SELECT json_build_object('amount', i.amount, 'kind', i.kind, 'tx_sig', i.tx_sig, 'at', i.confirmed_wall)
                FROM payout_intents i
               WHERE i.policy_mint = p.policy_mint AND i.status = 'confirmed'
+                AND p.paid_amount > 0 -- Reset zeroes paid_amount: a payout from an earlier run is not this policy's payout now
               ORDER BY i.confirmed_wall DESC LIMIT 1) AS last_payout
      FROM policies p LEFT JOIN gauges g ON g.gauge_id = p.gauge_id
      WHERE p.owner = $1 ORDER BY p.starts_at DESC`,
