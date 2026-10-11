@@ -6,8 +6,8 @@ export const config = {
   engineUrl: e.VITE_ENGINE_URL || "/engine", // an empty value means the default, not the site root
   chainUrl: e.VITE_CHAIN_URL ?? "",
   // Harvey footage on the landing page: a YouTube video id, and the second to start at.
-  footageId: e.VITE_FOOTAGE_ID ?? "",
-  footageStart: Number(e.VITE_FOOTAGE_START ?? 0) || 0,
+  footageId: e.VITE_FOOTAGE_ID || "rg-L9su5ygI",
+  footageStart: Number(e.VITE_FOOTAGE_START) || 601,
   rpcUrl: e.VITE_RPC_URL ?? "https://api.devnet.solana.com",
   ausdMint: e.VITE_AUSD_MINT ?? "",
   explorerCluster: e.VITE_EXPLORER_CLUSTER ?? "devnet",

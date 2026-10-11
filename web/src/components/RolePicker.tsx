@@ -83,6 +83,7 @@ export function AccountPanels() {
   async function logOut() {
     await signOut();
     setRole(null);
+    try { localStorage.removeItem("atlasRole:anon"); } catch { /* storage blocked */ }
     close();
     navigate("/");
   }

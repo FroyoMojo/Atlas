@@ -1,89 +1,103 @@
 # Atlas: emergency money when your neighborhood floods
 
-**Live: [atlasflood.us](https://atlasflood.us)** · Solana devnet, test dollars
+**Live: [atlasflood.us](https://atlasflood.us)** · Solana devnet, test dollars · Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Jesse (finance, chain, product, hosting) and Ezekiel (data and risk)
 
-When the river gauge next to your Houston neighborhood reaches the official flood level, Atlas sends you $500 in seconds, with a public receipt of the reading that triggered it. No claim, no adjuster, no waiting weeks. Demo: a replay of Hurricane Harvey's real 2017 river data.
+When the river gauge next to your Houston neighborhood reaches the official flood level, Atlas sends you $500 in seconds, with a public receipt of the reading that triggered it. No claim, no adjuster, no waiting weeks. The demo replays Hurricane Harvey's real 2017 river data, five days in about 90 seconds.
 
-> **Status:** hosted on Vultr at atlasflood.us (Caddy, systemd, `deploy/vultr/`), with the laptop setup as the fallback.
+## The idea
 
-Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Ezekiel (data and risk) and Jesse (chain, product and hosting).
+Maria rents in Meyerland. Her renters' insurance doesn't cover flooding, and aid takes weeks. When Brays Bayou crosses flood level, $500 lands on her phone before the water goes down: a hotel room, food and a missed shift in the first nights, when nothing else pays.
 
-## The pitch
-
-Maria rents in Meyerland. When her bayou crosses flood stage, $500 lands on her phone before the water goes down. That pays for a hotel, food and a missed shift in the first 72 hours, when nothing else pays.
-
-Atlas sells a small policy tied to the nearest stream gauge. If that gauge crosses a set flood level during the term, every covered household near it gets a fixed payout automatically. There is no claim form and no adjuster. Atlas covers immediate needs only. It does not pay for property damage or replace flood insurance.
+Atlas covers immediate needs only. It is not property insurance and does not replace it.
 
 ## How it works
 
-1. Gauge readings (USGS) go into **Tiger Data** hypertables. Decades of history price each policy.
-2. When a gauge has two consecutive readings at or above its trigger level, the engine opens an event and stores a hash of the exact reading.
-3. The first event in a run opens a **storm**. A payout bot pays every active policy on that gauge an interim share in test stablecoin (`aUSD`) on **Solana devnet**, writes the evidence hash in a Memo, and marks the policy `PAID`.
-4. When the storm closes, everyone gets a true-up to the same final share. Losses come out of a premium reserve first, then a catastrophe bond token whose NAV falls. Every money movement is a ledger row that reconciles with the chain after each run.
-5. For the demo, a **Harvey replay** plays the 2017 flood peak through the full pipeline in about 90 seconds.
+1. **Protect your address.** Type a ZIP or pick a neighborhood. Protection is $500 for 90 days, priced from that river's own record (about $20 a quarter in Meyerland, $58 in Spring). One policy per household, and a 7-day wait so nobody buys with the storm on the radar. Sales also close when the National Weather Service issues a flood watch.
+2. **The river decides.** USGS gauges report every 15 minutes into **Tiger Data**. Two readings in a row at or above the NWS moderate flood level (42 ft on Brays Bayou) open an event, and the engine stores a SHA-256 hash of that exact reading.
+3. **Money in seconds.** A payout bot sends test dollars (`aUSD`) to every protected wallet on that gauge on **Solana devnet**, with the evidence hash in a Memo. Anyone can check a payout in their browser against the recorded reading.
+4. **Readiness, in public.** Every market shows how much of its promised $500 is funded right now ("if it flooded this minute you would get $169"). Sponsors can close the gap from a phone, and the price falls as community money fills the pool.
+5. **Money in layers.** The community fund (premiums, a seed reserve, donations) pays first. A catastrophe bond takes only the rare, big years. Anything beyond both is shared equally. A Harvey-sized loss on a simulated 2,000-policy book ($837k) is paid in full.
+6. **Books match the chain.** Every money movement is a double-entry ledger row in Tiger and is reconciled against on-chain balances after each run.
 
-Architecture diagram: [build plan v3.1](docs/plan/Atlas_Build_Plan_v3.1.pdf), section 2.
+## Where to look in the code
+
+| What | Where |
+| --- | --- |
+| Trigger rule, replay and storms | [`engine/app/replay.py`](engine/app/replay.py) |
+| Pricing, readiness, capital and the loss waterfall | [`engine/app/pricing.py`](engine/app/pricing.py), [`engine/app/markets.py`](engine/app/markets.py) |
+| Sales freeze on NWS watches | [`engine/app/freeze.py`](engine/app/freeze.py) |
+| Evidence hash, same bytes in Python, TypeScript and the browser | [`docs/evidence.md`](docs/evidence.md), [`engine/app/evidence.py`](engine/app/evidence.py), [`chain/src/lib/memo.ts`](chain/src/lib/memo.ts), [`web/src/evidence.ts`](web/src/evidence.ts) |
+| Payout bot (interim payment, then true-up) | [`chain/src/bot/payout-bot.ts`](chain/src/bot/payout-bot.ts) |
+| Non-transferable Token-2022 policies, atomic purchase | [`chain/src/lib/policy.ts`](chain/src/lib/policy.ts), [`chain/src/server/index.ts`](chain/src/server/index.ts) |
+| Squads 2-of-3 vault, bond token, donations | [`chain/src/lib/squads.ts`](chain/src/lib/squads.ts), [`chain/src/lib/bond.ts`](chain/src/lib/bond.ts), [`chain/src/lib/donation.ts`](chain/src/lib/donation.ts) |
+| Ledger and reconciliation | [`chain/src/lib/ledger.ts`](chain/src/lib/ledger.ts), [`docs/api.md`](docs/api.md) |
+| Verify a payout in the browser | [`web/src/useVerify.ts`](web/src/useVerify.ts) |
+| Tiger schema (hypertables, continuous aggregates, columnstore) | [`engine/sql/schema.sql`](engine/sql/schema.sql) |
+| USGS loader and the risk studies behind the numbers | [`data/`](data/README.md) |
+| Tests | [`engine/tests/`](engine/tests), [`data/tests/`](data/tests) |
 
 ## Tracks
 
 | Track | How Atlas uses it |
 | --- | --- |
-| Best Overall | The full product |
-| Best Pitch/Demo | Business case: an engine for insurers, city programmes and nonprofits |
-| Best Environment Hack | Climate adaptation that protects a local community from flooding |
-| Best Use of Solana | Non-transferable Token-2022 policies, atomic purchase, Squads multisig vault, payout bot with intents, Memo evidence, catastrophe bond token |
-| Best Use of Tiger Data | Hypertables, continuous aggregates, columnstore, event and storm state, money ledger, pricing scenarios, replay engine |
-| Best Domain Name from GoDaddy Registry | `atlasflood.us` (.us is a GoDaddy Registry domain) |
-| Best Use of Vultr | The whole stack (engine, chain service, payout bot, dashboard) on one Vultr instance behind Caddy |
+| Best Overall | The full product, live |
+| Best Pitch/Demo | Harvey replay with live payouts and the readiness meter |
+| Best Environment Hack | Climate adaptation: money for the first nights of a flood, for people flood insurance misses |
+| Best Use of Solana | Non-transferable Token-2022 policies, one-transaction purchase, Squads multisig vault, payout bot with Memo evidence, catastrophe bond token |
+| Best Use of Tiger Data | 6.5M+ readings in hypertables, 6.5x columnstore compression, continuous aggregates, event and storm state, a double-entry money ledger, the replay engine |
+| Best Domain Name from GoDaddy Registry | `atlasflood.us` |
+| Best Use of Vultr | The whole stack (engine, chain service, payout bot, web app) on one Vultr server behind Caddy |
 
 ## Repo layout
 
 ```
-chain/    Solana side (TypeScript): setup scripts, chain service, payout bot      [built]
-web/      Dashboard and phone view (Vite + React)                              [built]
-deploy/   Hosting: vultr/ (current) and the laptop fallback; gateway code in chain/src/gateway
-tools/    g2_storm.py: opens a storm directly (true-up rehearsal)              [built]
-docs/     Plan, API contract, evidence format, decisions, demo, guides
-data/     USGS loader: gauges, annual peaks, Harvey window (Python)            [built; live poller: Ezekiel]
-engine/   FastAPI over Tiger: schema, read API, pricing, replay streamer, storms  [built]
+engine/   FastAPI over Tiger: schema, read API, pricing, readiness, replay, storms
+chain/    Solana side (TypeScript): chain service, payout bot, gateway, setup scripts
+web/      The app at atlasflood.us (Vite + React): map, buy, my protection, markets, invest, proof
+data/     USGS loader and the risk studies (pricing, grades, catastrophe bond, Harvey)
+deploy/   Hosting: deploy/vultr (live) and a laptop fallback
+tools/    Rehearsal helper for the payout true-up
+docs/     Design docs and the team's hackathon notes (below)
 ```
+
+## Run it
+
+- Engine: [engine/README.md](engine/README.md)
+- Data loader: [data/README.md](data/README.md)
+- Chain service and payout bot: [chain/README.md](chain/README.md)
+- Web app: [web/README.md](web/README.md)
+- Hosting: [deploy/vultr/README.md](deploy/vultr/README.md) (laptop fallback: [deploy/README.md](deploy/README.md), [deploy/WINDOWS.md](deploy/WINDOWS.md))
+- Configuration: [.env.example](.env.example) and [web/.env.example](web/.env.example)
 
 ## Docs
 
+**Design**
+
 | File | What it is |
 | --- | --- |
-| [docs/handoff.md](docs/handoff.md) | **Start here.** Status, owners, next steps |
-| [docs/plan/Atlas_Build_Plan_v3.1.pdf](docs/plan/Atlas_Build_Plan_v3.1.pdf) | The original build plan (LaTeX source alongside; older versions in `docs/plan/archive/`). Product changes since: [decisions.md](docs/decisions.md), [readiness.md](docs/readiness.md) |
+| [docs/plan/Atlas_Build_Plan_v3.1.pdf](docs/plan/Atlas_Build_Plan_v3.1.pdf) | The build plan we started from: architecture, money model, limitations (older versions in `docs/plan/archive/`) |
+| [docs/decisions.md](docs/decisions.md) | Every decision since the plan, with its reason |
+| [docs/readiness.md](docs/readiness.md) | Readiness markets: spec, demo runbook, what we may claim |
 | [docs/api.md](docs/api.md) | API contract, who writes which table, ledger entries, reconciliation |
-| [docs/evidence.md](docs/evidence.md) | Canonical evidence preimage, code in both languages, test vector |
-| [docs/decisions.md](docs/decisions.md) | Gate G1 checks and every decision with its reason |
-| [docs/demo.md](docs/demo.md) | 90-second and 4-minute demo scripts, judge Q&A |
-| [docs/phone-test.md](docs/phone-test.md) | Phantom test that picks purchase Flow A or B |
-| [docs/criteria.md](docs/criteria.md) | Hackathon rules, tracks and judging criteria |
-| [docs/morning.md](docs/morning.md) | **Oct 11 morning runbook:** overnight changes and the steps to submission |
-| [docs/checklist.md](docs/checklist.md) | Submission checklist: what is done, what is left |
-| [docs/readiness.md](docs/readiness.md) | Readiness Markets: spec, demo runbook, what we may claim |
-| [docs/devpost.md](docs/devpost.md) | Devpost text (pitch and "About the project") |
-| [docs/talking-points.md](docs/talking-points.md) | Live judging walkthrough, Q&A, video script |
-| [deploy/vultr/README.md](deploy/vultr/README.md) | **Hosting (current): the Vultr server at atlasflood.us** |
-| [deploy/WINDOWS.md](deploy/WINDOWS.md) | Fallback: the demo laptop (Windows), step by step |
-| [deploy/README.md](deploy/README.md) | Fallback: laptop + Cloudflare Tunnel (macOS/Linux) |
+| [docs/evidence.md](docs/evidence.md) | The evidence hash format, with a test vector |
+| [docs/numbers.sql](docs/numbers.sql) | The queries behind every number in the pitch |
 
-## Run
+**Hackathon notes** (how we worked; kept as a record)
 
-- Engine (FastAPI, schema, replay streamer): [engine/README.md](engine/README.md)
-- USGS loader (gauges, peaks, Harvey window): [data/README.md](data/README.md)
-- Chain service and payout bot: [chain/README.md](chain/README.md)
-- Dashboard and phone view: [web/README.md](web/README.md)
-- Hosting: [deploy/vultr/README.md](deploy/vultr/README.md) (fallback: [deploy/README.md](deploy/README.md))
-- Configuration: [.env.example](.env.example) (server) and [web/.env.example](web/.env.example)
+| File | What it is |
+| --- | --- |
+| [docs/devpost.md](docs/devpost.md) | Devpost submission text |
+| [docs/talking-points.md](docs/talking-points.md) | Judging walkthrough, Q&A, video script |
+| [docs/demo.md](docs/demo.md) | Earlier demo scripts |
+| [docs/handoff.md](docs/handoff.md) | Status and owners between shifts |
+| [docs/checklist.md](docs/checklist.md), [docs/morning.md](docs/morning.md) | Submission-day checklist and runbook |
+| [docs/phone-test.md](docs/phone-test.md) | The Phantom test that picked the purchase flow |
+| [docs/criteria.md](docs/criteria.md) | Hackathon rules and judging criteria |
 
-## Limitations (short version)
+## Limitations
 
-- **Basis risk:** payouts follow a gauge, not your property.
-- **Devnet and test money only.** Not a licensed insurance product; the bond token would likely be a security.
-- **Off-chain decision:** the payout bot decides to pay. The Memo makes that decision auditable, not enforced.
+- **Basis risk:** payouts follow a gauge, not your house. A street can flood while its gauge stays below the line, and the reverse.
+- **Devnet and test money only.** This is not a licensed insurance product, and the bond token would likely be a security. Going live needs a licensed partner.
+- **Off-chain decision:** the payout bot decides to pay. The Memo makes that decision checkable, not enforced; an on-chain program and oracle are the next step.
+- **Simulated pieces:** catastrophe numbers come from a simulated 2,000-policy book, and the bond pooled across seven markets is a simulation. Only the four Houston areas are live.
 - **No cash-out:** turning aUSD into money in a bank account is out of scope.
-- **Simulated book:** catastrophe numbers come from a simulated 2,000-policy portfolio; on-chain capital is seeded test money.
-
-The full list is in the build plan, section 13.
