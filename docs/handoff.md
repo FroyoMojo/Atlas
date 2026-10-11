@@ -71,7 +71,7 @@ Fill these in as they are created. Public addresses only; never paste private ke
 | Item | Value |
 | --- | --- |
 | Hosted URL | |
-| Domain | |
+| Domain | `atlasflood.us` (Porkbun, via the MLH GoDaddy Registry offer; expires 2027-10-11). DNS: A records to the Vultr IP, once the server exists |
 | Tunnel URL (trycloudflare) | |
 | Tiger Cloud service | (connection string in `.env` only) |
 | `aUSD` mint | `8rcNwXHnYbUG9Nm9gb3dXEJujPXsdkQAnCiL8UbnBbxo` |
