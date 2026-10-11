@@ -101,17 +101,53 @@ insurer) to offer it, and an on-chain program so no server decides to pay."
 
 ## Demo video script (about 2 minutes 30)
 
-Record the screen at 1440 wide with the phone mirrored on the right. Voice over, calm and plain.
+Record the screen at 1440 wide with the phone mirrored on the right. Talk like you're showing a
+friend, not reading. It's fine to paraphrase; the bracketed lines say what's on screen.
 
-| Time | Screen | Say |
-| --- | --- | --- |
-| 0:00 to 0:15 | Map hero, "Emergency money when your neighborhood floods." | "In 2017 Hurricane Harvey flooded Houston overnight. Renters waited weeks for help. Atlas is emergency money for the first days of a flood." |
-| 0:15 to 0:45 | `#/protect`: type 77096, green check, pick $500, $22.50, open "Why $22.50?", confirm in Phantom | "Type where you live. Meyerland is covered: we pay when Brays Bayou reaches 42 feet, the official flood level. Five hundred dollars of protection is $22.50 for 90 days, priced from 19 years of USGS river data. One tap in your wallet." |
-| 0:45 to 0:55 | Phone: You're protected, river at 17 ft vs 42 ft | "Now you're protected. Nothing else to do." |
-| 0:55 to 1:35 | Map: press Start replay; dots turn orange then red; live feed fills | "This is Hurricane Harvey's real river data, five days replayed in 90 seconds. Gauges turn orange as the water rises, and red when they cross flood level. Brays Bayou crosses 42 feet..." |
-| 1:35 to 1:50 | Phone flips to "Flood detected · We've sent you $500" | "...and five hundred dollars lands on the phone, in seconds, with what to do right now." |
-| 1:50 to 2:15 | Proof page: press Verify on the payout, green Verified sentence; money card | "Every payout is on Solana with a fingerprint of the river reading that triggered it. Your browser recomputes it and checks the match. The books match the chain." |
-| 2:15 to 2:30 | Proof: Harvey stress test; end on the map | "A Harvey-sized year is paid in full: premiums first, then catastrophe-bond investors. Atlas: emergency money when your neighborhood floods. atlasflood.us." |
+**[Map, top of the page]**
+So in 2017, Hurricane Harvey flooded a huge part of Houston, a lot of it overnight. And if you
+were renting, you were mostly on your own. Renters' insurance usually doesn't cover floods, and
+the aid that does come takes weeks. But you need a hotel room that night.
 
-Tips: do one dry run first; keep the cursor still while talking; if a step lags, cut it in editing
-rather than re-recording everything.
+That's what Atlas is for. It's a small payment that shows up as soon as your neighborhood floods.
+
+**[Get protected: type 77096]**
+Here's how you sign up. I'll put in a Meyerland ZIP code. It goes green, so I'm covered, and it
+tells me exactly what would pay me: Brays Bayou hitting 42 feet. That's the flood level the
+National Weather Service already uses.
+
+**[Pick $500, open "Why $22.50?"]**
+Five hundred dollars of protection is twenty-two fifty for three months. And it shows you why:
+that river has hit that level twice in the last nineteen years.
+
+**[Confirm in Phantom; the phone shows "You're protected"]**
+One tap in my wallet, and that's it. My phone says I'm protected, and I can see the river is
+nowhere near the line right now.
+
+**[Map: press Start replay]**
+Now let's see what happens in a real flood. This is Harvey's actual river data from 2017, five
+days of it, sped up to about a minute and a half.
+
+**[Dots turn orange, then red; the feed fills]**
+Each dot is a river gauge. They go orange as the water rises... and Brays just crossed 42 feet.
+
+**[Phone: "We've sent you $500"]**
+And there it is on the phone. Five hundred dollars, already in the wallet. Nobody filed a claim
+and nobody had to approve it. It also tells you what to do next: call 911 if you're in danger,
+find a shelter, and go get a room.
+
+**[Proof page: press Verify]**
+The fair question is why anyone should trust that. Every payment is on Solana with a fingerprint
+of the exact river reading that triggered it. When I hit Verify, my browser checks that
+fingerprint itself. It matches.
+
+**[Proof page: the Harvey section]**
+And we tested the money side against another Harvey. A storm that size is paid in full: premiums
+cover the first part, and investors who signed up for that risk cover the rest.
+
+**[Back to the map]**
+That's Atlas. When your neighborhood floods, the money's already on its way. You can try it at
+atlasflood.us.
+
+Tips: do one dry run first and keep the cursor still while you talk. If one part lags, cut it in
+editing instead of re-recording the whole thing.
