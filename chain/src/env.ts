@@ -41,6 +41,7 @@ export const env = {
   // The only payout amounts the buy endpoints accept (the dashboard offers these).
   payoutOptions: (process.env.PAYOUT_OPTIONS ?? "250,500").split(",").map(Number).filter((n) => Number.isFinite(n) && n > 0),
   maxBondDeposit: Number(process.env.MAX_BOND_DEPOSIT ?? 100_000),
+  maxDonation: Number(process.env.MAX_DONATION || 2_000), // largest single sponsor donation in aUSD
   botPollMs: Number(process.env.BOT_POLL_MS ?? 2_000),
 };
 

@@ -17,6 +17,7 @@ import { InvestPage } from "./pages/InvestPage";
 import { MapPage } from "./pages/MapPage";
 import { MyPage } from "./pages/MyPage";
 import { ProofPage } from "./pages/ProofPage";
+import { ReadinessPage } from "./pages/ReadinessPage";
 
 // Old links (#/gauge/:id from Blinks and policy metadata) land on the new pages.
 function GaugeRedirect() {
@@ -39,6 +40,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/gauge/:id" element={<GaugeRedirect />} />
                 <Route path="/me" element={<MyPage />} />
                 <Route path="/proof" element={<ProofPage />} />
+                <Route path="/readiness" element={<ReadinessPage />} />
                 <Route path="/pool" element={<Navigate to="/proof" replace />} />
                 <Route path="/verify" element={<ProofPage />} />
                 <Route path="/invest" element={<InvestPage />} />

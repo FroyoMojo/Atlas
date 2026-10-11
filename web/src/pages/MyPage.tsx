@@ -27,6 +27,7 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
 
   const { data: policies, error } = usePoll(() => (owner ? api.policies(owner) : Promise.resolve([] as Policy[])), 1500, [owner]);
   const { data: gauges } = usePoll(() => api.gauges(runId), 2000, [runId]);
+  const { data: ready } = usePoll(() => api.readiness().catch(() => null), 5000);
   const { data: balance } = usePoll(
     async () => {
       if (!owner || !config.ausdMint) return null;
@@ -185,6 +186,12 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
               <div className="tile"><span>Pays out</span><b>{usd(active.payout)}</b></div>
               <div className="tile"><span>Days left</span><b>{daysLeft}</b></div>
             </div>
+            {ready && ready.pool.readiness < 0.999 && (
+              <div className="notice info" style={{ fontSize: 14 }}>
+                The pool is {Math.round(ready.pool.readiness * 100)}% ready: if a flood hit today, expect{" "}
+                <b>{usd(active.payout * ready.pool.readiness)} of {usd(active.payout)}</b>. <Link to="/readiness">How to close the gap →</Link>
+              </div>
+            )}
             <div className="list">
               <Link to="/how#if-it-floods">What to do if it floods <span>→</span></Link>
               <a href={explorer(active.policy_mint, "address")} target="_blank" rel="noreferrer">Your policy on Solana <span>→</span></a>

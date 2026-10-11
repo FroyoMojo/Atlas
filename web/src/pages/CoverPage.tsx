@@ -121,6 +121,16 @@ export function CoverPage() {
               <span style={gauge ? undefined : { color: "#98A2B3" }}>{termDays} days</span>
               <b style={gauge ? undefined : { color: "#98A2B3" }}>{gauge && quote ? price(quote.premium) : "–"}</b>
             </div>
+            {gauge && quote?.readiness != null && (
+              <div className="notice info" style={{ fontSize: 14 }}>
+                The pool is <b>{Math.round(quote.readiness * 100)}% ready</b>: if a flood hit today you'd get{" "}
+                <b>{price(payout * quote.readiness)}</b> of ${payout}.
+                {quote.premium_if_ready != null && quote.premium_if_ready < quote.premium - 0.005 && (
+                  <> The price falls to <b>{price(quote.premium_if_ready)}</b> as the neighborhood gets fully ready.</>
+                )}{" "}
+                <Link to="/readiness">See readiness →</Link>
+              </div>
+            )}
             {gauge || !notCovered ? (
               <button className="btn btn-primary btn-block" onClick={buy} disabled={!gauge || !open || buying}>
                 {buying ? "Confirm in your wallet…" : !publicKey && gauge ? "Connect wallet to continue" : "Get protected"}

@@ -33,6 +33,11 @@ export interface Quote {
   lambda_iv?: number | null;
   years?: number;
   exceedances?: number;
+  // Readiness Markets (docs/readiness.md)
+  readiness?: number; // share of each payout funded right now, with this policy added
+  community_readiness?: number;
+  premium_if_ready?: number;
+  readiness_pricing?: boolean;
 }
 
 export interface Pool {
@@ -115,4 +120,44 @@ export interface Policy {
   status: "ACTV" | "PAID" | "EXPD";
   paid_amount: number;
   last_payout: { amount: number; kind: "interim" | "trueup"; tx_sig: string; at: string } | null;
+}
+
+/** GET /readiness (docs/readiness.md): funded status per market. */
+export interface ReadinessMarket {
+  market_id: string;
+  name: string;
+  region?: string;
+  kind: "live" | "simulated";
+  simulated: boolean;
+  grade: "A" | "B" | "C";
+  grade_reasons: string[];
+  years: number;
+  exceedances: number;
+  trigger_ft: number;
+  stage_label?: string;
+  policies: number;
+  households_assumed?: number;
+  owed_usd: number;
+  readiness: number;
+  expected_payout_per_500: number;
+  shortfall_per_500: number;
+  gap_usd: number;
+  gap_per_household: number | null;
+  price_standard: number;
+  price_now: number;
+  price_if_ready: number;
+}
+
+export interface Readiness {
+  pricing_mode: "readiness" | "standard";
+  pool: {
+    readiness: number;
+    community_readiness: number;
+    owed_usd: number;
+    funds_usd: number;
+    funding: { seed_reserve: number; household_premiums: number; sponsor_donations: number; outside_capital: number };
+    payout_if_fired_per_500: number;
+  };
+  markets: ReadinessMarket[];
+  assumptions: string[];
 }

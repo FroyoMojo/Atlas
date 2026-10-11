@@ -12,6 +12,7 @@ export function Layout() {
             <nav className="nav-links" aria-label="Main">
               <NavLink to="/" end>Map</NavLink>
               <NavLink to="/me">My protection</NavLink>
+              <NavLink to="/readiness">Readiness</NavLink>
               <NavLink to="/proof">Proof</NavLink>
               <NavLink to="/how">How it works</NavLink>
             </nav>
