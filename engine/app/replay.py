@@ -103,7 +103,7 @@ class Replay:
     def __init__(self, run_id: str, stop: threading.Event | None = None, seconds: float | None = None):
         self.run_id = run_id
         self.stop = stop or threading.Event()
-        self.seconds = seconds if seconds is not None else float(settings.env_str("REPLAY_SECONDS") or 90)
+        self.seconds = seconds if seconds is not None else float(settings.env_str("REPLAY_SECONDS") or 64)
         self.max_jump = float(settings.env_str("REPLAY_MAX_JUMP_FT") or 5)
         self.force_f_int = settings.env_str("FORCE_F_INT") or None
         self.storm: Storm | None = None

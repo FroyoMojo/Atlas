@@ -185,7 +185,7 @@ def replay_status():
             # For the dashboard: historic time = clock - shift; progress = (now - started_wall) / replay_seconds.
             "started_wall": iso(run["started_wall"]),
             "shift_seconds": shift.total_seconds() if shift is not None else None,
-            "replay_seconds": float(settings.env_str("REPLAY_SECONDS") or 90)}
+            "replay_seconds": float(settings.env_str("REPLAY_SECONDS") or 64)}
 
 
 @app.get("/gauges")

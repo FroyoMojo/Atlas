@@ -1,5 +1,5 @@
 // In-browser stand-in for Ezekiel's engine, used while VITE_USE_MOCKS=true.
-// Animates a fake 90-second flood so every page can be built and rehearsed early.
+// Animates a fake one-minute flood so every page can be built and rehearsed early.
 import gaugesRaw from "../mocks/gauges.json";
 import poolRaw from "../mocks/pool.json";
 import stressRaw from "../mocks/stress.json";
@@ -18,8 +18,8 @@ interface MockGauge {
 }
 
 const gauges = gaugesRaw as MockGauge[];
-const REPLAY_SECONDS = 90;
-const WINDOW_HOURS = 108; // about 4.5 days of flood squeezed into 90 seconds
+const REPLAY_SECONDS = 64;
+const WINDOW_HOURS = 108; // about 4.5 days of flood squeezed into about a minute
 const STEP_MIN = 15;
 const MOCK_WINDOW_START = Date.parse("2017-08-25T12:00:00Z"); // shown as the historic replay clock
 

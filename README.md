@@ -2,7 +2,7 @@
 
 **Live: [atlasflood.us](https://atlasflood.us)** · Solana devnet, test dollars · Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Jesse (finance, chain, product, hosting) and Ezekiel (data and risk)
 
-When the river gauge next to your Houston neighborhood reaches the official flood level, Atlas sends you $500 in seconds, with a public receipt of the reading that triggered it. No claim, no adjuster, no waiting weeks. The demo replays Hurricane Harvey's real 2017 river data, five days in about 90 seconds.
+When the river gauge next to your Houston neighborhood reaches the official flood level, Atlas sends you $500 in seconds, with a public receipt of the reading that triggered it. No claim, no adjuster, no waiting weeks. The demo replays Hurricane Harvey's real 2017 river data, five days in about a minute.
 
 ## The idea
 

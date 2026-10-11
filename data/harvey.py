@@ -136,7 +136,7 @@ def main() -> None:
         start = min(r[5] for r in d_rows) - timedelta(hours=48)
         end = max(r[4] for r in d_rows) + timedelta(hours=24)
         counts = dict(conn.execute(COUNT_IN_WINDOW, (demo, start, end)).fetchall())
-        replay_s = int(os.environ.get("REPLAY_SECONDS", "90"))
+        replay_s = int(os.environ.get("REPLAY_SECONDS", "64"))
         per = max(counts.values()) if counts else 0
         print(f"\nDemo gauges: {demo}")
         print(f"Replay window: {start:%Y-%m-%d %H:%M}Z to {end:%Y-%m-%d %H:%M}Z "
