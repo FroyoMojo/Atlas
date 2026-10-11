@@ -1,7 +1,7 @@
 // Send SOL (for fees) and aUSD from the treasury to every demo wallet.
 // Extra addresses (e.g. your Phantom phone wallet) can be passed as arguments, each optionally
 // with the aUSD to top up to: `npm run fund -- <address>` (1,000) or `<address>:3000`.
-import { getOrCreateAssociatedTokenAccount, transferChecked } from "@solana/spl-token";
+import { TokenAccountNotFoundError, getOrCreateAssociatedTokenAccount, transferChecked } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import { KeyName, connection, loadKeypair, requireState } from "../env.js";
 import { AUSD_DECIMALS, toUnits } from "../lib/ausd.js";
@@ -24,6 +24,19 @@ const plan: { name: string; to: PublicKey; sol: number; ausd: number }[] = [
   }),
 ];
 
+// A provider RPC can lag a moment behind the transaction that created a new token account, so the
+// library's read-back throws TokenAccountNotFoundError. The account exists: wait and ask again.
+async function ataWithRetry(owner: PublicKey) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await getOrCreateAssociatedTokenAccount(connection, treasury, ausdMint, owner);
+    } catch (e) {
+      if (attempt >= 6 || !(e instanceof TokenAccountNotFoundError)) throw e;
+      await new Promise((r) => setTimeout(r, 2_000));
+    }
+  }
+}
+
 for (const p of plan) {
   const have = await connection.getBalance(p.to);
   if (have < p.sol * LAMPORTS_PER_SOL * 0.5) {
@@ -31,7 +44,7 @@ for (const p of plan) {
   }
   if (p.ausd > 0) {
     const from = await getOrCreateAssociatedTokenAccount(connection, treasury, ausdMint, treasury.publicKey);
-    const to = await getOrCreateAssociatedTokenAccount(connection, treasury, ausdMint, p.to);
+    const to = await ataWithRetry(p.to);
     if (to.amount < toUnits(p.ausd)) {
       await transferChecked(connection, treasury, from.address, ausdMint, to.address, treasury, toUnits(p.ausd) - to.amount, AUSD_DECIMALS);
     }
