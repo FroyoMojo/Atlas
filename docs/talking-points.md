@@ -61,9 +61,13 @@ reading that triggered it. Press Verify: your browser fetches the transaction, r
 fingerprint from the USGS reading, and they match. And the money set aside matches the blockchain."
 
 **9. Can it survive another Harvey? (20 s).**
-"We stress-tested a 2,000-policy book with Harvey's real flood levels. An $837k loss, paid in
-full: the premium reserve covers the first $200k, and catastrophe-bond investors cover the rest.
-They earn the premiums in normal years for taking that risk."
+"The money is stacked in layers. First, the community fund: premiums plus sponsor donations. That
+covers normal bad years. Above it, investors cover only a once-in-a-generation storm like Harvey,
+spread across many cities so one flood never wipes them out. Above that, a public backstop like a
+city or a reinsurer. We ran Harvey's real flood levels through it: an $837k loss, paid in full."
+- If asked "why would investors take that?": "Because they're only on the hook for the rare, huge
+  storm, and they're paid more than it costs on average. Our first version had investors cover
+  every bad year; our own data showed they'd lose money in 5 of 10 years, so we moved them up."
 
 **9b. Readiness (45 s). Laptop, `#/readiness`. The part no one else shows.**
 "Here is the question we think every flood product should answer: if the river crossed the line right
@@ -172,8 +176,9 @@ of the exact river reading that triggered it. When I hit Verify, my browser chec
 fingerprint itself. It matches.
 
 **[Proof page: the Harvey section]**
-And we tested the money side against another Harvey. A storm that size is paid in full: premiums
-cover the first part, and investors who signed up for that risk cover the rest.
+And the money is stacked so it holds up. The community fund covers normal bad years. Investors
+only cover a storm as big as Harvey, and a city or reinsurer sits above that. We ran Harvey through
+it: paid in full.
 
 **[Back to the map]**
 That's Atlas. When your neighborhood floods, the money's already on its way. You can try it at

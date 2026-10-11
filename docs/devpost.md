@@ -77,7 +77,15 @@ where \\( \theta \\) is the risk load and \\( c k_i t \\) the cost of the capita
 
 $$ S_y = \sum_i B_i \cdot \mathbf{1}\left[\text{peak}_{g(i),y} \ge \text{trigger}_{g(i)}\right] \qquad K = \max\Big(\max_y S_y , S_{\text{Harvey}}\Big) - \mathbb{E}[L] \qquad k_i = K \frac{B_i}{\sum_j B_j} $$
 
-where \\( \mathbb{E}[L] \\) is the expected annual loss implied by the priced rates. That is a worst-observed-year standard, not a modelled 1-in-200, and we say so. On our simulated 2,000-policy book over seven gauges, \\( \mathbb{E}[L] \\) is about $168k and \\( K \\) about $669k. Harvey (water year 2017) is the worst year: a $837k loss, paid in full (\\( f_{\text{fin}} = 1 \\)). The premium reserve covers the first $200k and the catastrophe bond the remaining $637k, so bond investors lose about 95% in a Harvey year. That is the trade they are paid for.
+where \\( \mathbb{E}[L] \\) is the expected annual loss implied by the priced rates. That is a worst-observed-year standard, not a modelled 1-in-200, and we say so. On our simulated 2,000-policy book over seven gauges, \\( \mathbb{E}[L] \\) is about $168k and \\( K \\) about $669k. Harvey (water year 2017) is the worst year: a $837k loss, paid in full (\\( f_{\text{fin}} = 1 \\)).
+
+**How the money is layered.** Our first design put investors right behind a thin premium reserve, so they took almost every bad year; on our own data that bond lost money in 5 of 10 years, which nobody would buy. The design we're pitching stacks the money in three layers:
+
+1. **Community fund** (premiums plus sponsor donations): pays first and covers ordinary bad years. This is what the readiness meter shows.
+2. **Investors:** only pay once a storm is bigger than the community fund, a Harvey-scale year. Their money is spread across many regions so one flood never wipes them out, and they're paid more each year than that risk costs on average.
+3. **Public backstop** (a city, state or reinsurer): anything bigger than both.
+
+In the demo, the pool runs a simpler version of this: a reserve, then bond capital.
 
 **Paying fairly in a big storm.** If the pool can't cover everyone at once, everyone in the storm gets the same share, whatever order their gauges cross in. With available funds \\( A \\) (reserve plus bond capital at the start of the run), \\( E_{\text{risk}} \\) the payouts of active policies on gauges under a flood watch when the storm opens, and \\( E_{\text{trig}} \\) the payouts on gauges that actually triggered:
 
