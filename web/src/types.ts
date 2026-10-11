@@ -98,6 +98,10 @@ export interface ReplayStatus {
   status: "running" | "done" | "reset" | null;
   clock: string | null;
   streaming?: boolean;
+  // Optional so older engines still type-check; see docs/api.md.
+  started_wall?: string | null;
+  shift_seconds?: number | null; // historic time = clock - shift
+  replay_seconds?: number;
 }
 
 export interface Policy {

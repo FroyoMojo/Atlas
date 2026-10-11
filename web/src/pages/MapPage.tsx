@@ -1,104 +1,184 @@
 import { useState } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getAdminToken } from "../admin";
-import { activeRunId, api } from "../api";
-import type { GaugeStatus } from "../types";
+import { api } from "../api";
+import { areaOf, STATUS_COLOR } from "../areas";
+import { Contours, Level, Pill, WaveIcon } from "../components/ui";
 import { usePoll } from "../usePoll";
-
-const COLORS: Record<GaugeStatus, string> = { normal: "#2e9e5b", near: "#d99a0b", triggered: "#d23b2f" };
+import { fmtDateTime, fmtDay, fmtTime, fmtWeekday, useReplay } from "../useReplay";
 
 export function MapPage() {
   const navigate = useNavigate();
-  const { data: replay } = usePoll(api.replayStatus, 1000);
-  const runId = activeRunId(replay);
+  const { replay, runId, isReplay, historic, progress } = useReplay();
   const { data: gauges, error } = usePoll(() => api.gauges(runId), 1000, [runId]);
   const { data: storms } = usePoll(() => api.storms(runId), 1500, [runId]);
   const [adminError, setAdminError] = useState<string | null>(null);
   const isAdmin = !!getAdminToken();
-  const nameOf = (id: string) => gauges?.find((g) => g.gauge_id === id)?.name ?? id;
 
-  const act = (fn: () => Promise<unknown>) => () => fn().then(() => setAdminError(null)).catch((e) => setAdminError(String(e.message ?? e)));
+  const covered = gauges?.filter((g) => g.demo_ready) ?? [];
+  const flooding = covered.filter((g) => g.status === "triggered").length;
+  const households = new Set(storms?.flatMap((s) => s.payouts.map((p) => p.policy)) ?? []).size;
+  const gaugeById = (id: string) => gauges?.find((g) => g.gauge_id === id);
+
+  // Live feed, newest first: one line per flooded area, with what was sent there.
+  const feed =
+    storms
+      ?.flatMap((s) =>
+        s.events.map((e) => {
+          const { area, river } = areaOf(gaugeById(e.gauge_id), e.gauge_id);
+          const sent = s.payouts.length;
+          return {
+            key: e.event_id,
+            at: historic(e.opened_at),
+            text: (
+              <>
+                Flooding in <strong>{area}</strong>: {river} reached {e.value.toFixed(1)} ft.
+                {s.events[0]?.event_id === e.event_id && sent > 0 && ` ${sent} payment${sent === 1 ? "" : "s"} sent this storm.`}
+              </>
+            ),
+          };
+        }),
+      )
+      .sort((a, b) => (b.at?.getTime() ?? 0) - (a.at?.getTime() ?? 0)) ?? [];
+
+  const act = (fn: () => Promise<unknown>) => () =>
+    fn().then(() => setAdminError(null)).catch((e) => setAdminError(String(e.message ?? e)));
+
+  const clock = historic(replay?.clock);
+  const startDay = isReplay && replay?.started_wall && replay.shift_seconds != null
+    ? new Date(Date.parse(replay.started_wall) - replay.shift_seconds * 1000)
+    : null;
 
   return (
-    <div className="map-page">
-      <section className="map-wrap">
-        <MapContainer center={[29.8, -95.37]} zoom={10} className="map">
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {gauges?.map((g) => (
-            <CircleMarker
-              key={g.gauge_id}
-              center={[g.lat, g.lon]}
-              radius={g.status === "triggered" ? 16 : 11}
-              pathOptions={{ color: COLORS[g.status], fillColor: COLORS[g.status], fillOpacity: 0.65, weight: g.demo_ready ? 3 : 1 }}
-              eventHandlers={{ click: () => navigate(`/gauge/${encodeURIComponent(g.gauge_id)}`) }}
-            >
-              <Tooltip>
-                <b>{g.name}</b>
-                <br />
-                {g.latest_ft == null ? "–" : g.latest_ft.toFixed(1)} ft · trigger {g.trigger_ft.toFixed(1)} ft
-              </Tooltip>
-            </CircleMarker>
-          ))}
-        </MapContainer>
-      </section>
+    <>
+      <div className="hero pad-big">
+        <Contours />
+        <section className="hero-body">
+          <span className="eyebrow">Houston flood protection</span>
+          <h1>Emergency money when your neighborhood floods.</h1>
+          <p>Houston renters get $500 within minutes of a flood, for a hotel, food or a missed shift. No claim, no adjuster, no waiting weeks.</p>
+        </section>
+      </div>
 
-      <aside className="side">
-        {isAdmin && (
-          <div className="card">
-            <h3>Harvey replay</h3>
-            <p className="muted">Plays the 2017 flood peak through the full pipeline in about 90 seconds.</p>
-            <div className="row">
-              <button className="primary" onClick={act(api.replayStart)} disabled={replay?.status === "running"}>
-                Start replay
-              </button>
-              <button onClick={act(api.replayReset)}>Reset</button>
+      <section className="lift replay-card" aria-label="Replay">
+        <div className="replay-id">
+          <span className="replay-icon" style={{ background: isReplay ? "#FEF3F2" : "#E6F0F8" }}>
+            <WaveIcon color={isReplay ? "#B42318" : "#0A3A5F"} />
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span className="replay-kicker" style={{ color: isReplay ? "#B42318" : "#0A3A5F" }}>
+              {isReplay ? `Replay · Hurricane Harvey${replay?.status === "done" ? " · finished" : ""}` : "Live · USGS river gauges"}
+            </span>
+            <span className="replay-time">{isReplay ? fmtDateTime(clock) : "Checked every 15 minutes"}</span>
+          </div>
+        </div>
+        {isReplay && (
+          <div className="replay-bar">
+            <div className="replay-track">
+              <div style={{ width: `${progress * 100}%` }} />
             </div>
-            {replay?.run_id && <p className="muted small">run {replay.run_id} · {replay.status}</p>}
-            {adminError && <p className="error small">{adminError}</p>}
+            <div className="replay-labels">
+              <span>{fmtDay(startDay)}</span>
+              <span>{Math.round(progress * 100)}% replayed</span>
+            </div>
           </div>
         )}
+        <div className="replay-stats">
+          <div>
+            <b style={{ color: flooding ? "#B42318" : "#0A3A5F" }}>{flooding} of {covered.length}</b>
+            <span>areas flooding</span>
+          </div>
+          <div>
+            <b style={{ color: "#0A3A5F" }}>{households}</b>
+            <span>households paid</span>
+          </div>
+        </div>
+        {isAdmin && (
+          <div className="replay-admin">
+            <button className="btn btn-primary" onClick={act(api.replayStart)} disabled={replay?.status === "running"}>
+              Start replay
+            </button>
+            <button className="btn btn-outline" onClick={act(api.replayReset)}>Reset</button>
+          </div>
+        )}
+        {adminError && <p className="error small" style={{ margin: 0, flexBasis: "100%" }}>{adminError}</p>}
+      </section>
 
-        <div className="card">
-          <h3>Demo gauges</h3>
-          {error && <p className="error">{error}</p>}
-          <ul className="gauge-list">
-            {gauges
-              ?.filter((g) => g.demo_ready)
-              .map((g) => (
-                <li key={g.gauge_id} onClick={() => navigate(`/gauge/${encodeURIComponent(g.gauge_id)}`)}>
-                  <span className="dot" style={{ background: COLORS[g.status] }} />
-                  <span className="grow">{g.name}</span>
-                  <span className="num">{g.latest_ft == null ? "–" : g.latest_ft.toFixed(1)} ft</span>
-                </li>
-              ))}
-          </ul>
+      <div className="map-layout">
+        <div className="map-box">
+          <MapContainer center={[29.83, -95.45]} zoom={10} scrollWheelZoom={false} attributionControl>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {covered.map((g) => {
+              const flood = g.status === "triggered";
+              const { area, river } = areaOf(g);
+              return [
+                flood && (
+                  <CircleMarker key={`${g.gauge_id}-halo`} center={[g.lat, g.lon]} radius={26} interactive={false}
+                    pathOptions={{ stroke: false, fillColor: "#B42318", fillOpacity: 0.16 }} />
+                ),
+                <CircleMarker
+                  key={g.gauge_id}
+                  center={[g.lat, g.lon]}
+                  radius={10}
+                  pathOptions={{ color: "#fff", weight: 3, fillColor: STATUS_COLOR[g.status], fillOpacity: 1 }}
+                  eventHandlers={{ click: () => navigate(`/protect/${encodeURIComponent(g.gauge_id)}`) }}
+                >
+                  <Tooltip permanent direction="right" offset={[12, 0]} className="map-label">
+                    {area} <small>· {river}</small>
+                  </Tooltip>
+                </CircleMarker>,
+              ];
+            })}
+          </MapContainer>
+          <div className="map-legend">
+            <span><i className="dot" style={{ background: STATUS_COLOR.normal }} />Normal</span>
+            <span><i className="dot" style={{ background: STATUS_COLOR.near }} />Rising</span>
+            <span><i className="dot" style={{ background: STATUS_COLOR.triggered }} />Flooding</span>
+          </div>
         </div>
 
-        <div className="card">
-          <h3>Storm</h3>
-          {!storms?.length && <p className="muted">No gauge has crossed its trigger in this run.</p>}
-          {storms?.map((s) => (
-            <div key={s.storm_id}>
-              <p className="small muted">
-                {s.storm_id} · {s.status.replace("_", " ")} · interim share {s.f_int ?? "–"} · final {s.f_fin ?? "–"} ·{" "}
-                {s.payouts.length} payout(s)
-              </p>
-              <ul className="events">
-                {s.events.map((e) => (
-                  <li key={e.event_id}>
-                    <b>{nameOf(e.gauge_id)}</b> crossed at {e.value.toFixed(2)} ft
-                    {e.closed_at ? " · closed" : " · open"}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </aside>
-    </div>
+        <aside className="side">
+          <section className="card">
+            <h2>Covered areas</h2>
+            {error && <p className="error small">{error}</p>}
+            {!gauges && !error && <p className="muted small">Loading river levels…</p>}
+            {covered.map((g) => {
+              const { area, river } = areaOf(g);
+              return (
+                <Link key={g.gauge_id} to={`/protect/${encodeURIComponent(g.gauge_id)}`} className="area">
+                  <div className="area-top">
+                    <span><b>{area}</b> <em>· {river}</em></span>
+                    <Pill status={g.status} />
+                  </div>
+                  <Level gauge={g} />
+                  <span className="small" style={{ color: "#667085" }}>
+                    {g.latest_ft == null ? "No reading yet" : `${g.latest_ft.toFixed(1)} ft`} · flood level {g.trigger_ft} ft
+                  </span>
+                </Link>
+              );
+            })}
+          </section>
+
+          <section className="card" aria-label="Live feed" aria-live="polite">
+            <h2>
+              <span className="dot" style={{ background: flooding ? "#B42318" : "#079455", width: 8, height: 8 }} />
+              Live
+            </h2>
+            {!feed.length && <p className="muted small" style={{ margin: 0 }}>All covered rivers are below flood level.</p>}
+            {feed.slice(0, 5).map((f) => (
+              <div key={f.key} className="feed-item">
+                <time>{fmtWeekday(f.at)} {fmtTime(f.at)}</time>
+                <span>{f.text}</span>
+              </div>
+            ))}
+            <Link to="/proof" className="link-row">See where the money went, and why →</Link>
+          </section>
+        </aside>
+      </div>
+    </>
   );
 }

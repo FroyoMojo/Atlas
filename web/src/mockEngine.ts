@@ -21,6 +21,7 @@ const gauges = gaugesRaw as MockGauge[];
 const REPLAY_SECONDS = 90;
 const WINDOW_HOURS = 108; // about 4.5 days of flood squeezed into 90 seconds
 const STEP_MIN = 15;
+const MOCK_WINDOW_START = Date.parse("2017-08-25T12:00:00Z"); // shown as the historic replay clock
 
 let runId: string | null = null;
 let resetRunId: string | null = null; // like the engine: after Reset, status reports the reset run
@@ -166,6 +167,9 @@ export const mockEngine = {
       status: t < 1 ? "running" : "done",
       clock: replayTime(t).toISOString().replace(/\.\d{3}Z$/, "Z"),
       streaming: t < 1,
+      started_wall: new Date(startedAt).toISOString(),
+      shift_seconds: (startedAt - MOCK_WINDOW_START) / 1000,
+      replay_seconds: REPLAY_SECONDS,
     } as ReplayStatus);
   },
 
