@@ -35,7 +35,8 @@ not because someone inspected your home."
 **3. Get protected (30 s). Phone or laptop on `#/protect`.**
 "You type where you live. 77096, Meyerland: green, you're covered. It tells you exactly what pays
 you: Brays Bayou reaching 42 feet, the National Weather Service's moderate flood level. Pick
-$500: $22.50 for 90 days. Why $22.50? Brays has hit that level twice in 19 years of USGS records.
+$500: about $20 for 90 days (read the number on screen; it's $22.50 with no community money and
+drops as the pool fills). Why that price? Brays has hit that level twice in 19 years of USGS records.
 One tap in your wallet and you're protected."
 - Show an uncovered ZIP (77339, Kingwood) turning red: "We only cover areas next to a gauge we trust."
 
@@ -168,9 +169,9 @@ Here's how you sign up. I'll put in a Meyerland ZIP code. It goes green, so I'm 
 tells me exactly what would pay me: Brays Bayou hitting 42 feet. That's the flood level the
 National Weather Service already uses.
 
-**[Pick $500, open "Why $22.50?"]**
-Five hundred dollars of protection is twenty-two fifty for three months. And it shows you why:
-that river has hit that level twice in the last nineteen years.
+**[Pick $500, open "Why $…?"]**
+Five hundred dollars of protection is about twenty dollars for three months (say the number on
+screen). And it shows you why: that river has hit that level twice in the last nineteen years.
 
 **[Confirm in Phantom; the phone shows "You're protected"]**
 One tap in my wallet, and that's it. My phone says I'm protected, and I can see the river is
