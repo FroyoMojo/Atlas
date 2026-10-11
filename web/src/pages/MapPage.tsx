@@ -1,7 +1,7 @@
 // The landing page: the premise in one screen. Harvey footage and the live map side by side, with the
 // numbers that matter underneath. The only action is "Log in", which asks who to be in the demo.
 import { useState } from "react";
-import { CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
+import { Circle, CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
 import { getAdminToken } from "../admin";
 import { api } from "../api";
 import { areaOf, STATUS_COLOR } from "../areas";
@@ -17,6 +17,13 @@ const STEPS: [string, string][] = [
   ["Money arrives", "Within minutes, to your wallet. Nobody approves it by hand."],
 ];
 
+// How close a river is to its flood level, 0 (well below) to 1 (at or past the trigger). Below 60% of the
+// trigger there is no shading, so a calm river leaves the map clean.
+const closeness = (g: { latest_ft: number | null; trigger_ft: number }) =>
+  g.latest_ft == null || !(g.trigger_ft > 0) ? 0 : Math.max(0, Math.min(1, (g.latest_ft / g.trigger_ft - 0.6) / 0.4));
+// Navy (calm) through amber to red (at flood level), the same ramp as the status dots.
+const heatColor = (t: number) => (t < 0.5 ? "#4E8BC0" : t < 0.85 ? "#B54708" : "#B42318");
+
 export function MapPage() {
   const { openPanel, role } = useRole();
   const { replay, runId, isReplay, historic, progress } = useReplay();
@@ -29,8 +36,9 @@ export function MapPage() {
   const flooding = covered.filter((g) => g.status === "triggered").length;
   const households = new Set(storms?.flatMap((s) => s.payouts.map((p) => p.policy)) ?? []).size;
 
-  const act = (fn: () => Promise<unknown>) => () =>
-    fn().then(() => setAdminError(null)).catch((e) => setAdminError(String(e.message ?? e)));
+  const [resetKey, setResetKey] = useState(0);
+  const act = (fn: () => Promise<unknown>, after?: () => void) => () =>
+    fn().then(() => { setAdminError(null); after?.(); }).catch((e) => setAdminError(String(e.message ?? e)));
 
   return (
     <>
@@ -69,24 +77,29 @@ export function MapPage() {
           </div>
         )}
         <div className="stage-grid">
-          <Footage flooding={flooding > 0} />
+          <Footage flooding={flooding > 0} resetKey={resetKey} />
           <div className="map-box">
             <MapContainer center={[29.83, -95.45]} zoom={10} scrollWheelZoom={false} attributionControl>
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; OpenStreetMap contributors'
                 url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {covered.map((g) => {
                 const flood = g.status === "triggered";
                 const { area } = areaOf(g);
+                const t = closeness(g);
+                // Soft heat around each gauge: stacked translucent rings that widen and redden as the river nears
+                // its flood level. It shows river stress at the gauges we cover, not a flood-depth map.
                 return [
-                  flood && (
-                    <CircleMarker key={`${g.gauge_id}-halo`} center={[g.lat, g.lon]} radius={26} interactive={false}
-                      pathOptions={{ stroke: false, fillColor: "#B42318", fillOpacity: 0.16 }} />
-                  ),
+                  t > 0 && [1, 0.72, 0.46].map((k, i) => (
+                    <Circle key={`${g.gauge_id}-heat${i}`} center={[g.lat, g.lon]} radius={(2500 + 4500 * t) * k} interactive={false}
+                      pathOptions={{ stroke: false, fillColor: heatColor(t), fillOpacity: 0.07 + 0.1 * t }} />
+                  )),
                   <CircleMarker key={g.gauge_id} center={[g.lat, g.lon]} radius={10}
                     pathOptions={{ color: "#fff", weight: 3, fillColor: STATUS_COLOR[g.status], fillOpacity: 1 }}>
-                    <Tooltip permanent direction="right" offset={[12, 0]} className="map-label">{area}</Tooltip>
+                    <Tooltip permanent direction="right" offset={[12, 0]} className="map-label">
+                      {area}{g.latest_ft != null && <small> · {g.latest_ft.toFixed(1)} of {g.trigger_ft} ft</small>}
+                    </Tooltip>
                   </CircleMarker>,
                 ];
               })}
@@ -95,13 +108,14 @@ export function MapPage() {
               <span><i className="dot" style={{ background: STATUS_COLOR.normal }} />Normal</span>
               <span><i className="dot" style={{ background: STATUS_COLOR.near }} />Rising</span>
               <span><i className="dot" style={{ background: STATUS_COLOR.triggered }} />Flooding</span>
+              <span className="muted">Shading: river level vs flood level</span>
             </div>
           </div>
         </div>
         {isAdmin && (
           <div className="replay-admin">
             <button className="btn btn-primary" onClick={act(api.replayStart)} disabled={replay?.status === "running"}>Start replay</button>
-            <button className="btn btn-outline" onClick={act(api.replayReset)}>Reset</button>
+            <button className="btn btn-outline" onClick={act(api.replayReset, () => setResetKey((k) => k + 1))}>Reset</button>
             {adminError && <span className="error small">{adminError}</span>}
           </div>
         )}
