@@ -36,3 +36,4 @@ if (reserve > 0) {
   await transferChecked(connection, treasury, from.address, ausdMint, vaultAta, treasury, toUnits(reserve), AUSD_DECIMALS);
   console.log(`seeded vault with ${reserve} aUSD premium reserve`);
 }
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

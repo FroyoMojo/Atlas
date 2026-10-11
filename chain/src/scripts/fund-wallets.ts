@@ -32,3 +32,4 @@ for (const p of plan) {
   }
   console.log(`${p.name.padEnd(9)} ${p.to.toBase58()}  SOL ${p.sol}  aUSD ${p.ausd}`);
 }
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

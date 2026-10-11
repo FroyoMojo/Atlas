@@ -37,3 +37,4 @@ if (env.databaseUrl) {
   });
   await closeDb();
 }
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

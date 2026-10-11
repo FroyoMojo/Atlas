@@ -11,7 +11,8 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
   - [`deploy/`](../deploy/README.md): laptop hosting with a gateway and Cloudflare Tunnel (no Vultr); routing tested locally.
   - [`tools/g2_storm.py`](../tools/g2_storm.py): opens a storm for G2; tested with interim 0.6 and true-up 1.0.
   - [`engine/`](../engine/README.md) (started for Ezekiel): `sql/schema.sql` (one command), FastAPI with every read endpoint, `/replay/start` and `/replay/reset`; tested on TimescaleDB, and the dashboard runs on it with mocks off.
-- **Devnet:** set up and checked; addresses below.
+- **Devnet:** set up and checked; addresses below. RPC: Helius devnet (key in `.env` only).
+- **G2 passed on devnet (Oct 10, about 7 pm CDT)**, with a local TimescaleDB standing in for Tiger and real Harvey data: Reset refilled vault and float, holder1 bought a Brays policy (engine-priced), the replay crossed Brays and the bot paid 500 aUSD with the evidence Memo ([payout tx](https://explorer.solana.com/tx/3cfDne5GMs4ruDHkBP6AfqfotThG7VLM1xZJUE8yRdEd819k1SXr7NyUhA1XFYkPAymwPZVbDBSe5UGTtVfHKKwz?cluster=devnet)); the pool reconciled. Reset, then a second run: paid again, reconciled again. Repeat it on Tiger once Zeke shares it.
 - **Not done:** public URL and domain, phone test, and Ezekiel's data side: ingestion and backfill, replay streamer, events and storms (`f_int`/`f_fin`), the real simulated book and pricing review.
 - Commits go straight to `main` (no pull requests).
 
@@ -57,7 +58,8 @@ Read this first when you pick up the repo. Update the **Status** and **Next step
 - [ ] Ezekiel: confirm the demo gauges and trigger levels (NWS flood stage), then load them: `python3 data/usgs.py gauges ...`, `peaks`, `iv` ([data/README.md](../data/README.md)). Whiteoak went dark in Harvey: not a demo gauge.
 - [x] `GET /replay/status`; `/replay/start` records opening balances from `GET /chain/balances`; `/replay/reset` calls `POST /chain/reset` with `X-Admin-Token`.
 - [ ] Jesse: run the dashboard with `VITE_USE_MOCKS=false` once Tiger has data.
-- [ ] Both: G2 with [`tools/g2_storm.py`](../tools/g2_storm.py) on devnet.
+- [x] G2 on devnet (local DB stand-in for Tiger), see Status.
+- [ ] Both: repeat on Tiger with the final demo gauges: `npm run stack`, Reset, buy, Start.
 
 ## Accounts and addresses
 

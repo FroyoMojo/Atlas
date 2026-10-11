@@ -33,3 +33,4 @@ if (flow === "b") {
 }
 console.log(`flow ${flow.toUpperCase()}: ${built.message}`);
 console.log(`policy ${built.policy_mint}  ${explorer(sig)}`);
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

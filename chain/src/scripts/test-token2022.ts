@@ -49,3 +49,4 @@ await sendIxs(connection, setPolicyStatusIxs(plan.mint.publicKey, issuer.publicK
 const p = await readPolicy(connection, plan.mint.publicKey, loadKeypair("holder1").publicKey);
 console.log(`read back: name="${p.name}" supply=${p.supply} holder=${p.holder} fields=${JSON.stringify(p.fields)}`);
 console.log("name + status ACTV -> PAID -> ACTV round trip OK");
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

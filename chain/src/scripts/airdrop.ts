@@ -20,3 +20,4 @@ for (let i = 0; i < 3; i++) {
 const sol = (await connection.getBalance(treasury)) / LAMPORTS_PER_SOL;
 console.log(`treasury balance: ${sol} SOL`);
 if (sol === 0) console.log("Faucet refused. Fund the treasury at https://faucet.solana.com and continue.");
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

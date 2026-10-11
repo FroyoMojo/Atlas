@@ -21,3 +21,4 @@ const { signature } = await post<{ signature: string }>("/api/bond/submit", {
   transaction: tx.serialize({ requireAllSignatures: false }).toString("base64"),
 });
 console.log(`deposited ${amount} aUSD at NAV ${built.nav_per_unit}: ${explorer(signature)}`);
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

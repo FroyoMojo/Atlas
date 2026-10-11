@@ -14,3 +14,4 @@ await mintTo(connection, treasury, mint, ata.address, treasury, toUnits(1_000_00
 saveState({ ausdMint: mint.toBase58() });
 console.log(`aUSD mint ${mint.toBase58()}  ${explorer(mint.toBase58(), "address")}`);
 console.log("Minted 1,000,000 aUSD to the treasury. Put AUSD_MINT in .env for the web app.");
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs

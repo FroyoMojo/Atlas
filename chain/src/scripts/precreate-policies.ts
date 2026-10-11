@@ -25,3 +25,4 @@ for (const gaugeId of gauges) {
 }
 console.table(await poolCounts());
 await closeDb();
+process.exit(0); // web3 confirmation websockets keep the event loop alive on provider RPCs
