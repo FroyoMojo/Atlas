@@ -1,7 +1,6 @@
 // Readiness (docs/readiness.md): how much of each promised payout is funded right now, where the
 // money comes from, and a Fund readiness button for sponsors.
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
@@ -10,7 +9,7 @@ import { explorer } from "../config";
 import { Contours, price, usd } from "../components/ui";
 import type { ReadinessMarket } from "../types";
 import { usePoll } from "../usePoll";
-import { useServerTx } from "../wallet";
+import { useConnectWallet, useServerTx } from "../wallet";
 
 const pct = (r: number) => `${Math.round(r * 100)}%`;
 const GRADE_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -150,7 +149,7 @@ function MarketCard({ m }: { m: ReadinessMarket }) {
 
 function FundButton() {
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connectWallet = useConnectWallet();
   const { donate } = useServerTx();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(1000);
@@ -158,7 +157,7 @@ function FundButton() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string; sig?: string } | null>(null);
 
   async function send() {
-    if (!publicKey) return setVisible(true);
+    if (!publicKey) return connectWallet();
     setBusy(true);
     setMsg(null);
     try {

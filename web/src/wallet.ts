@@ -1,4 +1,6 @@
+import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Transaction } from "@solana/web3.js";
 import { useCallback } from "react";
 import { api } from "./api";
@@ -45,4 +47,28 @@ export function useServerTx() {
   const donate = useCallback(async (b64: string) => (await api.donateSubmit(toB64(await sign(b64)))).signature, [sign]);
 
   return { purchase, bond, donate };
+}
+
+const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/** Opens this page inside Phantom's in-app browser (Phantom's universal link). */
+export const phantomBrowseUrl = () =>
+  `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}?ref=${encodeURIComponent(window.location.origin)}`;
+
+export const NO_WALLET_EVENT = "atlas:no-wallet";
+
+/**
+ * "Connect wallet": the wallet list when the browser has a Solana wallet. Without one the list
+ * would be empty, so on a phone it reopens the page inside Phantom, and on a computer it shows
+ * how to install one (WalletHelp listens for NO_WALLET_EVENT).
+ */
+export function useConnectWallet() {
+  const { wallets } = useWallet();
+  const { setVisible } = useWalletModal();
+  return useCallback(() => {
+    const found = wallets.some((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
+    if (found) setVisible(true);
+    else if (isMobile()) window.location.href = phantomBrowseUrl();
+    else window.dispatchEvent(new Event(NO_WALLET_EVENT));
+  }, [wallets, setVisible]);
 }

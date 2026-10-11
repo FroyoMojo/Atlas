@@ -3,7 +3,6 @@
 // projector (no nav). The balance is read straight from chain.
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -11,8 +10,10 @@ import { api } from "../api";
 import { areaOf } from "../areas";
 import { config, explorer, short } from "../config";
 import { Brand, Contours, Level, Pill, usd } from "../components/ui";
+import { WalletHelp } from "../components/WalletHelp";
 import type { Policy } from "../types";
 import { usePoll } from "../usePoll";
+import { useConnectWallet } from "../wallet";
 import { fmtTime, useReplay } from "../useReplay";
 
 const DAY = 86_400_000;
@@ -20,7 +21,7 @@ const DAY = 86_400_000;
 export function MyPage({ standalone = false }: { standalone?: boolean }) {
   const [params] = useSearchParams();
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connectWallet = useConnectWallet();
   const { connection } = useConnection();
   const owner = params.get("owner") ?? publicKey?.toBase58() ?? null;
   const { runId } = useReplay();
@@ -87,7 +88,7 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
           </div>
         </div>
         <div className="col"><div className="phone-body">
-          <button className="btn btn-primary btn-block" onClick={() => setVisible(true)}>Connect wallet</button>
+          <button className="btn btn-primary btn-block" onClick={connectWallet}>Connect wallet</button>
           <Link to="/protect" className="link-row" style={{ textAlign: "center" }}>Not protected yet? Get protected →</Link>
         </div></div>
       </Shell>
@@ -228,7 +229,7 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
 }
 
 function Shell({ standalone, children }: { standalone: boolean; children: React.ReactNode }) {
-  return standalone ? <div className="app" style={{ background: "#F6F8FA" }}>{children}</div> : <>{children}</>;
+  return standalone ? <div className="app" style={{ background: "#F6F8FA" }}>{children}<WalletHelp /></div> : <>{children}</>;
 }
 
 function Others({ list }: { list: Policy[] }) {

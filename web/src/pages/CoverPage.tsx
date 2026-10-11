@@ -1,5 +1,4 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
@@ -7,7 +6,7 @@ import { areaOf, AREAS, lookup } from "../areas";
 import { CheckIcon, Contours, price } from "../components/ui";
 import { usePoll } from "../usePoll";
 import { useReplay } from "../useReplay";
-import { useServerTx } from "../wallet";
+import { useConnectWallet, useServerTx } from "../wallet";
 
 export function CoverPage() {
   const navigate = useNavigate();
@@ -33,7 +32,7 @@ export function CoverPage() {
   const { area, river } = areaOf(gauge);
 
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connectWallet = useConnectWallet();
   const { purchase } = useServerTx();
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
@@ -41,7 +40,7 @@ export function CoverPage() {
 
   async function buy() {
     if (!gauge) return;
-    if (!publicKey) return setVisible(true);
+    if (!publicKey) return connectWallet();
     setBuying(true);
     setBuyError(null);
     try {

@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { config } from "../config";
 import { Brand } from "./ui";
+import { WalletHelp } from "./WalletHelp";
 
 export function Layout() {
   return (
@@ -26,6 +27,7 @@ export function Layout() {
       <main>
         <Outlet />
       </main>
+      <WalletHelp />
       <footer className="footer">Demo on Solana devnet with test dollars. A fixed emergency payment, not property insurance.</footer>
     </div>
   );

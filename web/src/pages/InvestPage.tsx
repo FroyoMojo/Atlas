@@ -1,25 +1,24 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useState } from "react";
 import { api } from "../api";
 import { explorer } from "../config";
 import { Contours, usd } from "../components/ui";
 import { usePoll } from "../usePoll";
 import { useReplay } from "../useReplay";
-import { useServerTx } from "../wallet";
+import { useConnectWallet, useServerTx } from "../wallet";
 
 export function InvestPage() {
   const { runId } = useReplay();
   const { data: pool } = usePoll(() => api.pool(runId), 3000, [runId]);
   const { publicKey } = useWallet();
-  const { setVisible } = useWalletModal();
+  const connectWallet = useConnectWallet();
   const { bond } = useServerTx();
   const [amount, setAmount] = useState(5000);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string; sig?: string } | null>(null);
 
   async function deposit() {
-    if (!publicKey) return setVisible(true);
+    if (!publicKey) return connectWallet();
     setBusy(true);
     setMsg(null);
     try {
