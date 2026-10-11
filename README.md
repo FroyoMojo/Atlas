@@ -1,6 +1,10 @@
-# Atlas: parametric flood protection for Houston
+# Atlas: emergency money when your neighborhood floods
 
-> **Status: building to plan v3.1.** The chain service, payout bot and dashboard (`chain/`, `web/`) are built and tested on devnet (G2 passed). The engine and replay streamer run on real Harvey data in Tiger, with Ezekiel's final gauges and moderate triggers. Hosting: a Vultr server at `atlasflood.us` (DNS done; deploy in progress, `deploy/vultr/`), with the laptop setup as the fallback. Next: finish the Vultr deploy, the phone test, G3. The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
+**Live: [atlasflood.us](https://atlasflood.us)** · Solana devnet, test dollars
+
+When the river gauge next to your Houston neighborhood reaches the official flood level, Atlas sends you $500 in seconds, with a public receipt of the reading that triggered it. No claim, no adjuster, no waiting weeks. Demo: a replay of Hurricane Harvey's real 2017 river data.
+
+> **Status:** hosted on Vultr at atlasflood.us (Caddy, systemd, `deploy/vultr/`), with the laptop setup as the fallback. Submission checklist: `docs/checklist.md`. The GitHub repo was renamed from `Rug-Radar` to **Atlas**.
 
 Built for [CodeRED: Orion](https://codered-orion-ccs.devpost.com/) by Ezekiel (data and risk) and Jesse (chain, product and hosting).
 

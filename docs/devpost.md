@@ -5,12 +5,12 @@ against what is live at submission (marked TODO where it depends on the final se
 
 ## Elevator pitch (Devpost limit: 200 characters)
 
-> When a Houston bayou floods, Atlas pays renters in seconds: parametric flood cover priced from USGS gauge history in Tiger Data and paid out automatically on Solana.
+> Emergency money when your neighborhood floods: when the bayou crosses flood level, Atlas sends Houston renters $500 in seconds on Solana. No claim, no adjuster, no waiting.
 
 Alternatives:
 
-- Flood cover that pays in seconds, not weeks: a gauge crosses flood stage and the payout lands in your wallet, with a public receipt of the reading that triggered it.
-- Parametric flood protection for Houston renters: priced on USGS gauge history, paid automatically on Solana the moment the bayou crosses its trigger.
+- Flood protection that pays in seconds, not weeks: the river gauge crosses flood level and $500 lands in your wallet, with a public receipt of the reading that triggered it.
+- $500 for the first night of a flood: priced from 19 years of USGS river data in Tiger Data, paid automatically on Solana when your bayou floods.
 
 ## About the project (Markdown with LaTeX)
 
@@ -26,22 +26,22 @@ We are a finance major and a quant. We wanted to build the product an insurer, a
 
 ## What it does
 
-**Atlas** sells a small policy tied to the nearest USGS stream gauge. If that gauge crosses its flood trigger during the term, the policyholder gets a fixed payout (for example \\( B = 500 \\) aUSD, a test dollar), automatically, in seconds.
+**Atlas** is emergency money for the first days of a flood. You protect your home's neighborhood for 90 days; if the river gauge that watches it reaches the official flood level, a fixed amount (for example \\( B = 500 \\) aUSD, a test dollar) lands in your wallet automatically, in seconds. It is a fixed emergency payment for residents (one per household), not property insurance and not a bet on the weather.
 
-- **Buy:** pick a gauge on the map, see the quote with its confidence band, and buy in one wallet transaction. The policy is a non-transferable token in your wallet named **Atlas Policy ACTV**.
-- **Trigger:** when a gauge records two consecutive accepted readings at or above its trigger, Atlas opens an event and records a hash of the exact reading.
-- **Pay:** the payout bot sends the money with a Memo carrying that hash, and the policy turns **PAID** in the same transaction. The phone view shows "+$500 • PAID • Brays Bayou".
-- **Verify:** anyone can recompute the hash from the recorded reading and match it to the on-chain Memo.
-- **Solvency:** a pool page shows reserve, bond capital, the payout float and a reconciliation badge proving the books match the chain.
+- **Get protected:** type your ZIP or neighborhood. A covered address turns green and shows the gauge and flood level that would pay you; an uncovered one turns red. Pick $250 or $500, see the price ($22.50 for $500 in Meyerland), and confirm one wallet transaction. "Why $22.50?" shows the basis: Brays Bayou reached flood level 2 times in 19 years of records. The policy is a non-transferable token in your wallet named **Atlas Policy ACTV**.
+- **You're protected:** your page shows the river level against the flood line, days left and your balance.
+- **Trigger:** when a gauge records two consecutive accepted readings at or above its flood level, Atlas opens an event and records a hash of the exact reading.
+- **Pay:** the payout bot sends the money with a Memo carrying that hash, and the policy turns **PAID** in the same transaction. The phone switches to "Flood detected · Meyerland. We've sent you $500 for immediate costs", with what to do right now: call 911 if in danger, find a shelter, use the money for a room or food.
+- **Proof:** one page shows the money set aside and a "matches the blockchain" check, lists every payout with a **Verify** button that recomputes the reading's fingerprint in your browser, and stress-tests the pool against another Harvey.
 
-For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record: about five days of 15-minute readings at our four covered gauges (Brays Bayou, Buffalo Bayou at Piney Point, Cypress Creek and Spring Creek), squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, and payouts land on a real phone.
+For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record: about five days of 15-minute readings at our four covered gauges (Brays Bayou, Buffalo Bayou at Piney Point, Cypress Creek and Spring Creek), squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, the live feed reports each flood in plain words, and payouts land on a real phone.
 
 Cover runs for 90 days for one premium. Triggers sit at each gauge's National Weather Service **moderate** flood stage, which prices \\( 500 \\) aUSD of cover at about 22 to 58 aUSD per 90 days on the demo gauges.
 
 ## How we built it
 
 **Tiger Data (TimescaleDB): the risk engine and the books**
-- Gauge readings and the money ledger are **hypertables**. The 2007 to 2026 instantaneous history (from 2011 for Spring Creek; **5.8 million readings**) sits in **columnstore**, compressed from 1.05 GB to 162 MB (6.5x). The history charts read a **continuous aggregate** of hourly maxima, spot-checked against the raw readings. <!-- TODO Zeke: confirm 5.8M (decisions.md) vs 6.5M (handoff.md) -->
+- Gauge readings and the money ledger are **hypertables**. The 2007 to 2026 instantaneous history (from 2011 for Spring Creek; **more than 5.8 million readings**) sits in **columnstore**, compressed from 1.05 GB to 162 MB (6.5x). The history charts read a **continuous aggregate** of hourly maxima, spot-checked against the raw readings.
 - Annual peaks go back 60 to 92 years per gauge. USGS datum-change flags set where each gauge's comparable, priced record starts (2007 to 2015), so prices rest on 11 to 19 comparable years.
 - Every money movement is a **double-entry ledger** row; every entry sums to zero.
 - Events, storms, policies and payout intents live alongside, so one database answers "who gets paid, how much, and why".
@@ -54,9 +54,9 @@ Cover runs for 90 days for one premium. Triggers sit at each gauge's National We
 - The pool's capital sits in a **Squads v4 2-of-3 multisig** vault with a time lock. The payout bot only holds a capped float, refilled from the vault by a 2-of-3 proposal.
 - Every payout is **signed, recorded, then sent**. After a crash, the bot settles every recorded signature before building anything new, so a policy is never paid twice.
 
-**Vultr + GoDaddy Registry:** the whole stack (engine, chain service, payout bot and dashboard behind one gateway) runs on a Vultr instance at [atlasflood.us](https://atlasflood.us). <!-- TODO: confirm once the server is live -->
+**Vultr + GoDaddy Registry:** the whole stack (engine, chain service, payout bot and dashboard behind one gateway) runs on one Ubuntu Vultr instance behind Caddy (automatic HTTPS) and systemd at [atlasflood.us](https://atlasflood.us), a domain registered through the GoDaddy Registry offer.
 
-**Dashboard:** Vite + React with Leaflet, plus a phone view built to be mirrored on stage.
+**Dashboard:** Vite + React with Leaflet: a map with the Harvey replay, a phone-first "Get protected" and "My protection" flow, and a Proof page that verifies payouts in the browser. The phone view can be mirrored on stage.
 
 ### The math
 
@@ -70,7 +70,7 @@ where \\( \theta \\) is the risk load and \\( c k_i t \\) the cost of the capita
 
 $$ S_y = \sum_i B_i \cdot \mathbf{1}\left[\text{peak}_{g(i),y} \ge \text{trigger}_{g(i)}\right] \qquad K = \max\Big(\max_y S_y , S_{\text{Harvey}}\Big) - \mathbb{E}[L] \qquad k_i = K \frac{B_i}{\sum_j B_j} $$
 
-where \\( \mathbb{E}[L] \\) is the expected annual loss implied by the priced rates. That is a worst-observed-year standard, not a modelled 1-in-200, and we say so. On our simulated 2,000-policy book over seven gauges, \\( \mathbb{E}[L] \\) is about $XXXk and \\( K \\) about $YYYk: a Harvey-sized year is paid in full, with the catastrophe bond absorbing everything beyond the premium reserve. <!-- TODO Zeke: fill from `python data/run_numbers.py` (query 6) at the MODERATE triggers; the earlier $232k / $718k / f_fin 1 were at the minor triggers. Confirm Harvey is still paid in full (f_fin = 1). -->
+where \\( \mathbb{E}[L] \\) is the expected annual loss implied by the priced rates. That is a worst-observed-year standard, not a modelled 1-in-200, and we say so. On our simulated 2,000-policy book over seven gauges, \\( \mathbb{E}[L] \\) is about $168k and \\( K \\) about $669k. Harvey (water year 2017) is the worst year: a $837k loss, paid in full (\\( f_{\text{fin}} = 1 \\)). The premium reserve covers the first $200k and the catastrophe bond the remaining $637k, so bond investors lose about 95% in a Harvey year. That is the trade they are paid for.
 
 **Paying fairly in a big storm.** If the pool can't cover everyone at once, everyone in the storm gets the same share, whatever order their gauges cross in. With available funds \\( A \\) (reserve plus bond capital at the start of the run), \\( E_{\text{risk}} \\) the payouts of active policies on gauges under a flood watch when the storm opens, and \\( E_{\text{trig}} \\) the payouts on gauges that actually triggered:
 
