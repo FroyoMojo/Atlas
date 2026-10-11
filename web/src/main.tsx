@@ -5,6 +5,7 @@ import "./styles.css";
 
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -24,11 +25,15 @@ function GaugeRedirect() {
   return <Navigate to={`/protect/${encodeURIComponent(useParams().id ?? "")}`} replace />;
 }
 
-// Phantom and Solflare register themselves through the Wallet Standard, so no adapters are listed.
+// Wallets normally register themselves through the Wallet Standard. Phantom's adapter is listed
+// too, as a fallback for browsers where that registration doesn't reach the page; the provider
+// drops it whenever Phantom's standard wallet is present, so it never shows twice.
+const wallets = [new PhantomWalletAdapter()];
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ConnectionProvider endpoint={config.rpcUrl}>
-      <WalletProvider wallets={[]} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <HashRouter>
             <Routes>

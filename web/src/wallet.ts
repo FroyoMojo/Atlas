@@ -66,7 +66,8 @@ export function useConnectWallet() {
   const { wallets } = useWallet();
   const { setVisible } = useWalletModal();
   return useCallback(() => {
-    const found = wallets.some((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
+    const injected = typeof window !== "undefined" && !!((window as any).phantom?.solana || (window as any).solana); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const found = injected || wallets.some((w) => w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable);
     if (found) setVisible(true);
     else if (isMobile()) window.location.href = phantomBrowseUrl();
     else window.dispatchEvent(new Event(NO_WALLET_EVENT));
