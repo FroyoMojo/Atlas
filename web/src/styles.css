@@ -126,6 +126,9 @@ input { font: inherit; }
 .replay-admin { display: flex; gap: 8px; }
 
 .role-chip { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 10px; padding: 4px 12px; line-height: 1.25; cursor: pointer; font-family: inherit; }
+.role-chip.signin { padding: 8px 16px; font-size: 14px; font-weight: 700; }
+.or-line { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or-line::before, .or-line::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .role-chip-role { font-size: 13px; font-weight: 700; }
 .role-chip-wallet { font-size: 11px; opacity: .8; }
 .modal-backdrop { position: fixed; inset: 0; background: rgba(16,24,40,.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }

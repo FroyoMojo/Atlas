@@ -1,6 +1,7 @@
-// Who is using Atlas: a household, a sponsor or an investor. The wallet is the account; the role is a
-// choice stored in this browser for that wallet. It tailors the navigation and gives each role its own
-// account page. It is not access control: what a wallet may do is still decided by the chain service.
+// Who is using Atlas. The wallet is the account; a role (household, sponsor or investor) is a choice
+// stored in this browser for that wallet. A visitor without a wallet extension can also "sign in" by
+// pasting an address, which is view-only. The role tailors the menu and picks the account page. It is
+// not access control: what a wallet may do is decided by the chain service (the demo allowlist).
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
@@ -14,62 +15,81 @@ export const ROLES: Record<Role, { label: string; blurb: string; cta: { to: stri
 
 const isRole = (v: unknown): v is Role => v === "household" || v === "sponsor" || v === "investor";
 const keyFor = (wallet: string | null) => `atlasRole:${wallet ?? "anon"}`;
+const VIEW_KEY = "atlasViewAs";
 
-function read(wallet: string | null): Role | null {
+function read(key: string): string | null {
   try {
-    const v = localStorage.getItem(keyFor(wallet));
-    return isRole(v) ? v : null;
+    return localStorage.getItem(key);
   } catch {
-    return null; // private window or blocked storage: the page works without a remembered role
+    return null; // private window or blocked storage: the page works without remembering anything
   }
 }
+function write(key: string, value: string | null) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {
+    /* not remembered, still applied for this visit */
+  }
+}
+const readRole = (wallet: string | null): Role | null => {
+  const v = read(keyFor(wallet));
+  return isRole(v) ? v : null;
+};
+
+export type Panel = "signin" | "account" | null;
 
 interface RoleState {
   role: Role | null;
   setRole: (r: Role | null) => void;
-  /** The role chooser is open. */
-  choosing: boolean;
-  choose: (open: boolean) => void;
+  /** An address pasted in at sign-in (view-only), when no wallet is connected. */
+  viewAs: string | null;
+  setViewAs: (a: string | null) => void;
+  /** Connected wallet, else the pasted address. */
+  account: string | null;
+  /** Which panel is open: the sign-in or the account menu. */
+  panel: Panel;
+  openPanel: (p: Panel) => void;
 }
 
-const Ctx = createContext<RoleState>({ role: null, setRole: () => {}, choosing: false, choose: () => {} });
+const Ctx = createContext<RoleState>({
+  role: null, setRole: () => {}, viewAs: null, setViewAs: () => {}, account: null, panel: null, openPanel: () => {},
+});
 export const useRole = () => useContext(Ctx);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { publicKey } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
-  const [role, setRoleState] = useState<Role | null>(() => read(wallet));
-  const [choosing, choose] = useState(false); // opened only by the menu chip
+  const [viewAs, setViewAsState] = useState<string | null>(() => read(VIEW_KEY));
+  const account = wallet ?? viewAs;
+  const [role, setRoleState] = useState<Role | null>(() => readRole(account));
+  const [panel, openPanel] = useState<Panel>(null);
 
-  // A different wallet is a different account: load its role. A role picked before connecting (a card
-  // on the map) carries over to the wallet that connects. Nothing pops up: the chip in the menu changes
-  // it, and doing something (buy, donate, invest) sets it when it is not set yet.
+  // A different account is a different person: load its role. A role picked before signing in (a card
+  // on the map) carries over to the account that signs in.
   useEffect(() => {
-    const r = read(wallet) ?? (wallet ? read(null) : null);
+    const r = readRole(account) ?? (account ? readRole(null) : null);
     setRoleState(r);
-    if (wallet && r) {
-      try {
-        localStorage.setItem(keyFor(wallet), r);
-      } catch {
-        /* not remembered */
-      }
-    }
-  }, [wallet]);
+    if (account && r) write(keyFor(account), r);
+  }, [account]);
 
   const setRole = useCallback(
     (r: Role | null) => {
       setRoleState(r);
-      try {
-        if (r) localStorage.setItem(keyFor(wallet), r);
-        else localStorage.removeItem(keyFor(wallet));
-      } catch {
-        /* not remembered, still applied for this visit */
-      }
-      choose(false);
+      write(keyFor(account), r);
+      openPanel(null);
     },
-    [wallet],
+    [account],
   );
 
-  const value = useMemo(() => ({ role, setRole, choosing, choose }), [role, setRole, choosing]);
+  const setViewAs = useCallback((a: string | null) => {
+    setViewAsState(a);
+    write(VIEW_KEY, a);
+  }, []);
+
+  const value = useMemo(
+    () => ({ role, setRole, viewAs, setViewAs, account, panel, openPanel }),
+    [role, setRole, viewAs, setViewAs, account, panel],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -467,6 +467,16 @@ app.get(
 
 // ---------- account views by role (docs/readiness.md): what a wallet holds ----------
 
+// Sign-in check: is this address one the demo accepts? Answers for one address and never lists the others.
+app.get(
+  "/api/demo/allowed",
+  rateLimit(30),
+  wrap(async (req, res) => {
+    const account = parseAccount(req.query.address).toBase58();
+    res.json({ allowed: !env.demoMode || env.demoWallets.includes(account) });
+  }),
+);
+
 app.get(
   "/api/account/sponsor",
   rateLimit(30),

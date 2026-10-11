@@ -11,6 +11,7 @@ import { areaOf } from "../areas";
 import { config, explorer, short } from "../config";
 import { Brand, Contours, Level, Pill, usd } from "../components/ui";
 import { WalletHelp } from "../components/WalletHelp";
+import { useRole } from "../role";
 import type { Policy } from "../types";
 import { usePoll } from "../usePoll";
 import { useConnectWallet } from "../wallet";
@@ -23,7 +24,8 @@ export function MyPage({ standalone = false }: { standalone?: boolean }) {
   const { publicKey } = useWallet();
   const connectWallet = useConnectWallet();
   const { connection } = useConnection();
-  const owner = params.get("owner") ?? publicKey?.toBase58() ?? null;
+  const { account } = useRole();
+  const owner = params.get("owner") ?? publicKey?.toBase58() ?? account;
   const { runId, historic } = useReplay();
 
   const { data: policies, error } = usePoll(() => (owner ? api.policies(owner) : Promise.resolve([] as Policy[])), 1500, [owner]);

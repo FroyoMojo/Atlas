@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { config } from "../config";
 import { ROLES, useRole } from "../role";
-import { RoleChip, RoleChooser } from "./RolePicker";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { AccountPanels, RoleChip } from "./RolePicker";
 import { Brand } from "./ui";
 import { WalletHelp } from "./WalletHelp";
 
@@ -18,7 +19,11 @@ const NAV: Record<string, { to: string; label: string }[]> = {
 export function Layout() {
   const { pathname } = useLocation();
   const { role } = useRole();
-  useEffect(() => window.scrollTo(0, 0), [pathname]); // a new page starts at the top
+  // A new page starts at the top. Braces matter: returning scrollTo's result makes React treat it as a
+  // cleanup function and crash on the next page change.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   const cta = role ? ROLES[role].cta : ROLES.household.cta;
   return (
     <div className="app">
@@ -41,9 +46,11 @@ export function Layout() {
         </div>
       </header>
       <main>
-        <Outlet />
+        <ErrorBoundary resetKey={pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
-      <RoleChooser />
+      <AccountPanels />
       <WalletHelp />
       <footer className="footer">Demo on Solana devnet with test dollars. A fixed emergency payment, not property insurance.</footer>
     </div>

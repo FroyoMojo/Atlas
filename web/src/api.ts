@@ -51,6 +51,9 @@ export const api = {
   replayStart: (): Promise<{ run_id: string }> => (config.useMocks ? mockEngine.replayStart() : eng("/replay/start", admin())),
   replayReset: (): Promise<{ run_id: string }> => (config.useMocks ? mockEngine.replayReset() : eng("/replay/reset", admin())),
 
+  // Sign-in check: is this address one the demo accepts?
+  demoAllowed: (address: string) => chain<{ allowed: boolean }>(`/api/demo/allowed?address=${q(address)}`),
+
   // Account views by role (chain service)
   sponsorAccount: (owner: string) =>
     chain<{ donated_total: number; donations: { amount: number; tx_sig: string | null; at: string }[] }>(`/api/account/sponsor?owner=${q(owner)}`),

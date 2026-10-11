@@ -1,21 +1,17 @@
 // Your account, by role: a sponsor's donations, an investor's bond holding. A household's account is
 // My protection, so that role is sent there.
-import { useWallet } from "@solana/wallet-adapter-react";
 import { Link, Navigate } from "react-router-dom";
 import { api } from "../api";
 import { explorer } from "../config";
 import { Contours, usd } from "../components/ui";
 import { ROLES, useRole } from "../role";
 import { usePoll } from "../usePoll";
-import { useConnectWallet } from "../wallet";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function AccountPage() {
-  const { publicKey } = useWallet();
-  const { role, choose } = useRole();
-  const connectWallet = useConnectWallet();
-  const owner = publicKey?.toBase58() ?? null;
+  const { role, account, openPanel } = useRole();
+  const owner = account;
 
   if (role === "household") return <Navigate to="/me" replace />;
 
@@ -33,8 +29,8 @@ export function AccountPage() {
   if (!owner) {
     return (
       <>
-        {head("Your account", "Connect your wallet to see what you hold.")}
-        <div className="page"><button className="btn btn-primary" onClick={connectWallet}>Connect wallet</button></div>
+        {head("Your account", "Sign in to see what you hold.")}
+        <div className="page"><button className="btn btn-primary" onClick={() => openPanel("signin")}>Sign in</button></div>
       </>
     );
   }
@@ -42,7 +38,7 @@ export function AccountPage() {
     return (
       <>
         {head("Your account", "Tell us how you're using Atlas and we'll show the right account page.")}
-        <div className="page"><button className="btn btn-primary" onClick={() => choose(true)}>Choose your role</button></div>
+        <div className="page"><button className="btn btn-primary" onClick={() => openPanel("account")}>Choose your role</button></div>
       </>
     );
   }
