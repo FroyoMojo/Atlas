@@ -1,9 +1,12 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { config } from "../config";
 import { Brand } from "./ui";
 import { WalletHelp } from "./WalletHelp";
 
 export function Layout() {
+  const { pathname } = useLocation();
+  useEffect(() => window.scrollTo(0, 0), [pathname]); // a new page starts at the top
   return (
     <div className="app">
       <header className="nav">

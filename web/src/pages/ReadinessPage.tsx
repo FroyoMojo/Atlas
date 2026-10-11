@@ -42,8 +42,8 @@ export function ReadinessPage() {
         <Contours />
         <section className="hero-body center">
           <span className="eyebrow">Markets · for sponsors</span>
-          <h1 style={{ fontSize: 46 }}>Fund the neighborhoods before the flood.</h1>
-          <p>Each market shows how much of its promised $500 is funded today. Money you donate raises that share and lowers the price for every household there. It is a gift: no return, no units.</p>
+          <h1 className="h1-page">Fund the neighborhoods before the flood.</h1>
+          <p>Each market shows how much of its promised $500 is funded today. Houston's covered areas share one community fund: money you donate raises that share and lowers the price for every household. It is a gift: no return, no units.</p>
         </section>
       </div>
 
@@ -51,13 +51,13 @@ export function ReadinessPage() {
         <section className="lift money-card" aria-live="polite">
           <div>
             <span>Houston pool is</span>
-            <span className="big-num" style={{ fontSize: 44, whiteSpace: "nowrap", color: pool && pool.readiness < 1 ? "#B54708" : "#0A3A5F" }}>
+            <span className="big-num num-lg" style={{ color: pool && pool.readiness < 1 ? "#B54708" : "#0A3A5F" }}>
               {pool ? (nothingSold ? "open" : `${pct(pool.readiness)} ready`) : "–"}
             </span>
           </div>
           <div>
             <span>{nothingSold ? "No cover sold yet. The pool can fully fund" : "If a flood hit now, each household gets"}</span>
-            <span className="big-num" style={{ fontSize: 44, whiteSpace: "nowrap" }}>
+            <span className="big-num num-lg">
               {pool ? (nothingSold ? `${usd(pool.fully_funded_cover_usd ?? pool.funds_usd)} of cover` : `${usd(pool.payout_if_fired_per_500)} of $500`) : "–"}
             </span>
           </div>

@@ -1,6 +1,6 @@
 # Atlas web (Jesse)
 
-Dashboard for the demo: Vite + React + TypeScript, Leaflet map, Recharts, Solana wallet adapter.
+Dashboard for the demo: Vite + React + TypeScript, Leaflet map, Solana wallet adapter.
 
 ```bash
 cd web
@@ -15,10 +15,14 @@ npm run build        # type-checks, then builds to dist/
 | Route | Shows |
 | --- | --- |
 | `#/` | Map coloured normal / near / triggered, demo gauges, storm status; Start/Reset only with the admin token |
-| `#/gauge/:id` | Stage over event time, trigger line, event markers, rejected count; quote with band, k, freeze; Buy (Flow A or B) |
-| `#/pool` | On-chain panel (seeded capital labelled, float, NAV, reconciliation badge); simulated book with f_int / f_fin; payouts by kind; bond deposit |
-| `#/verify` | Paste a payout signature: preimage, sha256(preimage), Memo hash, match |
-| `#/phone?owner=<address>` | The money moment: balance from chain, "+$500 • PAID • Brays Bayou" banner with the transaction link |
+| `#/protect[/:id]` | Get protected: ZIP or neighborhood lookup (green covered, red not), $250/$500, price, readiness note, one-tap buy (Flow A or B) |
+| `#/me` | My protection: "You're protected" with the river level, or "We've sent you $500" with safety steps |
+| `#/phone?owner=<address>` | The same screen without the nav, for mirroring one wallet on the projector |
+| `#/readiness` | Markets: pool readiness, funding sources, live and simulated markets with grades, Fund readiness (donation) |
+| `#/invest` | The catastrophe bond: terms, risk and deposit |
+| `#/proof` | Money set aside, reconciliation, payouts with in-browser Verify (`?sig=` links), Harvey stress test |
+| `#/how` | How it works |
+| `#/gauge/:id`, `#/pool`, `#/verify` | Old links: redirect to `#/protect/:id` and `#/proof` |
 | `#/admin` | Store the admin token in this browser (demo laptop only) |
 
 ## Mocks

@@ -7,7 +7,7 @@ Status as of about 2:30 am CDT. Tick items as you go; push this file so we share
 - [x] Hosted at https://atlasflood.us on Vultr (Caddy + systemd), HTTPS valid; `/health` and `/engine/health` ok; `POST /chain/reset` is 403 from outside.
 - [x] New frontend deployed: map, Get protected, My protection, Proof, How it works (checked live: 77096 is covered, $22.50 for $500, "Why" shows 2 floods in 19 years).
 - [x] Domain atlasflood.us through the GoDaddy Registry offer.
-- [x] Devpost text: blanks filled from the live engine (`docs/devpost.md`): E[L] about $168k, K about $669k, Harvey $837k paid in full, bond takes $637k.
+- [x] Devpost text: blanks filled from the live engine (`docs/devpost.md`): E[L] about $168k, K about $669k, Harvey $837k paid in full (community reserve first, then bond capital).
 - [x] Talking points and video script (`docs/talking-points.md`); pitch deck drafted.
 - [x] Engine tests 22/22, web typecheck and build clean.
 

@@ -9,6 +9,7 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
 import { config } from "./config";
 import { AdminPage } from "./pages/AdminPage";
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <HashRouter>
+            <ErrorBoundary>
             <Routes>
               <Route path="/phone" element={<MyPage standalone />} />
               <Route element={<Layout />}>
@@ -54,6 +56,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
+            </ErrorBoundary>
           </HashRouter>
         </WalletModalProvider>
       </WalletProvider>

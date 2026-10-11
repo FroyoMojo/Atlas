@@ -12,12 +12,6 @@ export interface Gauge {
   demo_ready: boolean;
 }
 
-export interface Series {
-  points: { event_time: string; stage_ft: number }[];
-  trigger_ft: number;
-  rejected_count: number;
-}
-
 export interface Quote {
   premium: number;
   p_payout: number;

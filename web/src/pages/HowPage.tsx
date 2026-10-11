@@ -14,7 +14,7 @@ export function HowPage() {
         <Contours />
         <section className="hero-body center">
           <span className="eyebrow">How it works</span>
-          <h1 style={{ fontSize: 46 }}>No claim. The river decides.</h1>
+          <h1 className="h1-page">No claim. The river decides.</h1>
           <p>Atlas pays a fixed amount when the river gauge next to your neighborhood reaches flood level.</p>
         </section>
       </div>
@@ -53,7 +53,7 @@ export function HowPage() {
           </div>
           <div>
             <h3>Three ways to take part</h3>
-            <p><b>Households</b> buy protection and get a fixed payment when the river floods. <b>Sponsors</b> donate to a market on the <Link to="/readiness">Markets</Link> page: it raises how much of every payout is funded and lowers the price, and it earns no return. <b>Investors</b> buy the <Link to="/invest">catastrophe bond</Link>: it takes only the remote tail of flood losses, after premiums and community money, and pays T-bill interest plus a spread for that risk.</p>
+            <p><b>Households</b> buy protection and get a fixed payment when the river floods. <b>Sponsors</b> donate to the community fund on the <Link to="/readiness">Markets</Link> page: it raises how much of every payout is funded and lowers the price, and it earns no return. <b>Investors</b> buy the <Link to="/invest">catastrophe bond</Link>: it takes only the remote tail of flood losses, after premiums and community money, and pays T-bill interest plus a spread for that risk.</p>
           </div>
           <div>
             <h3>This demo</h3>

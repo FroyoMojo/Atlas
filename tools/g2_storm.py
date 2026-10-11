@@ -51,7 +51,8 @@ def opening_balances():
 def cmd_open(cur, a):
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
     vault, flt = opening_balances()
-    cur.execute("UPDATE runs SET status = 'done' WHERE status = 'running'")
+    # Mark an abandoned run reset (not done): a done run's open storm would stay payable.
+    cur.execute("UPDATE runs SET status = 'reset', reset_wall = now() WHERE status = 'running'")
     cur.execute(
         "INSERT INTO runs (run_id, source, started_wall, shift, clock, status, opening_vault, opening_float) "
         "VALUES (%s, 'replay', %s, interval '0', %s, 'running', %s, %s)",

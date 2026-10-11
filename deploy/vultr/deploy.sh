@@ -5,6 +5,12 @@ set -euo pipefail
 ROOT=/opt/atlas
 cd "$ROOT"
 
+# Never restart in the middle of a replay: it would kill the run and its payouts.
+if curl -fsS http://127.0.0.1:8080/engine/replay/status 2>/dev/null | grep -q '"status":"running"'; then
+  echo "A replay is running; wait for it to finish (or press Reset), then deploy again." >&2
+  exit 1
+fi
+
 sudo -u atlas git pull --ff-only
 sudo -u atlas bash -c "cd chain && npm ci --no-audit --no-fund"
 sudo -u atlas bash -c "cd web && npm ci --no-audit --no-fund"

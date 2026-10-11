@@ -1,5 +1,5 @@
-// Laptop gateway (replaces Caddy; hosting is the laptop + Cloudflare Tunnel).
-// One local port that Cloudflare Tunnel exposes over HTTPS:
+// Gateway: one local port in front of everything. On Vultr, Caddy terminates HTTPS and proxies to
+// it; on the fallback laptop, Cloudflare Tunnel does.
 //   /engine/*       -> Ezekiel's FastAPI on 127.0.0.1:8000 (prefix stripped)
 //   chain routes    -> chain service on 127.0.0.1:CHAIN_PORT
 //   /chain/reset    -> 403 (admin reset is localhost-only, never through the tunnel)

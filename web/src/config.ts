@@ -1,7 +1,7 @@
 const e = import.meta.env;
 
 export const config = {
-  useMocks: (e.VITE_USE_MOCKS ?? "true") === "true",
+  useMocks: e.VITE_USE_MOCKS === "true", // mocks only when asked for: a build without the env must never ship fake data
   // Empty or relative = same origin, so one build works on the tunnel URL and the domain.
   engineUrl: e.VITE_ENGINE_URL || "/engine", // an empty value means the default, not the site root
   chainUrl: e.VITE_CHAIN_URL ?? "",

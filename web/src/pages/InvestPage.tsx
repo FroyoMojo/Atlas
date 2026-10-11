@@ -43,7 +43,7 @@ export function InvestPage() {
         <Contours />
         <section className="hero-body center">
           <span className="eyebrow">For investors</span>
-          <h1 style={{ fontSize: 46 }}>A catastrophe bond for floods.</h1>
+          <h1 className="h1-page">A catastrophe bond for floods.</h1>
           <p>Atlas bond holders take only the remote tail: the losses that come after premiums and community money are used up. In return they earn T-bill interest plus a spread sized to that risk.</p>
         </section>
       </div>
@@ -109,7 +109,7 @@ export function InvestPage() {
             </div>
           )}
           <p className="small muted" style={{ margin: 0 }}>
-            Not looking for a return? <Link to="/readiness">Fund a neighborhood's readiness</Link> instead. Live in Houston? <Link to="/protect">Get protected</Link>.
+            Not looking for a return? <Link to="/readiness">Fund Houston's community fund</Link> instead. Live in Houston? <Link to="/protect">Get protected</Link>.
           </p>
         </section>
       </div>

@@ -71,8 +71,8 @@ export function ProofPage() {
       <div className="hero pad-mid">
         <Contours />
         <section className="hero-body center">
-          <h1 style={{ fontSize: 46 }}>Don't trust us. Check.</h1>
-          <p>Every number here comes straight from the blockchain.</p>
+          <h1 className="h1-page">Don't trust us. Check.</h1>
+          <p>Every number here is checked against the blockchain or recomputed from public river data.</p>
         </section>
       </div>
 

@@ -1,7 +1,7 @@
 # Hosting on the demo laptop (Jesse)
 
 > **Current hosting is the Vultr server: [vultr/README.md](vultr/README.md)** (`atlasflood.us` →
-> `45.32.196.119`). This page and [WINDOWS.md](WINDOWS.md) are the **fallback**: the demo laptop
+> `45.76.239.177`). This page and [WINDOWS.md](WINDOWS.md) are the **fallback**: the demo laptop
 > behind a Cloudflare Tunnel, if the server fails. Don't change the domain's DNS for this while
 > Vultr is live.
 

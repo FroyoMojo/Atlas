@@ -47,7 +47,7 @@ export function CoverPage() {
     try {
       const { transaction, flow } = await api.buyTx(gauge.gauge_id, payout, publicKey.toBase58());
       await purchase(transaction, flow);
-      navigate("/me", { state: { justBought: true } });
+      navigate("/me");
     } catch (e) {
       setBuyError(friendlyError(e));
     } finally {
