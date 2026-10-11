@@ -16,6 +16,7 @@
     "migrate": "tsx src/scripts/migrate.ts",
     "precreate": "tsx src/scripts/precreate-policies.ts",
     "fund:bot": "tsx src/scripts/fund-bot.ts",
+    "shrink:vault": "tsx src/scripts/shrink-vault.ts",
     "demo:buy": "tsx src/scripts/demo-buy.ts",
     "demo:bond": "tsx src/scripts/demo-bond.ts",
     "status": "tsx src/scripts/status.ts",

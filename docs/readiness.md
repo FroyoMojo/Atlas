@@ -63,6 +63,25 @@ pool even after the donation, and return-seeking capital does not lower the pric
 
 Stretch, only if everything above is done: sponsored purchase (payer different from owner).
 
+## Production runbook: switching the live site to the readiness demo (in this order)
+
+Each step depends on the one before. Reset only tops balances **up** to the snapshot and never takes
+money out, so shrinking the live vault needs its own step (the vault holds about $5,300 today).
+
+1. **Deploy the code.** On the server: `bash /opt/atlas/deploy/vultr/deploy.sh`. Check `https://atlasflood.us/engine/readiness` answers.
+2. **Set the env** in `/opt/atlas/.env`: `SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`, `MAX_DONATION=2000`. Run `deploy.sh` again so the stack restarts with it.
+3. **Press Reset** on the admin page. This puts every demo policy back to `ACTV` and writes a clean ledger baseline.
+4. **Shrink the vault:** `cd /opt/atlas/chain && sudo -u atlas npm run shrink:vault -- 600`. It moves the excess to the treasury through the 2-of-3 proposal (about 1 to 2 minutes with the 60 s time lock) and writes `reserve -x, seeded +x` to the ledger. Run it with no run in progress.
+5. **Check the pool:** `npm run status` shows the vault at 600; `GET /engine/readiness` shows `pool.funds_usd` 600 and `fully_funded_cover_usd` 600 with nothing sold.
+6. **Buy four policies on Brays** from the four demo wallets. Quotes should read about $16.69, $19.43, $20.33, $20.77 and readiness about 34%.
+7. **Run 1:** Start. Each household is paid about $169. The reconciliation badge must be green.
+8. **Reset, buy again, donate** about $1,320 from a phone (**donate before Start**), check readiness 100% and that a new Brays quote is about $15.91, then **Run 2:** Start. Each household is paid $500. Green again.
+9. Repeat 6 to 8 once more with no code changes. That is the freeze gate.
+
+A donation that is not consumed by a run stays in the vault (Reset never removes money), so the
+next readiness reading is higher than the snapshot. If that happens before judging, run step 4 again
+after a Reset to bring the vault back to 600.
+
 ## Honest limits to keep in the pitch
 
 - Readiness for a market that has never had a flood is a statement about *funds*, not about risk: it does not say how likely a flood is.
