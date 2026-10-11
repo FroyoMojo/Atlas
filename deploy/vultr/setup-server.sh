@@ -26,12 +26,19 @@ if ! command -v node >/dev/null || ! node -v | grep -q '^v22'; then
   apt-get install -y nodejs
 fi
 
-# Caddy (official repository)
+# Caddy. Ubuntu's own package first (the third-party Caddy apt repo started returning
+# "402 Payment Required"); if the distro has none, the .deb from Caddy's GitHub release.
+rm -f /etc/apt/sources.list.d/caddy-stable.list /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 if ! command -v caddy >/dev/null; then
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
-  apt-get update -y && apt-get install -y caddy
+  apt-get update -y || true
+  apt-get install -y caddy || true
 fi
+if ! command -v caddy >/dev/null; then
+  DEB_URL=$(curl -fsSL https://api.github.com/repos/caddyserver/caddy/releases/latest \
+    | grep -o 'https://[^"]*linux_amd64\.deb' | head -1)
+  curl -fsSL "$DEB_URL" -o /tmp/caddy.deb && apt-get install -y /tmp/caddy.deb
+fi
+command -v caddy >/dev/null || { echo "Caddy install failed"; exit 1; }
 
 # Service user and code
 id atlas >/dev/null 2>&1 || useradd --system --create-home --shell /usr/sbin/nologin atlas
