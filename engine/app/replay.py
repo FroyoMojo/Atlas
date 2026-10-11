@@ -176,6 +176,11 @@ class Replay:
         """Returns 'done', or 'stopped' if reset stopped it first."""
         with psycopg.connect(settings.DATABASE_URL, row_factory=dict_row) as conn:
             gauges = {r["gauge_id"]: r for r in conn.execute("SELECT * FROM gauges")}
+            # Replay only the gauges we cover: a non-demo gauge going red on stage, or opening
+            # an event in the storm, is confusing and adds nothing. REPLAY_DEMO_ONLY=false to stream all.
+            if (os.environ.get("REPLAY_DEMO_ONLY") or "true").lower() == "true":
+                demo = {k: v for k, v in gauges.items() if v["demo_ready"]}
+                gauges = demo or gauges
             run = conn.execute("SELECT * FROM runs WHERE run_id = %s", (self.run_id,)).fetchone()
             if run is None:
                 raise RuntimeError(f"run {self.run_id} does not exist")
@@ -183,8 +188,9 @@ class Replay:
             shift = run["started_wall"].replace(microsecond=0) - w0
             rows = conn.execute(
                 """SELECT event_time, gauge_id, stage_ft, discharge_cfs, rejected FROM gauge_readings
-                   WHERE run_id = 'live' AND event_time >= %s AND event_time <= %s ORDER BY event_time, gauge_id""",
-                (w0, w1)).fetchall()
+                   WHERE run_id = 'live' AND gauge_id = ANY(%s) AND event_time >= %s AND event_time <= %s
+                   ORDER BY event_time, gauge_id""",
+                (list(gauges), w0, w1)).fetchall()
             steps: list[list[dict]] = []
             for r in rows:
                 if not steps or steps[-1][0]["event_time"] != r["event_time"]:
