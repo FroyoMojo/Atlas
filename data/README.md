@@ -29,3 +29,10 @@ python data/db.py finalize               # continuous aggregate refresh + column
 - `finalize` runs after the backfill on purpose: the aggregate policy only refreshes 3 days, so history needs the full manual refresh, and the columnstore policy compresses the decades.
 - `record_note` is machine-written from the stage-discharge screen. It is not the datum-history check in plan 6.1. Read each gauge's datum history on its USGS page and overwrite `record_note` when you have.
 - USGS and NWPS endpoint paths are from memory and flagged `[VERIFY]` in the plan. If one 404s, `preflight.py` prints it as a problem rather than crashing.
+
+## Also in this folder
+
+- `usgs_cli.py`: Jesse's minimal loader (gauges, peaks, iv upserts), kept from the first engine pass. It is superseded by `backfill.py` for everything above; the Tiger database was filled with this pipeline, not with the CLI.
+- `verify.py`: what is in Tiger and whether it is usable for pricing.
+- `f11_decisions.json`: the datum-change record starts per gauge, applied with `py data\backfill.py f11`.
+

@@ -1,0 +1,52 @@
+{
+  "name": "atlas-chain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Atlas Solana layer: aUSD, policy tokens, Squads vault, buy server and payout bot",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "keygen": "tsx src/scripts/keygen.ts",
+    "airdrop": "tsx src/scripts/airdrop.ts",
+    "setup:ausd": "tsx src/scripts/setup-ausd.ts",
+    "fund": "tsx src/scripts/fund-wallets.ts",
+    "setup:multisig": "tsx src/scripts/setup-multisig.ts",
+    "setup:bond": "tsx src/scripts/setup-bond.ts",
+    "test:token2022": "tsx src/scripts/test-token2022.ts",
+    "migrate": "tsx src/scripts/migrate.ts",
+    "precreate": "tsx src/scripts/precreate-policies.ts",
+    "fund:bot": "tsx src/scripts/fund-bot.ts",
+    "demo:buy": "tsx src/scripts/demo-buy.ts",
+    "demo:bond": "tsx src/scripts/demo-bond.ts",
+    "status": "tsx src/scripts/status.ts",
+    "server": "tsx src/server/index.ts",
+    "bot": "tsx src/bot/payout-bot.ts",
+    "gateway": "tsx src/gateway/index.ts",
+    "stack": "concurrently -n chain,bot,gateway -c blue,magenta,green --restart-tries 20 --restart-after 2000 \"tsx src/server/index.ts\" \"tsx src/bot/payout-bot.ts\" \"tsx src/gateway/index.ts\"",
+    "tunnel": "cloudflared tunnel --url http://localhost:8080",
+    "web:build": "tsx src/scripts/build-web.ts"
+  },
+  "dependencies": {
+    "@solana/spl-token": "^0.4.14",
+    "@solana/spl-token-metadata": "^0.1.6",
+    "@solana/web3.js": "1.98.4",
+    "@sqds/multisig": "^2.1.4",
+    "bn.js": "^5.2.5",
+    "bs58": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "http-proxy-middleware": "^3.0.5",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.2.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.23.15",
+    "typescript": "5.9"
+  }
+}

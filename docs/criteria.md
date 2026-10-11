@@ -30,7 +30,6 @@ Copied from the [Devpost page](https://codered-orion-ccs.devpost.com/) and its [
 | Best Environment Hack | $500 | Technology for a healthier, more sustainable future: climate, conservation, pollution, protecting local communities |
 | [MLH] Best Use of Solana | Ledger wallets | Fast, cheap, high-frequency transactions; trading, payments, identity or supply-chain prototypes |
 | [MLH] Best Use of Tiger Data | Stream Deck Mini | Real-time data, time series, analytics; continuous aggregates, compression; financial prediction engines welcome |
-| [MLH] Best Use of Vultr | M5Stack Tab5 | Cloud deploy and compute on Vultr |
 | [MLH] Best Domain Name from GoDaddy Registry | Gift card | Register a domain through GoDaddy Registry |
 
-Other tracks we are not targeting: ElevenLabs, Gemini API, Backboard, Best Hardware, Most Immersive, DEV Writing Challenge.
+Other tracks we are not targeting: Vultr (hosting is the laptop + Cloudflare Tunnel), ElevenLabs, Gemini API, Backboard, Best Hardware, Most Immersive, DEV Writing Challenge.

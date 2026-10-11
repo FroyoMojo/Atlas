@@ -1,0 +1,8 @@
+[
+  { "gauge_id": "demo-buffalo", "name": "Buffalo Bayou (mock)", "lat": 29.762, "lon": -95.383, "trigger_ft": 30.0, "peak_ft": 38.5, "base_ft": 12.0, "peak_at": 0.45 },
+  { "gauge_id": "demo-brays", "name": "Brays Bayou (mock)", "lat": 29.707, "lon": -95.398, "trigger_ft": 40.0, "peak_ft": 46.0, "base_ft": 20.0, "peak_at": 0.55 },
+  { "gauge_id": "demo-whiteoak", "name": "White Oak Bayou (mock)", "lat": 29.775, "lon": -95.397, "trigger_ft": 35.0, "peak_ft": 41.0, "base_ft": 15.0, "peak_at": 0.4 },
+  { "gauge_id": "demo-greens", "name": "Greens Bayou (mock)", "lat": 29.92, "lon": -95.3, "trigger_ft": 45.0, "peak_ft": 49.0, "base_ft": 25.0, "peak_at": 0.6 },
+  { "gauge_id": "demo-sims", "name": "Sims Bayou (mock)", "lat": 29.67, "lon": -95.32, "trigger_ft": 28.0, "peak_ft": 26.0, "base_ft": 10.0, "peak_at": 0.5 },
+  { "gauge_id": "demo-cypress", "name": "Cypress Creek (mock)", "lat": 30.01, "lon": -95.43, "trigger_ft": 120.0, "peak_ft": 124.0, "base_ft": 105.0, "peak_at": 0.7 }
+]
