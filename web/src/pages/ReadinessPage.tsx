@@ -110,7 +110,7 @@ export function ReadinessPage() {
 }
 
 function MarketCard({ m }: { m: ReadinessMarket }) {
-  const { area, river } = m.simulated ? { area: m.name, river: m.region ?? "" } : areaOf({ gauge_id: m.market_id, name: m.name });
+  const { area, river } = m.simulated ? simulatedLabel(m) : areaOf({ gauge_id: m.market_id, name: m.name });
   const g = GRADE_STYLE[m.grade] ?? GRADE_STYLE.C;
   const color = m.readiness >= 0.999 ? "#079455" : m.readiness >= 0.5 ? "#B54708" : "#B42318";
   return (
@@ -145,6 +145,9 @@ function MarketCard({ m }: { m: ReadinessMarket }) {
           )}
         </>
       )}
+      {m.grade === "C" ? (
+        <div style={{ borderTop: "1px solid #E4E7EC", paddingTop: 10 }} className="small muted">Not offered: the record doesn't support a fair price.</div>
+      ) : (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, borderTop: "1px solid #E4E7EC", paddingTop: 10 }}>
         <span className="small muted" style={{ whiteSpace: "nowrap" }}>$500, 90 days</span>
         <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
@@ -152,9 +155,18 @@ function MarketCard({ m }: { m: ReadinessMarket }) {
           {m.price_if_ready < m.price_now - 0.005 && <span className="small muted">{price(m.price_if_ready)} when fully ready</span>}
         </span>
       </div>
+      )}
       {!m.simulated && <Link to={`/protect/${encodeURIComponent(m.market_id)}`} className="small muted">Live here? Get protected →</Link>}
     </div>
   );
+}
+
+/** "North Carolina: Neuse River at Kinston" -> place "Neuse River at Kinston", state "North Carolina". */
+function simulatedLabel(m: ReadinessMarket): { area: string; river: string } {
+  const [state, place] = (m.region ?? "").includes(":") ? (m.region ?? "").split(/:\s*/, 2) : [m.region ?? "", ""];
+  const name = place || m.name;
+  const tidy = name === name.toUpperCase() ? name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : name;
+  return { area: tidy, river: state };
 }
 
 function FundButton() {
