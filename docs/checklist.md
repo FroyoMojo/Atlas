@@ -7,11 +7,11 @@ Status as of about 2:30 am CDT. Tick items as you go; push this file so we share
 ## Done
 
 - [x] Hosted at https://atlasflood.us on Vultr (Caddy + systemd), HTTPS valid; `/health` and `/engine/health` ok; `POST /chain/reset` is 403 from outside.
-- [x] New frontend deployed: map, Get protected, My protection, Proof, How it works (checked live: 77096 is covered, $22.50 for $500, "Why" shows 2 floods in 19 years).
+- [x] New frontend deployed: map, Get protected, My protection, Proof, Markets, Invest; how it works is on the landing page (checked live: 77096 is covered, $22.50 for $500, "Why" shows 2 floods in 19 years).
 - [x] Domain atlasflood.us through the GoDaddy Registry offer.
 - [x] Devpost text: blanks filled from the live engine (`docs/devpost.md`): E[L] about $168k, K about $669k, Harvey $837k paid in full (community reserve first, then bond capital).
 - [x] Talking points and video script (`docs/talking-points.md`); pitch deck drafted.
-- [x] Engine tests 22/22, web typecheck and build clean.
+- [x] Engine tests 35/35, web typecheck and build clean.
 
 ## Must do (in this order)
 
@@ -33,7 +33,7 @@ Status as of about 2:30 am CDT. Tick items as you go; push this file so we share
    - Both teammates added to the submission.
 5. [x] **Readings count:** 6,503,183 readings (`python data/run_numbers.py`, section 1); Devpost and talking points now say more than 6.5 million, compressed 1,000 MB to 155 MB (6.5x).
 6. [x] **Repo is public** (FroyoMojo/Atlas) and the README opens with what Atlas is and the live link.
-6b. [ ] **Switch to the readiness demo** (`docs/readiness.md`, Production runbook): deploy, env (`SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`), Reset, `npm run shrink:vault -- 600`, four buys on Brays, Run 1 (about $169 each), donate about $1,320, Run 2 ($500 each). Replace every TODO(live) in `docs/devpost.md` with what you actually saw.
+6b. [ ] **Switch to the readiness demo** (`docs/readiness.md`, Production runbook): deploy, env (`SNAPSHOT_VAULT=600`, `SEED_RESERVE=300`, `READINESS_PRICING=true`), Reset, `npm run shrink:vault -- 600`, four buys on Brays, Run 1 (about $169 each), donate about $1,320, Run 2 ($500 each). Check the $169 / $1,320 / $15.91 figures in `docs/devpost.md` and `docs/talking-points.md` against what you saw.
 7. [ ] **Rehearse the 30-second and full walkthrough** twice each, swapping who talks.
 
 ## At judging

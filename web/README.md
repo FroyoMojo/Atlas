@@ -21,7 +21,7 @@ npm run build        # type-checks, then builds to dist/
 | `#/readiness` | Markets: pool readiness, funding sources, live and simulated markets with grades, Fund readiness (donation) |
 | `#/invest` | The catastrophe bond: terms, risk and deposit |
 | `#/proof` | Money set aside, reconciliation, payouts with in-browser Verify (`?sig=` links), Harvey stress test |
-| `#/how` | How it works |
+| `#/how` | Old link: redirects to `#/` (how it works is on the landing page) |
 | `#/gauge/:id`, `#/pool`, `#/verify` | Old links: redirect to `#/protect/:id` and `#/proof` |
 | `#/admin` | Store the admin token in this browser (demo laptop only) |
 

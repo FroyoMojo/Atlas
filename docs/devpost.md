@@ -26,14 +26,14 @@ We are a finance major and a quant. We wanted to build the product an insurer, a
 
 ## What it does
 
-**Atlas** is emergency money for the first days of a flood. You protect your home's neighborhood for 90 days; if the river gauge that watches it reaches the official flood level, a fixed amount (for example \\( B = 500 \\) aUSD, a test dollar) lands in your wallet automatically, in seconds. It is a fixed emergency payment for residents (one per household), not property insurance and not a bet on the weather.
+**Atlas** is emergency money for the first days of a flood. You protect your home's neighborhood for 90 days; if the river gauge that watches it reaches the official flood level, a fixed amount (for example \\( B = 500 \\) aUSD, a test dollar) lands in your wallet automatically, in seconds. It is a fixed emergency payment for residents (one per household; on devnet, one per wallet), not property insurance and not a bet on the weather.
 
 - **Get protected:** type your ZIP or neighborhood. A covered address turns green and shows the gauge and flood level that would pay you; an uncovered one turns red. Pick $250 or $500, see the price (for $500 in Meyerland, $22.50 with no community money behind the pool and less as it fills), and confirm one wallet transaction. "Why this price?" shows the basis: Brays Bayou reached flood level 2 times in 19 years of records. The policy is a non-transferable token in your wallet named **Atlas Policy ACTV**.
 - **You're protected:** your page shows the river level against the flood line, days left and your balance.
 - **Trigger:** when a gauge records two consecutive accepted readings at or above its flood level, Atlas opens an event and records a hash of the exact reading.
 - **Pay:** the payout bot sends the money with a Memo carrying that hash, and the policy turns **PAID** in the same transaction. The phone switches to "Flood detected · Meyerland. We've sent you $500 for immediate costs", with what to do right now: call 911 if in danger, find a shelter, use the money for a room or food.
 - **Proof:** one page shows the money set aside and a "matches the blockchain" check, lists every payout with a **Verify** button that recomputes the reading's fingerprint in your browser, and stress-tests the pool against another Harvey.
-- **Readiness:** every market shows, live, how much of its promised payout is funded right now: "if the river crossed the line this minute you would get $169 of $500". The gap to fully funded is shown per household, and the price falls as the community's own money (premiums and donated sponsor funds) covers more of the risk. Anyone can fund readiness from a wallet, and a market that is only partly ready pays everyone the same share until it is topped up.
+- **Readiness:** every market shows, live, how much of its promised payout is funded right now: "if the river crossed the line this minute you would get $169 of $500". The gap to fully funded is shown per household, and the price falls as the community's own money (premiums and donated sponsor funds) covers more of the risk. Anyone can fund readiness from a wallet, and a market that is only partly ready pays everyone the same share right away, and the rest when the storm ends if the funds allow.
 - **Markets:** the four live Houston gauges, plus eleven simulated candidates in other regions that Atlas grades A, B or C from the same data (how often the trigger was reached, how many comparable years, how many events). Simulated markets are priced and shown with their gap to launch; nothing is sold there.
 
 For the demo, we replay **Hurricane Harvey** from the real 2017 USGS record: about five days of 15-minute readings at our four covered gauges (Brays Bayou, Buffalo Bayou at Piney Point, Cypress Creek and Spring Creek), squeezed into about 90 seconds and time-shifted to now. The map turns red bayou by bayou, the live feed reports each flood in plain words, and payouts land on a real phone.
@@ -59,7 +59,7 @@ Cover runs for 90 days for one premium. Triggers sit at each gauge's National We
 **Readiness Markets: preparedness you can see and fund**
 - Readiness is the pay factor our engine already applies in a storm, shown before the storm: funds available divided by payouts owed. The funding split reads the vault's real balance from the chain, so the bar on the page adds up to what is actually there.
 - The price falls only with community money (seed reserve, household premiums, donated sponsor funds), never with return-seeking bond capital. A **Fund readiness** flow lets a sponsor donate aUSD to the vault from a wallet, with no bond units minted; the ledger books it as `donors -D, donations +D`, and reconciliation counts it.
-- Each market gets a grade from stated rules (trigger reached in 5 to 35% of years, 15 or more comparable years, at least two events) so the grade can be audited.
+- Each market gets a grade from stated rules (trigger reached in 5 to 35% of years; A needs 15 or more comparable years and at least two events, B has 10 to 14 years or a single event, C is not offered) so the grade can be audited.
 
 **Vultr + GoDaddy Registry:** the whole stack (engine, chain service, payout bot and dashboard behind one gateway) runs on one Ubuntu Vultr instance behind Caddy (automatic HTTPS) and systemd at [atlasflood.us](https://atlasflood.us), a domain registered through the GoDaddy Registry offer.
 
@@ -131,7 +131,7 @@ We tested ideas against our own data and dropped the ones that failed: a single-
 - Rainfall and multi-gauge triggers to reduce basis risk; NWS flood stages for every trigger.
 - A licensed partner (insurer, city programme or nonprofit) to sell it, and a cash-out path through an off-ramp or a linked card.
 
-## Limitations (honest version)
+## Limitations
 
 - **Basis risk:** payouts follow a gauge, not your street.
 - **Devnet and test money only;** not a licensed insurance product, and the bond token would likely be a security.
@@ -139,7 +139,7 @@ We tested ideas against our own data and dropped the ones that failed: a single-
 - **The catastrophe numbers** come from a simulated 2,000-policy book (the spread over gauges is an assumption); on-chain capital is seeded test money.
 - **Simulated markets are simulated.** The eleven candidate markets are priced and graded from public data, but no policies are sold there, and the diversification result (a pool spread across regions needs about a third less capital) rests on eight complete years.
 - **Readiness is about funds, not risk.** A market that has never flooded can read 100% ready; it says how much is funded, not how likely a flood is. On devnet the donations are test money.
-- **We found no open, on-chain, household-level flood product that publishes its own funded status and ties price to preparedness; we did not find none exist.** Parametric flood cover for businesses (FloodFlash), parametric earthquake cover for renters (Jumpstart) and a New York City flood pilot all exist.
+- **We found no open, on-chain, household-level flood product that publishes its own funded status and ties price to preparedness; that does not prove none exists.** Parametric flood cover for businesses (FloodFlash), parametric earthquake cover for renters (Jumpstart) and a New York City flood pilot all exist.
 - **No seasonality yet:** the price uses a yearly rate for a 90-day term, so cover bought in the quiet season is overpriced and cover bought before hurricane season is underpriced.
 
 ---
